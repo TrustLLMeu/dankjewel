@@ -1,0 +1,352 @@
+"""Rule-based claim extraction using spaCy dependency parsing.
+
+Extracts (subject, predicate, object) triples from text by traversing
+spaCy dependency trees. Each triple becomes a Claim with optional
+temporal anchors, comparative tags, and modality modifiers.
+
+Efficiency is tracked via extraction_time_ms for future comparison
+with vLLM-based claim extraction.
+"""
+
+import time
+from dataclasses import dataclass, field
+from typing import List, Optional
+import spacy
+
+
+@dataclass
+class Claim:
+    """A single extracted (subject, predicate, object) triple."""
+    subject: str
+    predicate: str
+    object: str
+    source_sentence: str
+    modifiers: List[str] = field(default_factory=list)       # hedge words attached to verb
+    temporal_anchor: Optional[str] = None                     # DATE entity if present
+    comparative_tag: Optional[str] = None                     # JJR/JJS tag if present
+
+    def to_dict(self) -> dict:
+        return {
+            'subject': self.subject,
+            'predicate': self.predicate,
+            'object': self.object,
+            'source_sentence': self.source_sentence,
+            'modifiers': self.modifiers,
+            'temporal_anchor': self.temporal_anchor,
+            'comparative_tag': self.comparative_tag,
+        }
+
+
+@dataclass
+class ExtractionResult:
+    """Result of claim extraction with timing metadata."""
+    claims: List[Claim]
+    extraction_time_ms: float
+    num_sentences: int
+
+    def to_dict(self) -> dict:
+        return {
+            'claims': [c.to_dict() for c in self.claims],
+            'extraction_time_ms': self.extraction_time_ms,
+            'num_sentences': self.num_sentences,
+        }
+
+
+# Modal verbs and uncertainty cues for modality detection
+MODAL_VERBS = {'may', 'might', 'could', 'can', 'should', 'would'}
+UNCERTAINTY_CUES = {'perhaps', 'maybe', 'possibly', 'seems', 'appears',
+                    'allegedly', 'supposedly', 'reportedly', 'apparently'}
+
+
+class ClaimExtractor:
+    """Extract structured claims from text using spaCy dependency parsing.
+
+    Loads en_core_web_sm once and reuses it. Extracts triples by walking
+    the dependency tree for each sentence:
+      - subject: nsubj / nsubjpass of the root verb
+      - predicate: root verb (+ aux/neg children)
+      - object: dobj / attr / prep+pobj / acomp of the root verb
+
+    Also annotates:
+      - temporal_anchor: DATE entities from spaCy NER overlapping the sentence
+      - comparative_tag: JJR/JJS POS tags in the object span
+      - modifiers: modal/uncertainty words governing the verb
+    """
+
+    def __init__(self):
+        try:
+            self._nlp = spacy.load('en_core_web_sm')
+        except OSError:
+            raise RuntimeError(
+                "spaCy model 'en_core_web_sm' not found. "
+                "Install with: python -m spacy download en_core_web_sm"
+            )
+
+    def extract(self, text: str) -> ExtractionResult:
+        """Extract claims from text.
+
+        Returns:
+            ExtractionResult with list of Claim objects and timing info.
+        """
+        start = time.perf_counter()
+        doc = self._nlp(text)
+        claims = []
+
+        for sent in doc.sents:
+            sent_claims = self._extract_from_sentence(sent)
+            claims.extend(sent_claims)
+
+        elapsed_ms = (time.perf_counter() - start) * 1000.0
+        return ExtractionResult(
+            claims=claims,
+            extraction_time_ms=elapsed_ms,
+            num_sentences=len(list(doc.sents)),
+        )
+
+    def _extract_from_sentence(self, sent) -> List[Claim]:
+        """Extract claims from a single spaCy Span (sentence)."""
+        claims = []
+        sent_text = sent.text.strip()
+
+        # Collect DATE entities in this sentence
+        date_entities = [ent.text for ent in sent.ents if ent.label_ == 'DATE']
+        temporal_anchor = date_entities[0] if date_entities else None
+
+        # Find root verb(s) in the sentence
+        for token in sent:
+            if token.dep_ == 'ROOT':
+                root_claims = self._extract_from_root(token, sent_text, temporal_anchor)
+                claims.extend(root_claims)
+
+        return claims
+
+    def _extract_from_root(self, root, sent_text: str,
+                           temporal_anchor: Optional[str]) -> List[Claim]:
+        """Extract claims from a ROOT token and its dependents."""
+        claims = []
+
+        # --- Detect modifiers (modality) early, needed by all paths ---
+        modifiers = self._get_modifiers(root)
+
+        # --- Handle existential constructions: "There could be an uprising" ---
+        has_expl = any(c.dep_ == 'expl' for c in root.children)
+        if has_expl:
+            # In existential constructions, the attr/dobj IS the claim subject
+            for child in root.children:
+                if child.dep_ in ('attr', 'dobj'):
+                    subj_text = self._expand_noun(child)
+                    comp_tag = self._detect_comparative(child)
+                    claim = Claim(
+                        subject=subj_text,
+                        predicate='exist',
+                        object='',
+                        source_sentence=sent_text,
+                        modifiers=modifiers,
+                        temporal_anchor=temporal_anchor,
+                        comparative_tag=comp_tag,
+                    )
+                    claims.append(claim)
+            return claims
+
+        # --- Find subject(s) ---
+        subjects = self._get_subjects(root)
+        if not subjects:
+            return claims
+
+        # --- Build predicate ---
+        predicate = self._build_predicate(root)
+
+        # --- Find object(s) ---
+        objects = self._get_objects(root)
+        if not objects:
+            return claims
+
+        # --- Build claims for each subject × object pair ---
+        for subj in subjects:
+            for obj_text, comp_tag in objects:
+                final_subj = subj
+                final_obj = obj_text
+
+                # --- Inverted copula detection ---
+                # "The capital of France is Paris" → subject is a description,
+                # object is the named entity. Flip so Wikidata can verify.
+                if root.lemma_ == 'be':
+                    final_subj, final_obj = self._maybe_flip_copula(
+                        root, final_subj, final_obj
+                    )
+
+                claim = Claim(
+                    subject=final_subj,
+                    predicate=predicate,
+                    object=final_obj,
+                    source_sentence=sent_text,
+                    modifiers=modifiers,
+                    temporal_anchor=temporal_anchor,
+                    comparative_tag=comp_tag,
+                )
+                claims.append(claim)
+
+        return claims
+
+    def _get_subjects(self, root) -> List[str]:
+        """Get subject noun phrases from root's dependents."""
+        subjects = []
+        for child in root.children:
+            if child.dep_ in ('nsubj', 'nsubjpass'):
+                # Expand to full noun chunk if possible
+                subj_text = self._expand_noun(child)
+                subjects.append(subj_text)
+                # Also grab conjuncts ("France and Germany are ...")
+                for conj in child.conjuncts:
+                    subjects.append(self._expand_noun(conj))
+        return subjects
+
+    def _maybe_flip_copula(self, root, subj: str, obj: str) -> tuple:
+        """Detect inverted copula and flip subject/object if needed.
+
+        Pattern: "The capital of France is Paris" has:
+          - nsubj = "capital" (common noun, no NER)
+          - attr  = "Paris" (proper noun, GPE entity)
+        We flip to produce (Paris, be, the capital of France) which is
+        verifiable against Wikidata.
+
+        Returns (subject, object), possibly swapped.
+        """
+        # Find the grammatical subject and attr tokens
+        subj_token = None
+        attr_token = None
+        for child in root.children:
+            if child.dep_ in ('nsubj', 'nsubjpass'):
+                subj_token = child
+            if child.dep_ == 'attr':
+                attr_token = child
+
+        if not subj_token or not attr_token:
+            return subj, obj
+
+        # Check if subject is a common noun (description) and attr is a proper noun / entity
+        subj_is_description = subj_token.pos_ in ('NOUN', 'DET') and subj_token.ent_type_ == ''
+        attr_is_entity = attr_token.pos_ == 'PROPN' or attr_token.ent_type_ != ''
+
+        if subj_is_description and attr_is_entity:
+            # Flip: use the attr as subject and the original subject phrase as object
+            new_subj = attr_token.text  # Just the entity name, not the full subtree
+            # For the object, use the original subject phrase
+            new_obj = subj
+            return new_subj, new_obj
+
+        return subj, obj
+
+    def _build_predicate(self, root) -> str:
+        """Build predicate string from root verb + auxiliaries + negation + particles."""
+        parts = []
+        for child in root.children:
+            if child.dep_ in ('aux', 'auxpass', 'neg'):
+                parts.append((child.i, child.text.lower()))
+            if child.dep_ == 'prt':  # verb particle: "carried out"
+                parts.append((child.i, child.text.lower()))
+        parts.append((root.i, root.lemma_.lower()))
+        parts.sort(key=lambda x: x[0])
+        return ' '.join(p[1] for p in parts)
+
+    def _get_objects(self, root) -> List[tuple]:
+        """Get object phrases from root's dependents.
+
+        Returns list of (object_text, comparative_tag_or_None).
+        Consolidates prep phrases into a single combined object when possible.
+        """
+        objects = []
+        # Direct objects, attributes, complements
+        for child in root.children:
+            if child.dep_ in ('dobj', 'attr', 'acomp', 'oprd'):
+                obj_text = self._expand_noun(child)
+                comp_tag = self._detect_comparative(child)
+                objects.append((obj_text, comp_tag))
+                # Conjuncts: "Paris and London"
+                for conj in child.conjuncts:
+                    obj_text2 = self._expand_noun(conj)
+                    comp_tag2 = self._detect_comparative(conj)
+                    objects.append((obj_text2, comp_tag2))
+
+        # Prepositional objects: consolidate all preps into one combined phrase
+        # e.g. "played at Knebworth in 1986" → "at Knebworth in 1986"
+        prep_parts = []
+        for child in root.children:
+            if child.dep_ == 'prep':
+                for pobj in child.children:
+                    if pobj.dep_ == 'pobj':
+                        obj_text = self._expand_noun(pobj)
+                        prep_parts.append(f"{child.text} {obj_text}")
+
+            # Also follow advmod→prep→pobj: "situated north of the Arctic Circle"
+            if child.dep_ == 'advmod':
+                for prep_child in child.children:
+                    if prep_child.dep_ == 'prep':
+                        for pobj in prep_child.children:
+                            if pobj.dep_ == 'pobj':
+                                obj_text = self._expand_noun(pobj)
+                                prep_parts.append(f"{child.text} {prep_child.text} {obj_text}")
+
+        if prep_parts:
+            combined = ', '.join(prep_parts)
+            # Check for comparative in the full prep text
+            comp_tag = None
+            for child in root.children:
+                if child.dep_ in ('prep', 'advmod'):
+                    ct = self._detect_comparative(child)
+                    if ct:
+                        comp_tag = ct
+                        break
+            objects.append((combined, comp_tag))
+
+        return objects
+
+    def _expand_noun(self, token) -> str:
+        """Expand a token to its full subtree noun phrase."""
+        # Use the subtree span for a natural reading
+        subtree_tokens = sorted(token.subtree, key=lambda t: t.i)
+        # Filter out relative clauses and other deep structures
+        # Keep tokens that are part of the noun phrase
+        phrase_tokens = []
+        for t in subtree_tokens:
+            # Stop at clause boundaries
+            if t.dep_ in ('relcl', 'advcl', 'ccomp', 'xcomp') and t != token:
+                break
+            # Skip tokens that belong to a verb's own clause
+            if t.dep_ in ('nsubj', 'nsubjpass', 'dobj') and t.head != token and t.head.pos_ == 'VERB':
+                continue
+            phrase_tokens.append(t)
+
+        if phrase_tokens:
+            return ' '.join(t.text for t in phrase_tokens).strip()
+        return token.text
+
+    def _detect_comparative(self, token) -> Optional[str]:
+        """Detect comparative/superlative adjectives in token's subtree."""
+        for t in token.subtree:
+            if t.tag_ == 'JJS':
+                return 'superlative'
+            if t.tag_ == 'JJR':
+                return 'comparative'
+        return None
+
+    def _get_modifiers(self, root) -> List[str]:
+        """Detect modal verbs and uncertainty cues modifying the root verb."""
+        modifiers = []
+        for child in root.children:
+            if child.dep_ in ('aux', 'advmod') and child.text.lower() in MODAL_VERBS:
+                modifiers.append(child.text.lower())
+            if child.dep_ == 'advmod' and child.text.lower() in UNCERTAINTY_CUES:
+                modifiers.append(child.text.lower())
+        # Also check sentence-initial adverbs (e.g., "Perhaps the city ...")
+        sent = root.sent
+        for token in sent:
+            if token.i >= root.i:
+                break
+            if token.text.lower() in UNCERTAINTY_CUES:
+                if token.text.lower() not in modifiers:
+                    modifiers.append(token.text.lower())
+        return modifiers
+
+
+

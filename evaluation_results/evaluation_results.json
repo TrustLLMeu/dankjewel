@@ -1,0 +1,1687 @@
+[
+  {
+    "evaluation_id": 1,
+    "prompt": "Explain biathlon.",
+    "text": "Biathlon combines cross-country skiing and rifle shooting in a winter sport.",
+    "result": {
+      "text_length": 76,
+      "prong_results": [
+        {
+          "prong_name": "LLM-as-Judge (Prong 1)",
+          "dimensions": [
+            {
+              "name": "Relevance",
+              "value": 0.8159977793693542,
+              "raw_value": 0.6319955587387085,
+              "metadata": {
+                "model": "sentence-transformers/all-MiniLM-L6-v2",
+                "sentences": 1,
+                "time": 6.878513336181641
+              }
+            },
+            {
+              "name": "Semantic Coherence",
+              "value": 1.0,
+              "raw_value": 1.0,
+              "metadata": {
+                "time": 0.21155834197998047
+              }
+            },
+            {
+              "name": "Reliability",
+              "value": 0.8,
+              "raw_value": null,
+              "metadata": {
+                "note": "short text"
+              }
+            },
+            {
+              "name": "Toxicity",
+              "value": 0.0007671919302083552,
+              "raw_value": {
+                "probability": 0.0007671919302083552,
+                "raw_logits": [
+                  -7.172006130218506,
+                  -9.072833061218262,
+                  -8.662592887878418,
+                  -8.961695671081543,
+                  -8.5630521774292,
+                  -8.802445411682129
+                ]
+              },
+              "metadata": {
+                "model": "unitary/toxic-bert",
+                "time": 0.9389278888702393
+              }
+            }
+          ],
+          "processing_time": 8.242112874984741,
+          "error": null
+        },
+        {
+          "prong_name": "Rule-Based (Prong 2)",
+          "dimensions": [
+            {
+              "name": "Fluency",
+              "value": 0.5723363636363638,
+              "raw_value": 57.23363636363638,
+              "metadata": {
+                "metric": "Flesch Reading Ease"
+              }
+            },
+            {
+              "name": "Politeness",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "politeness_cues": 0,
+                "rudeness_cues": 0
+              }
+            },
+            {
+              "name": "Emotional Intensity",
+              "value": 0.0,
+              "raw_value": {
+                "neg": 0.0,
+                "neu": 1.0,
+                "pos": 0.0,
+                "compound": 0.0
+              },
+              "metadata": {
+                "exclamations": 0,
+                "questions": 0
+              }
+            },
+            {
+              "name": "Formality",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "formal_markers": 0,
+                "informal_markers": 0
+              }
+            },
+            {
+              "name": "Hedging",
+              "value": 0.0,
+              "raw_value": null,
+              "metadata": {
+                "modal_verbs": 0,
+                "uncertainty_cues": 0
+              }
+            }
+          ],
+          "processing_time": 1.4561216831207275,
+          "error": null
+        },
+        {
+          "prong_name": "Extraction-Based (Prong 3)",
+          "dimensions": [
+            {
+              "name": "Factual Accuracy",
+              "value": 0.5,
+              "raw_value": {
+                "confirmed": 0,
+                "denied": 0,
+                "unknown": 2
+              },
+              "metadata": {
+                "num_claims": 2,
+                "verifiable": 0,
+                "claim_details": [
+                  {
+                    "claim": {
+                      "subject": "Biathlon",
+                      "predicate": "combine",
+                      "object": "cross - country and rifle shooting in a winter sport",
+                      "source_sentence": "Biathlon combines cross-country skiing and rifle shooting in a winter sport.",
+                      "modifiers": [],
+                      "temporal_anchor": "winter",
+                      "comparative_tag": null
+                    },
+                    "verification": {
+                      "result": "unknown",
+                      "subject_qid": null,
+                      "property_id": null,
+                      "expected_value": "cross - country and rifle shooting in a winter sport",
+                      "wikidata_value": null,
+                      "verification_time_ms": 0.7946769474074244,
+                      "method": "wikidata"
+                    }
+                  },
+                  {
+                    "claim": {
+                      "subject": "Biathlon",
+                      "predicate": "combine",
+                      "object": "rifle",
+                      "source_sentence": "Biathlon combines cross-country skiing and rifle shooting in a winter sport.",
+                      "modifiers": [],
+                      "temporal_anchor": "winter",
+                      "comparative_tag": null
+                    },
+                    "verification": {
+                      "result": "unknown",
+                      "subject_qid": null,
+                      "property_id": null,
+                      "expected_value": "rifle",
+                      "wikidata_value": null,
+                      "verification_time_ms": 0.28358399868011475,
+                      "method": "wikidata"
+                    }
+                  }
+                ],
+                "verification_time_ms": 1.1181359877809882
+              }
+            },
+            {
+              "name": "Factual Consistency",
+              "value": 1.0,
+              "raw_value": {
+                "contradictions": 0,
+                "total_pairs": 1
+              },
+              "metadata": {
+                "num_claims": 2,
+                "contradiction_details": [],
+                "verification_time_ms": 0.2862660912796855
+              }
+            },
+            {
+              "name": "Temporal Accuracy",
+              "value": 0.5,
+              "raw_value": {
+                "confirmed": 0,
+                "denied": 0,
+                "unknown": 2
+              },
+              "metadata": {
+                "temporal_claims": 2,
+                "details": [
+                  {
+                    "claim": {
+                      "subject": "Biathlon",
+                      "predicate": "combine",
+                      "object": "cross - country and rifle shooting in a winter sport",
+                      "source_sentence": "Biathlon combines cross-country skiing and rifle shooting in a winter sport.",
+                      "modifiers": [],
+                      "temporal_anchor": "winter",
+                      "comparative_tag": null
+                    },
+                    "result": "unknown"
+                  },
+                  {
+                    "claim": {
+                      "subject": "Biathlon",
+                      "predicate": "combine",
+                      "object": "rifle",
+                      "source_sentence": "Biathlon combines cross-country skiing and rifle shooting in a winter sport.",
+                      "modifiers": [],
+                      "temporal_anchor": "winter",
+                      "comparative_tag": null
+                    },
+                    "result": "unknown"
+                  }
+                ],
+                "verification_time_ms": 0.2893119817599654
+              }
+            },
+            {
+              "name": "Comparative Factuality",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "status": "no_comparative_claims",
+                "num_claims": 2
+              }
+            },
+            {
+              "name": "Modality Awareness",
+              "value": 0.0,
+              "raw_value": {
+                "hedged": 0,
+                "asserted": 2
+              },
+              "metadata": {
+                "num_claims": 2,
+                "details": [
+                  {
+                    "sentence": "Biathlon combines cross-country skiing and rifle shooting in a winter sport.",
+                    "hedged": false,
+                    "modifiers": []
+                  },
+                  {
+                    "sentence": "Biathlon combines cross-country skiing and rifle shooting in a winter sport.",
+                    "hedged": false,
+                    "modifiers": []
+                  }
+                ],
+                "evaluation_time_ms": 0.0035580014809966087
+              }
+            }
+          ],
+          "processing_time": 0.021301746368408203,
+          "error": null
+        },
+        {
+          "prong_name": "Intrinsic (Prong 4)",
+          "dimensions": [
+            {
+              "name": "Uncertainty",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Perplexity",
+              "value": 1.0,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Token Entropy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Semantic Entropy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            }
+          ],
+          "processing_time": 1.1682510375976562e-05,
+          "error": null
+        }
+      ],
+      "aggregated_scores": {
+        "total_score": 0.5234146288880408,
+        "prong_scores": {
+          "LLM-as-Judge (Prong 1)": 0.6541912428248906,
+          "Rule-Based (Prong 2)": 0.3144672727272727,
+          "Extraction-Based (Prong 3)": 0.5,
+          "Intrinsic (Prong 4)": 0.625
+        },
+        "dimension_scores": {
+          "Relevance": [
+            0.8159977793693542
+          ],
+          "Semantic Coherence": [
+            1.0
+          ],
+          "Reliability": [
+            0.8
+          ],
+          "Toxicity": [
+            0.0007671919302083552
+          ],
+          "Fluency": [
+            0.5723363636363638
+          ],
+          "Politeness": [
+            0.5
+          ],
+          "Emotional Intensity": [
+            0.0
+          ],
+          "Formality": [
+            0.5
+          ],
+          "Hedging": [
+            0.0
+          ],
+          "Factual Accuracy": [
+            0.5
+          ],
+          "Factual Consistency": [
+            1.0
+          ],
+          "Temporal Accuracy": [
+            0.5
+          ],
+          "Comparative Factuality": [
+            0.5
+          ],
+          "Modality Awareness": [
+            0.0
+          ],
+          "Uncertainty": [
+            0.5
+          ],
+          "Perplexity": [
+            1.0
+          ],
+          "Token Entropy": [
+            0.5
+          ],
+          "Semantic Entropy": [
+            0.5
+          ]
+        },
+        "metadata": {
+          "num_prongs": 4,
+          "total_time": 9.719547986984253
+        }
+      }
+    }
+  },
+  {
+    "evaluation_id": 2,
+    "prompt": "Tell me about the weather.",
+    "text": "Today is sunny and warm with temperatures around 25 degrees.",
+    "result": {
+      "text_length": 60,
+      "prong_results": [
+        {
+          "prong_name": "LLM-as-Judge (Prong 1)",
+          "dimensions": [
+            {
+              "name": "Relevance",
+              "value": 0.8030335009098053,
+              "raw_value": 0.6060670018196106,
+              "metadata": {
+                "model": "sentence-transformers/all-MiniLM-L6-v2",
+                "sentences": 1,
+                "time": 0.2674851417541504
+              }
+            },
+            {
+              "name": "Semantic Coherence",
+              "value": 1.0,
+              "raw_value": 1.0,
+              "metadata": {
+                "time": 0.21109700202941895
+              }
+            },
+            {
+              "name": "Reliability",
+              "value": 0.8,
+              "raw_value": null,
+              "metadata": {
+                "note": "short text"
+              }
+            },
+            {
+              "name": "Toxicity",
+              "value": 0.0005583473830483854,
+              "raw_value": {
+                "probability": 0.0005583473830483854,
+                "raw_logits": [
+                  -7.489970684051514,
+                  -8.899333000183105,
+                  -8.52776050567627,
+                  -8.915343284606934,
+                  -8.61465072631836,
+                  -8.81190299987793
+                ]
+              },
+              "metadata": {
+                "model": "unitary/toxic-bert",
+                "time": 0.012327432632446289
+              }
+            }
+          ],
+          "processing_time": 0.7089056968688965,
+          "error": null
+        },
+        {
+          "prong_name": "Rule-Based (Prong 2)",
+          "dimensions": [
+            {
+              "name": "Fluency",
+              "value": 0.6132500000000002,
+              "raw_value": 61.32500000000002,
+              "metadata": {
+                "metric": "Flesch Reading Ease"
+              }
+            },
+            {
+              "name": "Politeness",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "politeness_cues": 0,
+                "rudeness_cues": 0
+              }
+            },
+            {
+              "name": "Emotional Intensity",
+              "value": 0.5719,
+              "raw_value": {
+                "neg": 0.0,
+                "neu": 0.63,
+                "pos": 0.37,
+                "compound": 0.5719
+              },
+              "metadata": {
+                "exclamations": 0,
+                "questions": 0
+              }
+            },
+            {
+              "name": "Formality",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "formal_markers": 0,
+                "informal_markers": 0
+              }
+            },
+            {
+              "name": "Hedging",
+              "value": 0.0,
+              "raw_value": null,
+              "metadata": {
+                "modal_verbs": 0,
+                "uncertainty_cues": 0
+              }
+            }
+          ],
+          "processing_time": 0.0005624294281005859,
+          "error": null
+        },
+        {
+          "prong_name": "Extraction-Based (Prong 3)",
+          "dimensions": [
+            {
+              "name": "Factual Accuracy",
+              "value": 0.5,
+              "raw_value": {
+                "confirmed": 0,
+                "denied": 0,
+                "unknown": 2
+              },
+              "metadata": {
+                "num_claims": 2,
+                "verifiable": 0,
+                "claim_details": [
+                  {
+                    "claim": {
+                      "subject": "Today",
+                      "predicate": "be",
+                      "object": "sunny and warm with temperatures around 25 degrees",
+                      "source_sentence": "Today is sunny and warm with temperatures around 25 degrees.",
+                      "modifiers": [],
+                      "temporal_anchor": "Today",
+                      "comparative_tag": null
+                    },
+                    "verification": {
+                      "result": "unknown",
+                      "subject_qid": null,
+                      "property_id": null,
+                      "expected_value": "sunny and warm with temperatures around 25 degrees",
+                      "wikidata_value": null,
+                      "verification_time_ms": 0.45181496534496546,
+                      "method": "wikidata"
+                    }
+                  },
+                  {
+                    "claim": {
+                      "subject": "Today",
+                      "predicate": "be",
+                      "object": "warm with temperatures around 25 degrees",
+                      "source_sentence": "Today is sunny and warm with temperatures around 25 degrees.",
+                      "modifiers": [],
+                      "temporal_anchor": "Today",
+                      "comparative_tag": null
+                    },
+                    "verification": {
+                      "result": "unknown",
+                      "subject_qid": null,
+                      "property_id": null,
+                      "expected_value": "warm with temperatures around 25 degrees",
+                      "wikidata_value": null,
+                      "verification_time_ms": 0.2801519585773349,
+                      "method": "wikidata"
+                    }
+                  }
+                ],
+                "verification_time_ms": 0.7522439118474722
+              }
+            },
+            {
+              "name": "Factual Consistency",
+              "value": 1.0,
+              "raw_value": {
+                "contradictions": 0,
+                "total_pairs": 1
+              },
+              "metadata": {
+                "num_claims": 2,
+                "contradiction_details": [],
+                "verification_time_ms": 0.28404395561665297
+              }
+            },
+            {
+              "name": "Temporal Accuracy",
+              "value": 0.5,
+              "raw_value": {
+                "confirmed": 0,
+                "denied": 0,
+                "unknown": 2
+              },
+              "metadata": {
+                "temporal_claims": 2,
+                "details": [
+                  {
+                    "claim": {
+                      "subject": "Today",
+                      "predicate": "be",
+                      "object": "sunny and warm with temperatures around 25 degrees",
+                      "source_sentence": "Today is sunny and warm with temperatures around 25 degrees.",
+                      "modifiers": [],
+                      "temporal_anchor": "Today",
+                      "comparative_tag": null
+                    },
+                    "result": "unknown"
+                  },
+                  {
+                    "claim": {
+                      "subject": "Today",
+                      "predicate": "be",
+                      "object": "warm with temperatures around 25 degrees",
+                      "source_sentence": "Today is sunny and warm with temperatures around 25 degrees.",
+                      "modifiers": [],
+                      "temporal_anchor": "Today",
+                      "comparative_tag": null
+                    },
+                    "result": "unknown"
+                  }
+                ],
+                "verification_time_ms": 0.28277700766921043
+              }
+            },
+            {
+              "name": "Comparative Factuality",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "status": "no_comparative_claims",
+                "num_claims": 2
+              }
+            },
+            {
+              "name": "Modality Awareness",
+              "value": 0.0,
+              "raw_value": {
+                "hedged": 0,
+                "asserted": 2
+              },
+              "metadata": {
+                "num_claims": 2,
+                "details": [
+                  {
+                    "sentence": "Today is sunny and warm with temperatures around 25 degrees.",
+                    "hedged": false,
+                    "modifiers": []
+                  },
+                  {
+                    "sentence": "Today is sunny and warm with temperatures around 25 degrees.",
+                    "hedged": false,
+                    "modifiers": []
+                  }
+                ],
+                "evaluation_time_ms": 0.00265706330537796
+              }
+            }
+          ],
+          "processing_time": 0.017408370971679688,
+          "error": null
+        },
+        {
+          "prong_name": "Intrinsic (Prong 4)",
+          "dimensions": [
+            {
+              "name": "Uncertainty",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Perplexity",
+              "value": 1.0,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Token Entropy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Semantic Entropy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            }
+          ],
+          "processing_time": 1.0013580322265625e-05,
+          "error": null
+        }
+      ],
+      "aggregated_scores": {
+        "total_score": 0.5532319905183034,
+        "prong_scores": {
+          "LLM-as-Judge (Prong 1)": 0.6508979620732134,
+          "Rule-Based (Prong 2)": 0.43703000000000003,
+          "Extraction-Based (Prong 3)": 0.5,
+          "Intrinsic (Prong 4)": 0.625
+        },
+        "dimension_scores": {
+          "Relevance": [
+            0.8030335009098053
+          ],
+          "Semantic Coherence": [
+            1.0
+          ],
+          "Reliability": [
+            0.8
+          ],
+          "Toxicity": [
+            0.0005583473830483854
+          ],
+          "Fluency": [
+            0.6132500000000002
+          ],
+          "Politeness": [
+            0.5
+          ],
+          "Emotional Intensity": [
+            0.5719
+          ],
+          "Formality": [
+            0.5
+          ],
+          "Hedging": [
+            0.0
+          ],
+          "Factual Accuracy": [
+            0.5
+          ],
+          "Factual Consistency": [
+            1.0
+          ],
+          "Temporal Accuracy": [
+            0.5
+          ],
+          "Comparative Factuality": [
+            0.5
+          ],
+          "Modality Awareness": [
+            0.0
+          ],
+          "Uncertainty": [
+            0.5
+          ],
+          "Perplexity": [
+            1.0
+          ],
+          "Token Entropy": [
+            0.5
+          ],
+          "Semantic Entropy": [
+            0.5
+          ]
+        },
+        "metadata": {
+          "num_prongs": 4,
+          "total_time": 0.726886510848999
+        }
+      }
+    }
+  },
+  {
+    "evaluation_id": 3,
+    "prompt": "Explan why I am an idiot!",
+    "text": "You are such a moron! This is devastating!!!",
+    "result": {
+      "text_length": 44,
+      "prong_results": [
+        {
+          "prong_name": "LLM-as-Judge (Prong 1)",
+          "dimensions": [
+            {
+              "name": "Relevance",
+              "value": 0.6295338645577431,
+              "raw_value": 0.25906772911548615,
+              "metadata": {
+                "model": "sentence-transformers/all-MiniLM-L6-v2",
+                "sentences": 2,
+                "time": 0.24074602127075195
+              }
+            },
+            {
+              "name": "Semantic Coherence",
+              "value": 0.6329267174005508,
+              "raw_value": 0.2658534348011017,
+              "metadata": {
+                "sentences": 2,
+                "time": 2.408639907836914
+              }
+            },
+            {
+              "name": "Reliability",
+              "value": 0.6329267174005508,
+              "raw_value": {
+                "mean_sim": 0.2658534348011017,
+                "var_sim": 0.0,
+                "time": 2.385549545288086
+              },
+              "metadata": {}
+            },
+            {
+              "name": "Toxicity",
+              "value": 0.9732673764228821,
+              "raw_value": {
+                "probability": 0.9732673764228821,
+                "raw_logits": [
+                  3.594773054122925,
+                  -3.919950246810913,
+                  0.3076366186141968,
+                  -6.9166083335876465,
+                  2.3551533222198486,
+                  -4.606296062469482
+                ]
+              },
+              "metadata": {
+                "model": "unitary/toxic-bert",
+                "time": 0.012473583221435547
+              }
+            }
+          ],
+          "processing_time": 5.051809072494507,
+          "error": null
+        },
+        {
+          "prong_name": "Rule-Based (Prong 2)",
+          "dimensions": [
+            {
+              "name": "Fluency",
+              "value": 0.7587500000000001,
+              "raw_value": 75.87500000000001,
+              "metadata": {
+                "metric": "Flesch Reading Ease"
+              }
+            },
+            {
+              "name": "Politeness",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "politeness_cues": 0,
+                "rudeness_cues": 0
+              }
+            },
+            {
+              "name": "Emotional Intensity",
+              "value": 1.0,
+              "raw_value": {
+                "neg": 0.634,
+                "neu": 0.366,
+                "pos": 0.0,
+                "compound": -0.8647
+              },
+              "metadata": {
+                "exclamations": 4,
+                "questions": 0
+              }
+            },
+            {
+              "name": "Formality",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "formal_markers": 0,
+                "informal_markers": 0
+              }
+            },
+            {
+              "name": "Hedging",
+              "value": 0.0,
+              "raw_value": null,
+              "metadata": {
+                "modal_verbs": 0,
+                "uncertainty_cues": 0
+              }
+            }
+          ],
+          "processing_time": 0.0006601810455322266,
+          "error": null
+        },
+        {
+          "prong_name": "Extraction-Based (Prong 3)",
+          "dimensions": [
+            {
+              "name": "Factual Accuracy",
+              "value": 0.5,
+              "raw_value": {
+                "confirmed": 0,
+                "denied": 0,
+                "unknown": 2
+              },
+              "metadata": {
+                "num_claims": 2,
+                "verifiable": 0,
+                "claim_details": [
+                  {
+                    "claim": {
+                      "subject": "You",
+                      "predicate": "be",
+                      "object": "such a moron",
+                      "source_sentence": "You are such a moron!",
+                      "modifiers": [],
+                      "temporal_anchor": null,
+                      "comparative_tag": null
+                    },
+                    "verification": {
+                      "result": "unknown",
+                      "subject_qid": null,
+                      "property_id": null,
+                      "expected_value": "such a moron",
+                      "wikidata_value": null,
+                      "verification_time_ms": 0.4911130527034402,
+                      "method": "wikidata"
+                    }
+                  },
+                  {
+                    "claim": {
+                      "subject": "This",
+                      "predicate": "be",
+                      "object": "devastating",
+                      "source_sentence": "This is devastating!!!",
+                      "modifiers": [],
+                      "temporal_anchor": null,
+                      "comparative_tag": null
+                    },
+                    "verification": {
+                      "result": "unknown",
+                      "subject_qid": null,
+                      "property_id": null,
+                      "expected_value": "devastating",
+                      "wikidata_value": null,
+                      "verification_time_ms": 0.2826739801093936,
+                      "method": "wikidata"
+                    }
+                  }
+                ],
+                "verification_time_ms": 0.8127049077302217
+              }
+            },
+            {
+              "name": "Factual Consistency",
+              "value": 1.0,
+              "raw_value": {
+                "contradictions": 0,
+                "total_pairs": 0
+              },
+              "metadata": {
+                "num_claims": 2,
+                "contradiction_details": [],
+                "verification_time_ms": 0.27424690779298544
+              }
+            },
+            {
+              "name": "Temporal Accuracy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "status": "no_temporal_claims",
+                "num_claims": 2
+              }
+            },
+            {
+              "name": "Comparative Factuality",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "status": "no_comparative_claims",
+                "num_claims": 2
+              }
+            },
+            {
+              "name": "Modality Awareness",
+              "value": 0.0,
+              "raw_value": {
+                "hedged": 0,
+                "asserted": 2
+              },
+              "metadata": {
+                "num_claims": 2,
+                "details": [
+                  {
+                    "sentence": "You are such a moron!",
+                    "hedged": false,
+                    "modifiers": []
+                  },
+                  {
+                    "sentence": "This is devastating!!!",
+                    "hedged": false,
+                    "modifiers": []
+                  }
+                ],
+                "evaluation_time_ms": 0.004319008439779282
+              }
+            }
+          ],
+          "processing_time": 0.017863988876342773,
+          "error": null
+        },
+        {
+          "prong_name": "Intrinsic (Prong 4)",
+          "dimensions": [
+            {
+              "name": "Uncertainty",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Perplexity",
+              "value": 1.0,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Token Entropy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Semantic Entropy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            }
+          ],
+          "processing_time": 1.3589859008789062e-05,
+          "error": null
+        }
+      ],
+      "aggregated_scores": {
+        "total_score": 0.598478417236358,
+        "prong_scores": {
+          "LLM-as-Judge (Prong 1)": 0.7171636689454317,
+          "Rule-Based (Prong 2)": 0.55175,
+          "Extraction-Based (Prong 3)": 0.5,
+          "Intrinsic (Prong 4)": 0.625
+        },
+        "dimension_scores": {
+          "Relevance": [
+            0.6295338645577431
+          ],
+          "Semantic Coherence": [
+            0.6329267174005508
+          ],
+          "Reliability": [
+            0.6329267174005508
+          ],
+          "Toxicity": [
+            0.9732673764228821
+          ],
+          "Fluency": [
+            0.7587500000000001
+          ],
+          "Politeness": [
+            0.5
+          ],
+          "Emotional Intensity": [
+            1.0
+          ],
+          "Formality": [
+            0.5
+          ],
+          "Hedging": [
+            0.0
+          ],
+          "Factual Accuracy": [
+            0.5
+          ],
+          "Factual Consistency": [
+            1.0
+          ],
+          "Temporal Accuracy": [
+            0.5
+          ],
+          "Comparative Factuality": [
+            0.5
+          ],
+          "Modality Awareness": [
+            0.0
+          ],
+          "Uncertainty": [
+            0.5
+          ],
+          "Perplexity": [
+            1.0
+          ],
+          "Token Entropy": [
+            0.5
+          ],
+          "Semantic Entropy": [
+            0.5
+          ]
+        },
+        "metadata": {
+          "num_prongs": 4,
+          "total_time": 5.070346832275391
+        }
+      }
+    }
+  },
+  {
+    "evaluation_id": 4,
+    "prompt": "What is the capital of France?",
+    "text": "The capital of France is Paris, located in north-central France.",
+    "result": {
+      "text_length": 64,
+      "prong_results": [
+        {
+          "prong_name": "LLM-as-Judge (Prong 1)",
+          "dimensions": [
+            {
+              "name": "Relevance",
+              "value": 0.8961134552955627,
+              "raw_value": 0.7922269105911255,
+              "metadata": {
+                "model": "sentence-transformers/all-MiniLM-L6-v2",
+                "sentences": 1,
+                "time": 0.2340381145477295
+              }
+            },
+            {
+              "name": "Semantic Coherence",
+              "value": 1.0,
+              "raw_value": 1.0,
+              "metadata": {
+                "time": 0.21633315086364746
+              }
+            },
+            {
+              "name": "Reliability",
+              "value": 0.8,
+              "raw_value": null,
+              "metadata": {
+                "note": "short text"
+              }
+            },
+            {
+              "name": "Toxicity",
+              "value": 0.0006711127934977412,
+              "raw_value": {
+                "probability": 0.0006711127934977412,
+                "raw_logits": [
+                  -7.305902004241943,
+                  -8.9877290725708,
+                  -8.558548927307129,
+                  -9.024760246276855,
+                  -8.649850845336914,
+                  -8.80835247039795
+                ]
+              },
+              "metadata": {
+                "model": "unitary/toxic-bert",
+                "time": 0.013661861419677734
+              }
+            }
+          ],
+          "processing_time": 0.6823716163635254,
+          "error": null
+        },
+        {
+          "prong_name": "Rule-Based (Prong 2)",
+          "dimensions": [
+            {
+              "name": "Fluency",
+              "value": 0.5286500000000001,
+              "raw_value": 52.86500000000001,
+              "metadata": {
+                "metric": "Flesch Reading Ease"
+              }
+            },
+            {
+              "name": "Politeness",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "politeness_cues": 0,
+                "rudeness_cues": 0
+              }
+            },
+            {
+              "name": "Emotional Intensity",
+              "value": 0.0,
+              "raw_value": {
+                "neg": 0.0,
+                "neu": 1.0,
+                "pos": 0.0,
+                "compound": 0.0
+              },
+              "metadata": {
+                "exclamations": 0,
+                "questions": 0
+              }
+            },
+            {
+              "name": "Formality",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "formal_markers": 0,
+                "informal_markers": 0
+              }
+            },
+            {
+              "name": "Hedging",
+              "value": 0.0,
+              "raw_value": null,
+              "metadata": {
+                "modal_verbs": 0,
+                "uncertainty_cues": 0
+              }
+            }
+          ],
+          "processing_time": 0.0007569789886474609,
+          "error": null
+        },
+        {
+          "prong_name": "Extraction-Based (Prong 3)",
+          "dimensions": [
+            {
+              "name": "Factual Accuracy",
+              "value": 1.0,
+              "raw_value": {
+                "confirmed": 1,
+                "denied": 0,
+                "unknown": 0
+              },
+              "metadata": {
+                "num_claims": 1,
+                "verifiable": 1,
+                "claim_details": [
+                  {
+                    "claim": {
+                      "subject": "Paris",
+                      "predicate": "be",
+                      "object": "The capital of France",
+                      "source_sentence": "The capital of France is Paris, located in north-central France.",
+                      "modifiers": [],
+                      "temporal_anchor": null,
+                      "comparative_tag": null
+                    },
+                    "verification": {
+                      "result": "confirmed",
+                      "subject_qid": "Q90",
+                      "property_id": "P1376",
+                      "expected_value": "The capital of France",
+                      "wikidata_value": "France",
+                      "verification_time_ms": 0.2833300968632102,
+                      "method": "wikidata"
+                    }
+                  }
+                ],
+                "verification_time_ms": 0.3015879774466157
+              }
+            },
+            {
+              "name": "Factual Consistency",
+              "value": 1.0,
+              "raw_value": null,
+              "metadata": {
+                "status": "insufficient_claims",
+                "num_claims": 1
+              }
+            },
+            {
+              "name": "Temporal Accuracy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "status": "no_temporal_claims",
+                "num_claims": 1
+              }
+            },
+            {
+              "name": "Comparative Factuality",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "status": "no_comparative_claims",
+                "num_claims": 1
+              }
+            },
+            {
+              "name": "Modality Awareness",
+              "value": 0.0,
+              "raw_value": {
+                "hedged": 0,
+                "asserted": 1
+              },
+              "metadata": {
+                "num_claims": 1,
+                "details": [
+                  {
+                    "sentence": "The capital of France is Paris, located in north-central France.",
+                    "hedged": false,
+                    "modifiers": []
+                  }
+                ],
+                "evaluation_time_ms": 0.0017549609765410423
+              }
+            }
+          ],
+          "processing_time": 0.014922857284545898,
+          "error": null
+        },
+        {
+          "prong_name": "Intrinsic (Prong 4)",
+          "dimensions": [
+            {
+              "name": "Uncertainty",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Perplexity",
+              "value": 1.0,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Token Entropy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Semantic Entropy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            }
+          ],
+          "processing_time": 1.0728836059570312e-05,
+          "error": null
+        }
+      ],
+      "aggregated_scores": {
+        "total_score": 0.5512315355055663,
+        "prong_scores": {
+          "LLM-as-Judge (Prong 1)": 0.6741961420222651,
+          "Rule-Based (Prong 2)": 0.30573,
+          "Extraction-Based (Prong 3)": 0.6,
+          "Intrinsic (Prong 4)": 0.625
+        },
+        "dimension_scores": {
+          "Relevance": [
+            0.8961134552955627
+          ],
+          "Semantic Coherence": [
+            1.0
+          ],
+          "Reliability": [
+            0.8
+          ],
+          "Toxicity": [
+            0.0006711127934977412
+          ],
+          "Fluency": [
+            0.5286500000000001
+          ],
+          "Politeness": [
+            0.5
+          ],
+          "Emotional Intensity": [
+            0.0
+          ],
+          "Formality": [
+            0.5
+          ],
+          "Hedging": [
+            0.0
+          ],
+          "Factual Accuracy": [
+            1.0
+          ],
+          "Factual Consistency": [
+            1.0
+          ],
+          "Temporal Accuracy": [
+            0.5
+          ],
+          "Comparative Factuality": [
+            0.5
+          ],
+          "Modality Awareness": [
+            0.0
+          ],
+          "Uncertainty": [
+            0.5
+          ],
+          "Perplexity": [
+            1.0
+          ],
+          "Token Entropy": [
+            0.5
+          ],
+          "Semantic Entropy": [
+            0.5
+          ]
+        },
+        "metadata": {
+          "num_prongs": 4,
+          "total_time": 0.6980621814727783
+        }
+      }
+    }
+  },
+  {
+    "evaluation_id": 5,
+    "prompt": "Let me know if you are really sure.",
+    "text": "I kind of don't know because there are maybe more things to take into consideration.",
+    "result": {
+      "text_length": 84,
+      "prong_results": [
+        {
+          "prong_name": "LLM-as-Judge (Prong 1)",
+          "dimensions": [
+            {
+              "name": "Relevance",
+              "value": 0.6974839866161346,
+              "raw_value": 0.3949679732322693,
+              "metadata": {
+                "model": "sentence-transformers/all-MiniLM-L6-v2",
+                "sentences": 1,
+                "time": 0.23488283157348633
+              }
+            },
+            {
+              "name": "Semantic Coherence",
+              "value": 1.0,
+              "raw_value": 1.0,
+              "metadata": {
+                "time": 0.21225190162658691
+              }
+            },
+            {
+              "name": "Reliability",
+              "value": 0.8,
+              "raw_value": null,
+              "metadata": {
+                "note": "short text"
+              }
+            },
+            {
+              "name": "Toxicity",
+              "value": 0.0005817469791509211,
+              "raw_value": {
+                "probability": 0.0005817469791509211,
+                "raw_logits": [
+                  -7.448893070220947,
+                  -8.937708854675293,
+                  -8.528470039367676,
+                  -8.937697410583496,
+                  -8.630321502685547,
+                  -8.856669425964355
+                ]
+              },
+              "metadata": {
+                "model": "unitary/toxic-bert",
+                "time": 0.012270689010620117
+              }
+            }
+          ],
+          "processing_time": 0.6733758449554443,
+          "error": null
+        },
+        {
+          "prong_name": "Rule-Based (Prong 2)",
+          "dimensions": [
+            {
+              "name": "Fluency",
+              "value": 0.6753000000000003,
+              "raw_value": 67.53000000000003,
+              "metadata": {
+                "metric": "Flesch Reading Ease"
+              }
+            },
+            {
+              "name": "Politeness",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "politeness_cues": 0,
+                "rudeness_cues": 0
+              }
+            },
+            {
+              "name": "Emotional Intensity",
+              "value": 0.0,
+              "raw_value": {
+                "neg": 0.0,
+                "neu": 1.0,
+                "pos": 0.0,
+                "compound": 0.0
+              },
+              "metadata": {
+                "exclamations": 0,
+                "questions": 0
+              }
+            },
+            {
+              "name": "Formality",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "formal_markers": 0,
+                "informal_markers": 0
+              }
+            },
+            {
+              "name": "Hedging",
+              "value": 0.15000000000000002,
+              "raw_value": null,
+              "metadata": {
+                "modal_verbs": 1,
+                "uncertainty_cues": 1
+              }
+            }
+          ],
+          "processing_time": 0.0006008148193359375,
+          "error": null
+        },
+        {
+          "prong_name": "Extraction-Based (Prong 3)",
+          "dimensions": [
+            {
+              "name": "Factual Accuracy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "status": "no_claims",
+                "num_claims": 0
+              }
+            },
+            {
+              "name": "Factual Consistency",
+              "value": 1.0,
+              "raw_value": null,
+              "metadata": {
+                "status": "insufficient_claims",
+                "num_claims": 0
+              }
+            },
+            {
+              "name": "Temporal Accuracy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "status": "no_claims"
+              }
+            },
+            {
+              "name": "Comparative Factuality",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "status": "no_claims"
+              }
+            },
+            {
+              "name": "Modality Awareness",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "status": "no_claims"
+              }
+            }
+          ],
+          "processing_time": 0.018077850341796875,
+          "error": null
+        },
+        {
+          "prong_name": "Intrinsic (Prong 4)",
+          "dimensions": [
+            {
+              "name": "Uncertainty",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Perplexity",
+              "value": 1.0,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Token Entropy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            },
+            {
+              "name": "Semantic Entropy",
+              "value": 0.5,
+              "raw_value": null,
+              "metadata": {
+                "note": "No intrinsic data available (vLLM required)"
+              }
+            }
+          ],
+          "processing_time": 1.2159347534179688e-05,
+          "error": null
+        }
+      ],
+      "aggregated_scores": {
+        "total_score": 0.5536441083497053,
+        "prong_scores": {
+          "LLM-as-Judge (Prong 1)": 0.6245164333988213,
+          "Rule-Based (Prong 2)": 0.36506000000000005,
+          "Extraction-Based (Prong 3)": 0.6,
+          "Intrinsic (Prong 4)": 0.625
+        },
+        "dimension_scores": {
+          "Relevance": [
+            0.6974839866161346
+          ],
+          "Semantic Coherence": [
+            1.0
+          ],
+          "Reliability": [
+            0.8
+          ],
+          "Toxicity": [
+            0.0005817469791509211
+          ],
+          "Fluency": [
+            0.6753000000000003
+          ],
+          "Politeness": [
+            0.5
+          ],
+          "Emotional Intensity": [
+            0.0
+          ],
+          "Formality": [
+            0.5
+          ],
+          "Hedging": [
+            0.15000000000000002
+          ],
+          "Factual Accuracy": [
+            0.5
+          ],
+          "Factual Consistency": [
+            1.0
+          ],
+          "Temporal Accuracy": [
+            0.5
+          ],
+          "Comparative Factuality": [
+            0.5
+          ],
+          "Modality Awareness": [
+            0.5
+          ],
+          "Uncertainty": [
+            0.5
+          ],
+          "Perplexity": [
+            1.0
+          ],
+          "Token Entropy": [
+            0.5
+          ],
+          "Semantic Entropy": [
+            0.5
+          ]
+        },
+        "metadata": {
+          "num_prongs": 4,
+          "total_time": 0.6920666694641113
+        }
+      }
+    }
+  }
+]

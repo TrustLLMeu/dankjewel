@@ -1,0 +1,108 @@
+[
+  {
+    "id": "geo_001",
+    "claim": "Paris is the capital of France.",
+    "ground_truth": true,
+    "category": "geography",
+    "prompt_template": "Answer the following question in one sentence: What is the capital of France?"
+  },
+  {
+    "id": "geo_002",
+    "claim": "Tromsø is in the Stockholm archipelago.",
+    "ground_truth": false,
+    "category": "geography",
+    "prompt_template": "Answer the following question in one sentence: Where is Tromsø located?"
+  },
+  {
+    "id": "geo_003",
+    "claim": "Mount Everest is the highest mountain in the world.",
+    "ground_truth": true,
+    "category": "geography_comparative",
+    "prompt_template": "Answer the following question in one sentence: What is the highest mountain in the world?"
+  },
+  {
+    "id": "geo_004",
+    "claim": "Berlin is the capital of Germany.",
+    "ground_truth": true,
+    "category": "geography",
+    "prompt_template": "Answer the following question in one sentence: What is the capital of Germany?"
+  },
+  {
+    "id": "geo_005",
+    "claim": "Tromsø is in Norway.",
+    "ground_truth": true,
+    "category": "geography",
+    "prompt_template": "Answer the following question in one sentence: What country is Tromsø in?"
+  },
+  {
+    "id": "geo_006",
+    "claim": "Oslo is the capital of Norway.",
+    "ground_truth": true,
+    "category": "geography",
+    "prompt_template": "Answer the following question in one sentence: What is the capital of Norway?"
+  },
+  {
+    "id": "hist_001",
+    "claim": "Albert Einstein was born in 1879.",
+    "ground_truth": true,
+    "category": "history_temporal",
+    "prompt_template": "Answer the following question in one sentence: When was Albert Einstein born?"
+  },
+  {
+    "id": "hist_002",
+    "claim": "World War II started in 1939.",
+    "ground_truth": true,
+    "category": "history_temporal",
+    "prompt_template": "Answer the following question in one sentence: When did World War II start?"
+  },
+  {
+    "id": "hist_003",
+    "claim": "Queen played their last concert at Knebworth in 1986.",
+    "ground_truth": true,
+    "category": "history_event",
+    "prompt_template": "Answer the following question in one sentence: When did Queen play their last concert?"
+  },
+  {
+    "id": "people_001",
+    "claim": "Marie Curie was a physicist.",
+    "ground_truth": true,
+    "category": "people",
+    "prompt_template": "Answer the following question in one sentence: What was Marie Curie's profession?"
+  },
+  {
+    "id": "people_002",
+    "claim": "William Shakespeare was an English playwright.",
+    "ground_truth": true,
+    "category": "people",
+    "prompt_template": "Answer the following question in one sentence: Who was William Shakespeare?"
+  },
+  {
+    "id": "false_001",
+    "claim": "London is the capital of France.",
+    "ground_truth": false,
+    "category": "geography_false",
+    "prompt_template": "Answer the following question in one sentence: What is the capital of France?"
+  },
+  {
+    "id": "false_002",
+    "claim": "The Nile is in South America.",
+    "ground_truth": false,
+    "category": "geography_false",
+    "prompt_template": "Answer the following question in one sentence: Where is the Nile river?"
+  },
+  {
+    "id": "hedge_001",
+    "claim": "There could be an uprising this week.",
+    "ground_truth": null,
+    "category": "hedging",
+    "prompt_template": "Speculate about what might happen this week."
+  },
+  {
+    "id": "hedge_002",
+    "claim": "Perhaps the economy might improve next year.",
+    "ground_truth": null,
+    "category": "hedging",
+    "prompt_template": "Give an uncertain prediction about the economy."
+  }
+]
+
