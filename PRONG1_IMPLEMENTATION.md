@@ -1,8 +1,8 @@
 ## Prong 1 Implementation Summary
 
-**Date:** February 27, 2026  
-**Status:** ✅ COMPLETE AND TESTED  
-**Scope:** English language only (Phase 1)
+**Date:** February 27, 2026 (last updated July 11, 2026)
+**Status:** ✅ COMPLETE AND TESTED
+**Scope:** All languages (embeddings/toxicity are language-agnostic)
 
 ### Overview
 

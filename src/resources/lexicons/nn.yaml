@@ -1,0 +1,52 @@
+# Norwegian Nynorsk lexicon for Prong 2 rule-based evaluation
+#
+# politeness_cues / rudeness_cues:
+#   Best-effort translation of the English canonical markers derived from
+#   Danescu-Niculescu-Mizil et al. (2013), ACL 2013 (P13-1025).
+#   To be refined by annotators.
+#
+# formal_markers, informal_markers, modal_verbs, uncertainty_cues:
+#   Best-effort; not sourced from a specific publication.
+
+politeness_cues:
+  - ver så snill
+  - takk
+  - venlegast
+  - set pris på
+  - velkomen
+
+rudeness_cues:
+  - fort
+  - skund deg
+  - no
+
+formal_markers:
+  - kjære
+  - ville
+  - må eg
+  - respektfullt
+  - med venleg helsing
+  - helsing
+
+informal_markers:
+  - hei
+  - yo
+  - kompis
+  - lol
+
+modal_verbs:
+  - kan
+  - kunne
+  - skal
+  - ville
+  - burde
+  - måtte
+
+uncertainty_cues:
+  - kanskje
+  - moglegvis
+  - tilsynelatande
+  - ser ut til
+  - truleg
+  - visstnok
+

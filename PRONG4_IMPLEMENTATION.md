@@ -1,8 +1,8 @@
 ## Prong 4 Implementation Summary
 
-**Date:** February 27, 2026  
-**Status:** ✅ COMPLETE & TESTED  
-**Scope:** English language, Phase 1 (Mock data only, vLLM integration pending)
+**Date:** February 27, 2026 (last updated July 11, 2026)
+**Status:** ✅ COMPLETE & TESTED — vLLM integration live
+**Scope:** All 9 supported languages (language-agnostic; logprobs from vLLM HTTP API)
 
 ### Overview
 
@@ -162,12 +162,12 @@ result = prong4.evaluate(text, intrinsic_data=intrinsic_data)
 | Token Entropy | [0, log2(50000)] → [0, 1] | Yes | 0 = deterministic, 1 = max entropy |
 | Semantic Entropy | [0, log2(5)] → [0, 1] | Yes | 0 = one token, 1 = 5 equally likely |
 
-### Next Steps (Phase 2)
+### Next Steps
 
-1. **vLLM Integration** — Test with actual vLLM output format
-2. **Latency Profiling** — Measure real end-to-end latency with all 4 prongs
-3. **Validation** — Compare with vLLM reference implementations
-4. **Multilingual** — Extend to 7 target languages (structure language-agnostic)
+1. **Full-logit mode** — expose vLLM's native Python API (`vllm.LLM`) for exact
+   Token Entropy over full vocab (see `ASSUMPTIONS.md` A1/A2)
+2. **Latency profiling** — measure real end-to-end latency across all 4 prongs
+3. **Multilingual validation** — logprob pipeline is already language-agnostic;
 
 ### References
 
@@ -180,7 +180,6 @@ result = prong4.evaluate(text, intrinsic_data=intrinsic_data)
 
 ---
 
-**Status:** ✅ Production ready (mock data)  
-**Test Coverage:** 19 tests, 100% pass rate  
-**Ready for:** vLLM integration testing
+**Status:** ✅ Complete — vLLM HTTP API integrated via `src/vllm_adapter.py`
+**Test Coverage:** 19 tests, 100% pass rate
 

@@ -54,7 +54,14 @@ class IntrinsicData:
 
 
 class Uncertainty(ScorableDimension):
-    """Mean token confidence (uncertainty = 1 - confidence)."""
+    """Mean token confidence (uncertainty = 1 - confidence).
+
+    `value` stays as "uncertainty" (higher = worse, its documented,
+    tested meaning). `agg_value` supplies the inverted confidence
+    (1 - uncertainty) so aggregation treats high uncertainty as a
+    negative contribution instead of blending it in as if higher
+    uncertainty were "better".
+    """
 
     def __init__(self):
         super().__init__(name="Uncertainty")
@@ -70,10 +77,12 @@ class Uncertainty(ScorableDimension):
                 confidences = np.exp(np.clip(intrinsic_data.log_likelihoods, -100, 0))
                 mean_confidence = float(np.mean(confidences))
                 uncertainty = 1.0 - mean_confidence
+                uncertainty = max(0.0, min(1.0, uncertainty))
                 return self.create_score(
-                    value=max(0.0, min(1.0, uncertainty)),
+                    value=uncertainty,
                     raw_value={'mean_confidence': mean_confidence},
-                    metadata={'method': 'log_likelihoods', 'num_tokens': len(confidences)}
+                    metadata={'method': 'log_likelihoods', 'num_tokens': len(confidences)},
+                    agg_value=1.0 - uncertainty,
                 )
             elif intrinsic_data.has_logits():
                 logits = intrinsic_data.logits
@@ -83,19 +92,30 @@ class Uncertainty(ScorableDimension):
                 confidences = np.max(probs, axis=1)
                 mean_confidence = float(np.mean(confidences))
                 uncertainty = 1.0 - mean_confidence
+                uncertainty = max(0.0, min(1.0, uncertainty))
                 return self.create_score(
-                    value=max(0.0, min(1.0, uncertainty)),
+                    value=uncertainty,
                     raw_value={'mean_confidence': mean_confidence},
-                    metadata={'method': 'logits', 'num_tokens': len(confidences)}
+                    metadata={'method': 'logits', 'num_tokens': len(confidences)},
+                    agg_value=1.0 - uncertainty,
                 )
             else:
-                return self.create_score(0.5, metadata={'error': 'No logprob data available'})
+                return self.create_score(0.5, metadata={'error': 'No logprob data available'}, agg_value=0.5)
         except Exception as e:
-            return self.create_score(0.5, metadata={'error': str(e)})
+            return self.create_score(0.5, metadata={'error': str(e)}, agg_value=0.5)
 
 
 class Perplexity(ScorableDimension):
-    """Perplexity of generated text (raw, not normalized)."""
+    """Perplexity of generated text (raw, not normalized).
+
+    `value` stays as the raw perplexity number (unbounded, >= 1.0,
+    lower = better — its documented, tested meaning; used directly for
+    inter-run comparison). `agg_value` supplies a bounded [0,1],
+    higher-is-better transform (1 / (1 + perplexity)) so this dimension
+    can be safely averaged with the rest instead of a raw unbounded
+    number (e.g. perplexity=15) silently dominating/breaking the
+    prong/total score, which is meant to stay in [0,1].
+    """
 
     def __init__(self):
         super().__init__(name="Perplexity")
@@ -110,7 +130,8 @@ class Perplexity(ScorableDimension):
                 return self.create_score(
                     value=ppl,
                     raw_value={'mean_nll': mean_nll, 'perplexity': ppl},
-                    metadata={'method': 'log_likelihoods', 'num_tokens': len(log_liks)}
+                    metadata={'method': 'log_likelihoods', 'num_tokens': len(log_liks)},
+                    agg_value=1.0 / (1.0 + ppl),
                 )
             elif intrinsic_data.has_logits():
                 # Estimate from logits: use max logit prob
@@ -125,16 +146,24 @@ class Perplexity(ScorableDimension):
                 return self.create_score(
                     value=ppl,
                     raw_value={'perplexity': ppl},
-                    metadata={'method': 'logits', 'num_tokens': len(logits)}
+                    metadata={'method': 'logits', 'num_tokens': len(logits)},
+                    agg_value=1.0 / (1.0 + ppl),
                 )
             else:
-                return self.create_score(1.0, metadata={'error': 'No logits or log_likelihoods'})
+                return self.create_score(1.0, metadata={'error': 'No logits or log_likelihoods'}, agg_value=0.5)
         except Exception as e:
-            return self.create_score(1.0, metadata={'error': str(e)})
+            return self.create_score(1.0, metadata={'error': str(e)}, agg_value=0.5)
 
 
 class TokenEntropy(ScorableDimension):
-    """Shannon entropy of token-level distributions (normalized to [0,1])."""
+    """Shannon entropy of token-level distributions (normalized to [0,1]).
+
+    Descriptive/diagnostic axis — whether higher entropy (more diverse,
+    less peaked next-token distribution) is "better" or "worse" is
+    context-dependent (creativity vs. hallucination risk), so there is
+    no universal direction. Excluded from aggregation (aggregate=False)
+    and reported for information only.
+    """
 
     def __init__(self):
         super().__init__(name="Token Entropy")
@@ -163,7 +192,8 @@ class TokenEntropy(ScorableDimension):
                 return self.create_score(
                     value=normalized_entropy,
                     raw_value={'mean_entropy_bits': mean_entropy, 'max_entropy_bits': max_entropy},
-                    metadata={'method': 'logits', 'num_tokens': len(logits), 'vocab_size': intrinsic_data.vocab_size}
+                    metadata={'method': 'logits', 'num_tokens': len(logits), 'vocab_size': intrinsic_data.vocab_size},
+                    aggregate=False,
                 )
 
             elif intrinsic_data.has_top_k_logprobs():
@@ -191,16 +221,22 @@ class TokenEntropy(ScorableDimension):
                         'k': k,
                         'num_tokens': len(top_k_lp),
                         'assumption': 'A1',
-                    }
+                    },
+                    aggregate=False,
                 )
             else:
-                return self.create_score(0.5, metadata={'error': 'No logits or top_k_logprobs available'})
+                return self.create_score(0.5, metadata={'error': 'No logits or top_k_logprobs available'}, aggregate=False)
         except Exception as e:
-            return self.create_score(0.5, metadata={'error': str(e)})
+            return self.create_score(0.5, metadata={'error': str(e)}, aggregate=False)
 
 
 class SemanticEntropy(ScorableDimension):
-    """Semantic entropy: entropy across clustered similar tokens (normalized to [0,1])."""
+    """Semantic entropy: entropy across clustered similar tokens (normalized to [0,1]).
+
+    Descriptive/diagnostic axis — same rationale as Token Entropy: no
+    universal "better" direction. Excluded from aggregation
+    (aggregate=False) and reported for information only.
+    """
 
     def __init__(self):
         super().__init__(name="Semantic Entropy")
@@ -233,7 +269,7 @@ class SemanticEntropy(ScorableDimension):
                 method = 'top_k_approximation'
 
             else:
-                return self.create_score(0.5, metadata={'error': 'No logits or top_k_logprobs available'})
+                return self.create_score(0.5, metadata={'error': 'No logits or top_k_logprobs available'}, aggregate=False)
 
             # Renormalize top-k probabilities to sum to 1
             top_k_probs_norm = top_k_probs / np.sum(top_k_probs, axis=1, keepdims=True)
@@ -261,9 +297,10 @@ class SemanticEntropy(ScorableDimension):
                 value=normalized_entropy,
                 raw_value={'mean_semantic_entropy_bits': mean_semantic_entropy, 'max_entropy_bits': max_entropy},
                 metadata=metadata,
+                aggregate=False,
             )
         except Exception as e:
-            return self.create_score(0.5, metadata={'error': str(e)})
+            return self.create_score(0.5, metadata={'error': str(e)}, aggregate=False)
 
 
 class Prong4Intrinsic(Evaluator):
@@ -308,25 +345,29 @@ class Prong4Intrinsic(Evaluator):
                     name='Uncertainty',
                     value=0.5,
                     raw_value=None,
-                    metadata={'note': 'No intrinsic data available (vLLM required)'}
+                    metadata={'note': 'No intrinsic data available (vLLM required)'},
+                    agg_value=0.5,
                 ),
                 DimensionScore(
                     name='Perplexity',
                     value=1.0,
                     raw_value=None,
-                    metadata={'note': 'No intrinsic data available (vLLM required)'}
+                    metadata={'note': 'No intrinsic data available (vLLM required)'},
+                    agg_value=0.5,
                 ),
                 DimensionScore(
                     name='Token Entropy',
                     value=0.5,
                     raw_value=None,
-                    metadata={'note': 'No intrinsic data available (vLLM required)'}
+                    metadata={'note': 'No intrinsic data available (vLLM required)'},
+                    aggregate=False,
                 ),
                 DimensionScore(
                     name='Semantic Entropy',
                     value=0.5,
                     raw_value=None,
-                    metadata={'note': 'No intrinsic data available (vLLM required)'}
+                    metadata={'note': 'No intrinsic data available (vLLM required)'},
+                    aggregate=False,
                 ),
             ]
         else:

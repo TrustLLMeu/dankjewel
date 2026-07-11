@@ -149,6 +149,54 @@ class TestAPIEndpoints:
         resp = client.post("/generate-and-evaluate", json={"prompt": "Hello"})
         assert resp.status_code == 422  # Missing 'model'
 
+    # ── Remote (bring-your-own-key) backend routing ────────────────────────
+
+    def test_models_post_local_default(self, client):
+        """POST /models with no backend fields behaves like GET /models (local)."""
+        resp = client.post("/models", json={})
+        assert resp.status_code == 502  # local vLLM unreachable in tests
+
+    def test_models_post_remote_unreachable(self, client):
+        """POST /models with backend_type=remote hits the given base_url, not local vLLM."""
+        resp = client.post("/models", json={
+            "backend_type": "remote",
+            "base_url": "http://localhost:19999",
+            "api_key": "sk-test",
+        })
+        assert resp.status_code == 502
+        assert "19999" in resp.json()["detail"]
+
+    def test_generate_remote_unreachable(self, client):
+        """POST /generate with backend_type=remote routes to the remote host."""
+        resp = client.post("/generate", json={
+            "prompt": "Hello",
+            "model": "gpt-x",
+            "backend_type": "remote",
+            "base_url": "http://localhost:19999",
+            "api_key": "sk-test",
+        })
+        assert resp.status_code == 502
+        assert "19999" in resp.json()["detail"]
+
+    def test_generate_remote_missing_base_url(self, client):
+        """backend_type=remote without base_url fails cleanly, not with a crash."""
+        resp = client.post("/generate", json={
+            "prompt": "Hello",
+            "model": "gpt-x",
+            "backend_type": "remote",
+        })
+        assert resp.status_code == 422
+
+    def test_generate_and_evaluate_remote_unreachable(self, client):
+        resp = client.post("/generate-and-evaluate", json={
+            "prompt": "Hello",
+            "model": "gpt-x",
+            "backend_type": "remote",
+            "base_url": "http://localhost:19999",
+            "api_key": "sk-test",
+        })
+        assert resp.status_code == 502
+
 
 # ── Benchmark claims tests ─────────────────────────────────────────────────
 

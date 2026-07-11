@@ -1,0 +1,77 @@
+# English lexicon for Prong 2 rule-based evaluation
+# Canonical reference — other languages should mirror these keys.
+#
+# politeness_cues / rudeness_cues:
+#   Derived from the politeness strategy definitions in:
+#   Danescu-Niculescu-Mizil et al. (2013), "A computational approach to
+#   politeness with application to social factors", ACL 2013 (P13-1025).
+#   The paper defines strategies (gratitude, greeting, counterfactual modal,
+#   apologizing, direct/bald-on-record, etc.) operationalised as syntactic
+#   patterns.  The lists below are a keyword simplification of those
+#   strategies — a lossy extraction suitable for substring matching.
+#   NOTE: substring matching means short cues like "now" may false-match
+#   inside longer words.  Word-boundary matching is deferred to a future
+#   iteration.
+#
+# formal_markers, informal_markers, modal_verbs, uncertainty_cues:
+#   Best-effort; not sourced from a specific publication.
+
+politeness_cues:
+  # Gratitude strategy
+  - thank
+  - thanks
+  - appreciate
+  # Please / request softener
+  - please
+  - kindly
+  # Greeting strategy
+  - welcome
+  # Apologizing strategy
+  - sorry
+  - apologize
+  - apologies
+  # Counterfactual modal strategy
+  - could you
+  - would you
+
+rudeness_cues:
+  # Bald-on-record urgency (direct imposition strategies)
+  - immediately
+  - pronto
+  - hurry
+  - rush
+  - now
+
+formal_markers:
+  - dear
+  - would
+  - may i
+  - respectfully
+  - sincerely
+  - regards
+
+informal_markers:
+  - hey
+  - gonna
+  - wanna
+  - dude
+  - mate
+  - lol
+  - bruh
+
+modal_verbs:
+  - may
+  - might
+  - could
+  - can
+  - should
+  - would
+
+uncertainty_cues:
+  - perhaps
+  - maybe
+  - possibly
+  - seems
+  - appears
+  - allegedly
+

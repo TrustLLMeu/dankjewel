@@ -2,6 +2,7 @@
 
 import json
 from typing import List
+from src import config
 from src.prongs import Prong1LLMAsJudge, Prong2RuleBased, Prong3Extraction, Prong4Intrinsic
 from src.aggregation.aggregator import ScoreAggregator
 
@@ -27,11 +28,11 @@ class EvaluationPipeline:
         if 2 in enable_prongs:
             self.prongs['Prong 2'] = Prong2RuleBased()
         if 3 in enable_prongs:
-            self.prongs['Prong 3'] = Prong3Extraction()
+            self.prongs['Prong 3'] = Prong3Extraction(wikidata_db_path=config.WIKIDATA_DB_PATH)
         if 4 in enable_prongs:
             self.prongs['Prong 4'] = Prong4Intrinsic()
 
-    def evaluate(self, text: str, prompt: str = None, intrinsic_data=None) -> dict:
+    def evaluate(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en") -> dict:
         """
         Evaluate text across all enabled prongs.
 
@@ -40,6 +41,7 @@ class EvaluationPipeline:
             prompt: Optional prompt/query that generated the text (used by Prong 1 for relevance)
             intrinsic_data: Optional IntrinsicData from vLLM for Prong 4.
                            If None, Prong 4 returns neutral placeholder scores.
+            lang: Language code for Prong 2 lexicon selection (default: "en").
 
         Returns:
             Dictionary containing all prong results and aggregated scores
@@ -53,6 +55,8 @@ class EvaluationPipeline:
                 elif prong_name == 'Prong 1':
                     # Prong 1 uses prompt for relevance scoring
                     result = prong.evaluate(text, prompt=prompt)
+                elif prong_name == 'Prong 2':
+                    result = prong.evaluate(text, lang=lang)
                 else:
                     result = prong.evaluate(text)
                 results.append(result)
@@ -71,7 +75,7 @@ class EvaluationPipeline:
 
         return output
 
-    def evaluate_to_json(self, text: str, prompt: str = None, intrinsic_data=None) -> str:
+    def evaluate_to_json(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en") -> str:
         """
         Evaluate text and return results as JSON string.
 
@@ -79,10 +83,11 @@ class EvaluationPipeline:
             text: The text to evaluate
             prompt: Optional prompt/query that generated the text
             intrinsic_data: Optional IntrinsicData from vLLM for Prong 4
+            lang: Language code for Prong 2 lexicon selection (default: "en").
 
         Returns:
             JSON string of evaluation results
         """
-        results = self.evaluate(text, prompt=prompt, intrinsic_data=intrinsic_data)
+        results = self.evaluate(text, prompt=prompt, intrinsic_data=intrinsic_data, lang=lang)
         return json.dumps(results, indent=2)
 

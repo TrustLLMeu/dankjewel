@@ -1,0 +1,38 @@
+# Local writing/notes artifacts — not part of the tracked repo
+architecture_diagram.tex
+architecture_section.tex
+snippet.py
+snippet2.py
+scripts/snippet.py
+scripts/snippet2.py
+
+# LaTeX build artifacts (in case the .tex files above are compiled locally)
+*.aux
+*.log
+*.out
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+
+# Python environments, bytecode, test tooling, and local IDE state
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.idea/
+
+# Generated evaluation databases, caches, samples, and results
+data/wikidata_cache/
+data/wikidata_fever.db
+data/fever2_*.jsonl
+evaluation_results/fever2_*.json
+evaluation_results/fever2_*.md
+
+# Vendored upstream FEVER checkout; obtain separately when needed
+fever/
+
+# Local configuration and credentials
+.env
+.env.*
+

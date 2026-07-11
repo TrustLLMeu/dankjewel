@@ -2,7 +2,7 @@
 
 Extracts (subject, predicate, object) triples from text by traversing
 spaCy dependency trees. Each triple becomes a Claim with optional
-temporal anchors, comparative tags, and modality modifiers.
+temporal anchors, comparative tags, modality modifiers, and negation flag.
 
 Efficiency is tracked via extraction_time_ms for future comparison
 with vLLM-based claim extraction.
@@ -24,6 +24,7 @@ class Claim:
     modifiers: List[str] = field(default_factory=list)       # hedge words attached to verb
     temporal_anchor: Optional[str] = None                     # DATE entity if present
     comparative_tag: Optional[str] = None                     # JJR/JJS tag if present
+    negated: bool = False                                     # True if verb has a 'neg' child
 
     def to_dict(self) -> dict:
         return {
@@ -34,6 +35,7 @@ class Claim:
             'modifiers': self.modifiers,
             'temporal_anchor': self.temporal_anchor,
             'comparative_tag': self.comparative_tag,
+            'negated': self.negated,
         }
 
 
@@ -64,13 +66,14 @@ class ClaimExtractor:
     Loads en_core_web_sm once and reuses it. Extracts triples by walking
     the dependency tree for each sentence:
       - subject: nsubj / nsubjpass of the root verb
-      - predicate: root verb (+ aux/neg children)
+      - predicate: root verb (+ aux children, negation tracked separately)
       - object: dobj / attr / prep+pobj / acomp of the root verb
 
     Also annotates:
       - temporal_anchor: DATE entities from spaCy NER overlapping the sentence
       - comparative_tag: JJR/JJS POS tags in the object span
       - modifiers: modal/uncertainty words governing the verb
+      - negated: True if the root verb has a 'neg' dependency child
     """
 
     def __init__(self):
@@ -125,8 +128,9 @@ class ClaimExtractor:
         """Extract claims from a ROOT token and its dependents."""
         claims = []
 
-        # --- Detect modifiers (modality) early, needed by all paths ---
+        # --- Detect modifiers (modality) and negation early ---
         modifiers = self._get_modifiers(root)
+        negated = self._detect_negation(root)
 
         # --- Handle existential constructions: "There could be an uprising" ---
         has_expl = any(c.dep_ == 'expl' for c in root.children)
@@ -136,6 +140,15 @@ class ClaimExtractor:
                 if child.dep_ in ('attr', 'dobj'):
                     subj_text = self._expand_noun(child)
                     comp_tag = self._detect_comparative(child)
+                    # "no" as a determiner inside the existential NP acts as
+                    # sentential negation ("There exists NO city called X")
+                    # but spaCy attaches it as a 'det' of the noun, not a
+                    # 'neg' child of the root verb — _detect_negation() alone
+                    # misses this very common FEVER 2.0 pattern.
+                    existential_negated = negated or any(
+                        t.dep_ == 'det' and t.text.lower() == 'no'
+                        for t in child.subtree
+                    )
                     claim = Claim(
                         subject=subj_text,
                         predicate='exist',
@@ -144,6 +157,7 @@ class ClaimExtractor:
                         modifiers=modifiers,
                         temporal_anchor=temporal_anchor,
                         comparative_tag=comp_tag,
+                        negated=existential_negated,
                     )
                     claims.append(claim)
             return claims
@@ -153,7 +167,7 @@ class ClaimExtractor:
         if not subjects:
             return claims
 
-        # --- Build predicate ---
+        # --- Build predicate (negation tracked separately, not in predicate) ---
         predicate = self._build_predicate(root)
 
         # --- Find object(s) ---
@@ -183,17 +197,24 @@ class ClaimExtractor:
                     modifiers=modifiers,
                     temporal_anchor=temporal_anchor,
                     comparative_tag=comp_tag,
+                    negated=negated,
                 )
                 claims.append(claim)
 
         return claims
+
+    def _detect_negation(self, root) -> bool:
+        """Detect whether the root verb is negated (has a 'neg' child)."""
+        for child in root.children:
+            if child.dep_ == 'neg':
+                return True
+        return False
 
     def _get_subjects(self, root) -> List[str]:
         """Get subject noun phrases from root's dependents."""
         subjects = []
         for child in root.children:
             if child.dep_ in ('nsubj', 'nsubjpass'):
-                # Expand to full noun chunk if possible
                 subj_text = self._expand_noun(child)
                 subjects.append(subj_text)
                 # Also grab conjuncts ("France and Germany are ...")
@@ -212,7 +233,6 @@ class ClaimExtractor:
 
         Returns (subject, object), possibly swapped.
         """
-        # Find the grammatical subject and attr tokens
         subj_token = None
         attr_token = None
         for child in root.children:
@@ -224,24 +244,26 @@ class ClaimExtractor:
         if not subj_token or not attr_token:
             return subj, obj
 
-        # Check if subject is a common noun (description) and attr is a proper noun / entity
         subj_is_description = subj_token.pos_ in ('NOUN', 'DET') and subj_token.ent_type_ == ''
         attr_is_entity = attr_token.pos_ == 'PROPN' or attr_token.ent_type_ != ''
 
         if subj_is_description and attr_is_entity:
-            # Flip: use the attr as subject and the original subject phrase as object
-            new_subj = attr_token.text  # Just the entity name, not the full subtree
-            # For the object, use the original subject phrase
+            new_subj = attr_token.text
             new_obj = subj
             return new_subj, new_obj
 
         return subj, obj
 
     def _build_predicate(self, root) -> str:
-        """Build predicate string from root verb + auxiliaries + negation + particles."""
+        """Build predicate string from root verb + auxiliaries + particles.
+
+        Negation is NOT included here — it is tracked separately via the
+        `negated` flag on Claim so the predicate stays clean for property
+        matching (e.g., "be" matches PREDICATE_TO_PROPERTY, "be not" does not).
+        """
         parts = []
         for child in root.children:
-            if child.dep_ in ('aux', 'auxpass', 'neg'):
+            if child.dep_ in ('aux', 'auxpass'):
                 parts.append((child.i, child.text.lower()))
             if child.dep_ == 'prt':  # verb particle: "carried out"
                 parts.append((child.i, child.text.lower()))
@@ -253,7 +275,9 @@ class ClaimExtractor:
         """Get object phrases from root's dependents.
 
         Returns list of (object_text, comparative_tag_or_None).
-        Consolidates prep phrases into a single combined object when possible.
+        Each prepositional phrase becomes its own separate triple candidate
+        rather than being merged into one combined string — "in Flash Comics"
+        and "in 1973" are independent facts and should be verified separately.
         """
         objects = []
         # Direct objects, attributes, complements
@@ -268,52 +292,84 @@ class ClaimExtractor:
                     comp_tag2 = self._detect_comparative(conj)
                     objects.append((obj_text2, comp_tag2))
 
-        # Prepositional objects: consolidate all preps into one combined phrase
-        # e.g. "played at Knebworth in 1986" → "at Knebworth in 1986"
-        prep_parts = []
+        # Prepositional objects: each prep → pobj becomes a separate object
+        # candidate so each can be individually verified against Wikidata.
+        # (Previously they were merged into one string, which prevented any
+        # of them from matching cleanly.)
         for child in root.children:
             if child.dep_ == 'prep':
                 for pobj in child.children:
                     if pobj.dep_ == 'pobj':
+                        # Skip temporal/numeric prep objects ("in 1973",
+                        # "in the 1970s") — they are not Wikidata-verifiable
+                        # entity facts and trigger false location denials.
+                        if pobj.ent_type_ == 'DATE' or pobj.like_num:
+                            continue
+                        if any(t.ent_type_ == 'DATE' for t in pobj.subtree
+                               if t != pobj):
+                            continue
                         obj_text = self._expand_noun(pobj)
-                        prep_parts.append(f"{child.text} {obj_text}")
+                        comp_tag = self._detect_comparative(pobj)
+                        objects.append((f"{child.text} {obj_text}", comp_tag))
 
-            # Also follow advmod→prep→pobj: "situated north of the Arctic Circle"
             if child.dep_ == 'advmod':
                 for prep_child in child.children:
                     if prep_child.dep_ == 'prep':
                         for pobj in prep_child.children:
                             if pobj.dep_ == 'pobj':
+                                if pobj.ent_type_ == 'DATE' or pobj.like_num:
+                                    continue
                                 obj_text = self._expand_noun(pobj)
-                                prep_parts.append(f"{child.text} {prep_child.text} {obj_text}")
-
-        if prep_parts:
-            combined = ', '.join(prep_parts)
-            # Check for comparative in the full prep text
-            comp_tag = None
-            for child in root.children:
-                if child.dep_ in ('prep', 'advmod'):
-                    ct = self._detect_comparative(child)
-                    if ct:
-                        comp_tag = ct
-                        break
-            objects.append((combined, comp_tag))
+                                comp_tag = self._detect_comparative(pobj)
+                                objects.append(
+                                    (f"{child.text} {prep_child.text} {obj_text}", comp_tag)
+                                )
 
         return objects
 
     def _expand_noun(self, token) -> str:
-        """Expand a token to its full subtree noun phrase."""
-        # Use the subtree span for a natural reading
+        """Expand a token to its full subtree noun phrase.
+
+        Three classes of tokens are excluded from the expansion:
+        1. Tokens that belong to embedded relative/adverbial clauses
+           (relcl, advcl, ccomp, xcomp).  The entire subtree of such a
+           clause head is collected upfront, so that aux/auxpass tokens
+           that precede the clause head in linear order are also excluded
+           (old 'break' approach missed those).
+        2. Subjects/objects of embedded verbs — but NEVER the seed token
+           itself.  The old condition lacked the ``t != token`` guard,
+           which caused the head token (e.g. nsubj "Canary", dobj
+           "constitution", dobj "tiger") to be filtered out, leaving only
+           its modifiers ("Black", "a novel", "Tasmanian").
+        3. Punctuation tokens at the boundary of the phrase.
+        """
         subtree_tokens = sorted(token.subtree, key=lambda t: t.i)
-        # Filter out relative clauses and other deep structures
-        # Keep tokens that are part of the noun phrase
+
+        # ── Step 1: collect indices belonging to embedded clauses ──────
+        # This is more robust than the old 'break on relcl' approach:
+        # it also catches aux/auxpass that appear *before* the clause head
+        # in linear order (e.g. "a network is headquartered" — 'is' leaks
+        # through with break-on-relcl because it comes before 'headquartered').
+        embedded: set = set()
+        for t in subtree_tokens:
+            if t.dep_ in ('relcl', 'advcl', 'ccomp', 'xcomp') and t != token:
+                for t2 in t.subtree:
+                    embedded.add(t2.i)
+
+        # ── Step 2: build phrase, applying exclusion rules ─────────────
         phrase_tokens = []
         for t in subtree_tokens:
-            # Stop at clause boundaries
-            if t.dep_ in ('relcl', 'advcl', 'ccomp', 'xcomp') and t != token:
-                break
-            # Skip tokens that belong to a verb's own clause
-            if t.dep_ in ('nsubj', 'nsubjpass', 'dobj') and t.head != token and t.head.pos_ == 'VERB':
+            if t.i in embedded:
+                continue
+            # Skip punctuation at the edges (periods, commas etc.)
+            if t.is_punct:
+                continue
+            # Skip subjects/objects of embedded verbs — but NEVER the
+            # seed token itself (old bug: lacked ``t != token`` guard).
+            if (t != token
+                    and t.dep_ in ('nsubj', 'nsubjpass', 'dobj')
+                    and t.head != token
+                    and t.head.pos_ == 'VERB'):
                 continue
             phrase_tokens.append(t)
 
@@ -338,7 +394,6 @@ class ClaimExtractor:
                 modifiers.append(child.text.lower())
             if child.dep_ == 'advmod' and child.text.lower() in UNCERTAINTY_CUES:
                 modifiers.append(child.text.lower())
-        # Also check sentence-initial adverbs (e.g., "Perhaps the city ...")
         sent = root.sent
         for token in sent:
             if token.i >= root.i:
@@ -347,6 +402,3 @@ class ClaimExtractor:
                 if token.text.lower() not in modifiers:
                     modifiers.append(token.text.lower())
         return modifiers
-
-
-

@@ -1,0 +1,53 @@
+# Norwegian Bokmål lexicon for Prong 2 rule-based evaluation
+#
+# politeness_cues / rudeness_cues:
+#   Best-effort translation of the English canonical markers derived from
+#   Danescu-Niculescu-Mizil et al. (2013), ACL 2013 (P13-1025).
+#   To be refined by annotators.
+#
+# formal_markers, informal_markers, modal_verbs, uncertainty_cues:
+#   Best-effort; not sourced from a specific publication.
+
+politeness_cues:
+  - vennligst
+  - takk
+  - vær så snill
+  - setter pris på
+  - velkommen
+
+rudeness_cues:
+  - fort
+  - skynd deg
+  - nå
+
+formal_markers:
+  - kjære
+  - ville
+  - må jeg
+  - respektfullt
+  - med vennlig hilsen
+  - hilsen
+
+informal_markers:
+  - hei
+  - yo
+  - kompis
+  - dansen
+  - lol
+
+modal_verbs:
+  - kan
+  - kunne
+  - skal
+  - ville
+  - burde
+  - måtte
+
+uncertainty_cues:
+  - kanskje
+  - muligens
+  - tilsynelatende
+  - ser ut til
+  - angivelig
+  - trolig
+

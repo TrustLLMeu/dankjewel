@@ -1,0 +1,41 @@
+# Minimal CPU-only install — covers all four prongs and the full web UI.
+# No GPU or local vLLM server required.
+#
+# Prong 4 intrinsic metrics work with any remote OpenAI-compatible backend
+# that returns per-token logprobs (e.g. OpenAI, Groq, Fireworks).
+# If the remote provider does not return logprobs, Prong 4 shows neutral
+# placeholder scores — all other prongs are unaffected.
+#
+# The only reason to install the full requirements.txt is to run a LOCAL
+# vLLM generation server on-machine (requires CUDA GPU).
+#
+# Full install (local vLLM/GPU):  pip install -r requirements.txt
+# Minimal install (CPU + remote): pip install -r requirements-minimal.txt
+
+# Prong 2: rule-based evaluation
+textstat>=0.7.3
+vaderSentiment>=3.3.2
+spacy>=3.7.2
+nltk>=3.8.1
+
+# Prong 1: embeddings + toxicity
+sentence-transformers>=2.2.0
+torch>=2.0.0
+transformers>=4.36.0
+
+# Prong 3: extraction-based evaluation
+networkx>=3.0
+
+# Localization & lexicon templates
+PyYAML>=6.0
+
+# API server
+fastapi>=0.100.0
+httpx>=0.28.0
+uvicorn>=0.30.0
+pydantic>=2.0.0
+
+# General
+python-dotenv>=1.0.0
+numpy>=1.24.0
+

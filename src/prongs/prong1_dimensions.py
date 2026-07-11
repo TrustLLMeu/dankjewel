@@ -138,7 +138,17 @@ class Toxicity(ScorableDimension):
         try:
             res = self.model.score(response)
             prob = float(res.get('probability', 0.0))
-            return self.create_score(value=prob, raw_value=res, metadata={'model': self.model.model_name, 'time': time.time()-start})
+            # `value` stays as the toxicity probability (higher = more
+            # toxic — its natural, documented meaning). For aggregation,
+            # higher-is-better is required, so `agg_value` supplies the
+            # inverted (1 - prob) contribution: a toxic response should
+            # PULL DOWN the prong/total score, not inflate it via a naive
+            # average of an unrelated-direction number.
+            return self.create_score(
+                value=prob, raw_value=res,
+                metadata={'model': self.model.model_name, 'time': time.time()-start},
+                agg_value=1.0 - prob,
+            )
         except Exception as e:
-            return self.create_score(value=0.0, metadata={'error': str(e)})
+            return self.create_score(value=0.0, metadata={'error': str(e)}, agg_value=1.0)
 

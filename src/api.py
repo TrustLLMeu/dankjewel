@@ -1,16 +1,23 @@
 """FastAPI server: vLLM text generation + Instant Evaluator.
 
 Provides REST endpoints for:
-  - Model listing (from vLLM)
-  - Text generation (batch and SSE streaming, via vLLM)
+  - Model listing (from vLLM, or from a remote OpenAI-compatible host)
+  - Text generation (batch and SSE streaming), via a local vLLM server OR
+    a remote OpenAI-compatible host (bring your own API key)
   - Text evaluation (via IE pipeline, using HuggingFace models)
   - Combined generate-and-evaluate (the main workflow)
   - Static frontend at /
 
+Backend selection: every generation-related request accepts optional
+`backend_type` ("local"|"remote"), `base_url`, and `api_key` fields.
+Defaults to "local" (the existing vLLM-only behavior, unchanged). Remote
+backends are constructed per-request and never cached — see
+src/llm_backends/factory.py for the security rationale.
+
 Start with:
     uvicorn src.api:app --host 0.0.0.0 --port 8080
 
-Requires a running vLLM server:
+Requires a running vLLM server for the local backend:
     python -m vllm.entrypoints.openai.api_server \\
         --model <model_name> --port 8000
 """
@@ -34,6 +41,7 @@ from src.vllm_client import VLLMClient, GenerationResult
 from src.vllm_adapter import generation_result_to_intrinsic_data
 from src.pipeline import EvaluationPipeline
 from src.config import VLLM_LOGPROBS_K
+from src.llm_backends.factory import BackendConfig, build_backend, is_remote
 
 logger = logging.getLogger(__name__)
 
@@ -66,12 +74,13 @@ async def lifespan(application: FastAPI):
 # ── App setup ───────────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title="Instant Evaluator API",
+    title="Dankjewel Instant Evaluator API",
     description=(
-        "Generate text with vLLM and evaluate it with the "
-        "multi-dimensional Instant Evaluator pipeline."
+        "Generate text — locally via vLLM, or remotely via any "
+        "OpenAI-compatible host (bring your own key) — and evaluate it "
+        "with the multi-dimensional Dankjewel Instant Evaluator pipeline."
     ),
-    version="0.2.0",
+    version="0.4.0",
     lifespan=lifespan,
 )
 
@@ -88,24 +97,62 @@ app.add_middleware(
 class GenerateRequest(BaseModel):
     prompt: str = Field(..., description="The input prompt for the LLM")
     model: str = Field(..., description="Model ID (from /models endpoint)")
-    max_tokens: int = Field(512, ge=1, le=4096)
+    max_tokens: int = Field(2048, ge=1, le=32768, description="Reasoning models may need several thousand tokens for hidden chain-of-thought before any visible answer")
     temperature: float = Field(0.7, ge=0.0, le=2.0)
     top_p: float = Field(1.0, ge=0.0, le=1.0)
     repetition_penalty: float = Field(1.0, ge=1.0, le=2.0)
     frequency_penalty: float = Field(0.0, ge=0.0, le=2.0)
+    language: str = Field("en", description="Language code for Prong 2 lexicons (e.g. en, nl, da)")
+    backend_type: str = Field("local", description="'local' (vLLM) or 'remote' (OpenAI-compatible, bring-your-own-key)")
+    base_url: Optional[str] = Field(None, description="Base URL for a remote backend (required if backend_type='remote')")
+    api_key: Optional[str] = Field(None, description="API key for a remote backend. Never stored server-side.")
+
+    def backend_config(self) -> BackendConfig:
+        return BackendConfig(backend_type=self.backend_type, base_url=self.base_url, api_key=self.api_key)
 
 class EvaluateRequest(BaseModel):
     prompt: str = Field("", description="The original prompt (for relevance scoring)")
     text: str = Field(..., description="The text to evaluate")
+    language: str = Field("en", description="Language code for Prong 2 lexicons (e.g. en, nl, da)")
 
 class GenerateAndEvaluateRequest(BaseModel):
     prompt: str = Field(..., description="The input prompt for the LLM")
     model: str = Field(..., description="Model ID (from /models endpoint)")
-    max_tokens: int = Field(512, ge=1, le=4096)
+    max_tokens: int = Field(2048, ge=1, le=32768, description="Reasoning models may need several thousand tokens for hidden chain-of-thought before any visible answer")
     temperature: float = Field(0.7, ge=0.0, le=2.0)
     top_p: float = Field(1.0, ge=0.0, le=1.0)
     repetition_penalty: float = Field(1.0, ge=1.0, le=2.0)
     frequency_penalty: float = Field(0.0, ge=0.0, le=2.0)
+    language: str = Field("en", description="Language code for Prong 2 lexicons (e.g. en, nl, da)")
+    backend_type: str = Field("local", description="'local' (vLLM) or 'remote' (OpenAI-compatible, bring-your-own-key)")
+    base_url: Optional[str] = Field(None, description="Base URL for a remote backend (required if backend_type='remote')")
+    api_key: Optional[str] = Field(None, description="API key for a remote backend. Never stored server-side.")
+
+    def backend_config(self) -> BackendConfig:
+        return BackendConfig(backend_type=self.backend_type, base_url=self.base_url, api_key=self.api_key)
+
+class ModelsRequest(BaseModel):
+    backend_type: str = Field("local", description="'local' (vLLM) or 'remote' (OpenAI-compatible)")
+    base_url: Optional[str] = Field(None, description="Base URL for a remote backend (required if backend_type='remote')")
+    api_key: Optional[str] = Field(None, description="API key for a remote backend. Never stored server-side.")
+
+
+async def _resolve_backend(cfg: BackendConfig):
+    """Return (backend, must_close).
+
+    must_close=True for per-request remote backends, which are never cached
+    or shared (see src/llm_backends/factory.py). must_close=False for the
+    shared local vLLM backend managed by the app lifespan.
+    """
+    try:
+        if is_remote(cfg):
+            return build_backend(cfg, vllm_client), True
+        return vllm_client, False
+    except ValueError as e:
+        # e.g. backend_type='remote' with no base_url — a client error, not
+        # a network failure, so 422 rather than 502.
+        raise HTTPException(status_code=422, detail=str(e))
+
 
 
 # ── Frontend ────────────────────────────────────────────────────────────────
@@ -135,7 +182,7 @@ async def health():
 
 @app.get("/models")
 async def list_models():
-    """List available models from the vLLM server."""
+    """List available models from the local vLLM server (backward-compatible shortcut)."""
     try:
         models = await vllm_client.list_models()
         return {"models": models}
@@ -146,11 +193,28 @@ async def list_models():
         )
 
 
+@app.post("/models")
+async def list_models_for_backend(req: ModelsRequest):
+    """List available models for any backend (local or remote, bring-your-own-key)."""
+    cfg = BackendConfig(backend_type=req.backend_type, base_url=req.base_url, api_key=req.api_key)
+    backend, must_close = await _resolve_backend(cfg)
+    try:
+        models = await backend.list_models()
+        return {"models": models}
+    except Exception as e:
+        target = req.base_url if req.backend_type == "remote" else VLLM_BASE_URL
+        raise HTTPException(status_code=502, detail=f"Cannot reach backend at {target}: {e}")
+    finally:
+        if must_close:
+            await backend.close()
+
+
 @app.post("/generate")
 async def generate(req: GenerateRequest):
-    """Generate text via vLLM — no evaluation."""
+    """Generate text via the selected backend (local vLLM or remote) — no evaluation."""
+    backend, must_close = await _resolve_backend(req.backend_config())
     try:
-        result = await vllm_client.generate(
+        result = await backend.generate(
             prompt=req.prompt,
             model=req.model,
             max_tokens=req.max_tokens,
@@ -168,7 +232,11 @@ async def generate(req: GenerateRequest):
             "num_tokens": len(result.tokens) if result.tokens else 0,
         }
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"vLLM generation failed: {e}")
+        target = req.base_url if req.backend_type == "remote" else VLLM_BASE_URL
+        raise HTTPException(status_code=502, detail=f"Generation failed ({target}): {e}")
+    finally:
+        if must_close:
+            await backend.close()
 
 
 @app.post("/generate/stream")
@@ -177,15 +245,19 @@ async def generate_stream(req: GenerateRequest):
 
     Frontend connects with EventSource or fetch() and reads the stream.
     After the final token, evaluation runs and a final 'evaluation' event is sent.
+    Works with either backend (local vLLM or remote, bring-your-own-key).
     """
+    backend, must_close = await _resolve_backend(req.backend_config())
+
     async def event_stream():
         accumulated_tokens = []
         accumulated_logprobs = []
         accumulated_top_logprobs = []
+        reasoning_chars = 0
         start_time = time.perf_counter()
 
         try:
-            async for chunk in vllm_client.generate_stream(
+            async for chunk in backend.generate_stream(
                 prompt=req.prompt,
                 model=req.model,
                 max_tokens=req.max_tokens,
@@ -195,6 +267,20 @@ async def generate_stream(req: GenerateRequest):
                 frequency_penalty=req.frequency_penalty,
                 logprobs=VLLM_LOGPROBS_K,
             ):
+                # Some hosted "reasoning" models (gpt-oss, DeepSeek-R1 style,
+                # etc.) stream hidden chain-of-thought via a separate field
+                # before any visible answer. Forward it as its own event type
+                # so the frontend can show progress instead of looking stuck
+                # on an empty output. It is NOT included in the evaluated text.
+                reasoning_token = chunk.get("reasoning_token")
+                if reasoning_token:
+                    reasoning_chars += len(reasoning_token)
+                    reasoning_data = json.dumps({
+                        "type": "reasoning",
+                        "token": reasoning_token,
+                    })
+                    yield f"data: {reasoning_data}\n\n"
+
                 token = chunk.get("token", "")
                 if token:
                     accumulated_tokens.append(token)
@@ -220,6 +306,8 @@ async def generate_stream(req: GenerateRequest):
         except Exception as e:
             error_data = json.dumps({"type": "error", "detail": str(e)})
             yield f"data: {error_data}\n\n"
+            if must_close:
+                await backend.close()
             return
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000.0
@@ -238,7 +326,9 @@ async def generate_stream(req: GenerateRequest):
         )
 
         # Send generation metadata
-        gen_data = json.dumps({"type": "generation", "data": gen_result.to_dict()})
+        gen_dict = gen_result.to_dict()
+        gen_dict["reasoning_chars"] = reasoning_chars
+        gen_data = json.dumps({"type": "generation", "data": gen_dict})
         yield f"data: {gen_data}\n\n"
 
         # Run evaluation
@@ -248,6 +338,7 @@ async def generate_stream(req: GenerateRequest):
                 text=full_text,
                 prompt=req.prompt,
                 intrinsic_data=intrinsic_data,
+                lang=req.language,
             )
             eval_data = json.dumps({"type": "evaluation", "data": eval_result})
             yield f"data: {eval_data}\n\n"
@@ -256,6 +347,8 @@ async def generate_stream(req: GenerateRequest):
             yield f"data: {error_data}\n\n"
 
         yield "data: [DONE]\n\n"
+        if must_close:
+            await backend.close()
 
     return StreamingResponse(
         event_stream(),
@@ -274,7 +367,7 @@ async def evaluate(req: EvaluateRequest):
     if evaluator is None:
         raise HTTPException(status_code=503, detail="Evaluator not initialized.")
     try:
-        result = evaluator.evaluate(text=req.text, prompt=req.prompt)
+        result = evaluator.evaluate(text=req.text, prompt=req.prompt, lang=req.language)
         return result
     except Exception as e:
         logger.exception("Evaluation failed")
@@ -286,9 +379,10 @@ async def evaluate(req: EvaluateRequest):
 
 @app.post("/generate-and-evaluate")
 async def generate_and_evaluate(req: GenerateAndEvaluateRequest):
-    """Generate text via vLLM, then evaluate — the main workflow (non-streaming)."""
+    """Generate text via the selected backend, then evaluate — the main workflow (non-streaming)."""
+    backend, must_close = await _resolve_backend(req.backend_config())
     try:
-        gen_result = await vllm_client.generate(
+        gen_result = await backend.generate(
             prompt=req.prompt,
             model=req.model,
             max_tokens=req.max_tokens,
@@ -299,7 +393,11 @@ async def generate_and_evaluate(req: GenerateAndEvaluateRequest):
             logprobs=VLLM_LOGPROBS_K,
         )
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"vLLM generation failed: {e}")
+        target = req.base_url if req.backend_type == "remote" else VLLM_BASE_URL
+        raise HTTPException(status_code=502, detail=f"Generation failed ({target}): {e}")
+    finally:
+        if must_close:
+            await backend.close()
 
     intrinsic_data = generation_result_to_intrinsic_data(gen_result)
 
@@ -308,6 +406,7 @@ async def generate_and_evaluate(req: GenerateAndEvaluateRequest):
             text=gen_result.text,
             prompt=req.prompt,
             intrinsic_data=intrinsic_data,
+            lang=req.language,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Evaluation failed: {e}")

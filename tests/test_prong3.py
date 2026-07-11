@@ -5,6 +5,7 @@ Comprehensive tests for:
   - Wikidata offline lookup and verification
   - All five dimensions with D7.5 examples
   - Full pipeline integration
+  - Negation handling
 """
 
 import pytest
@@ -444,3 +445,102 @@ class TestProng3Integration:
         result = prong.evaluate("Paris is the capital of France.")
         assert result.processing_time > 0
         assert result.processing_time < 30  # Should complete in under 30s
+
+
+# ── Negation Tests ──────────────────────────────────────────────────────────
+
+class TestNegation:
+
+    def test_negation_extraction(self, extractor):
+        """'Tromsø is not the capital of France' → negated=True, predicate='be'."""
+        result = extractor.extract("Tromsø is not the capital of France.")
+        assert len(result.claims) >= 1
+        c = result.claims[0]
+        assert c.negated is True
+        assert c.predicate == 'be'  # clean predicate, no "not"
+
+    def test_no_negation_extraction(self, extractor):
+        """'Tromsø is the capital of France' → negated=False."""
+        result = extractor.extract("Tromsø is the capital of France.")
+        assert len(result.claims) >= 1
+        c = result.claims[0]
+        assert c.negated is False
+
+    def test_negated_true_claim(self, wikidata):
+        """'Tromsø is not the capital of France' → accuracy 1.0 (claim is true).
+
+        Tromsø is NOT the capital → Wikidata DENIES the positive triple →
+        inverting gives CONFIRMED → the negated claim is factually correct.
+        """
+        dim = FactualAccuracy(wikidata=wikidata)
+        claims = [Claim(
+            subject="Tromsø", predicate="be", object="the capital of France",
+            source_sentence="Tromsø is not the capital of France.",
+            negated=True
+        )]
+        score = dim.evaluate("", claims=claims)
+        assert score.value == 1.0
+        assert score.raw_value['confirmed'] == 1
+        assert score.raw_value['denied'] == 0
+
+    def test_negated_false_claim(self, wikidata):
+        """'Paris is not the capital of France' → accuracy 0.0 (claim is false).
+
+        Paris IS the capital → Wikidata CONFIRMS the positive triple →
+        inverting gives DENIED → the negated claim is factually wrong.
+        """
+        dim = FactualAccuracy(wikidata=wikidata)
+        claims = [Claim(
+            subject="Paris", predicate="be", object="the capital of France",
+            source_sentence="Paris is not the capital of France.",
+            negated=True
+        )]
+        score = dim.evaluate("", claims=claims)
+        assert score.value == 0.0
+        assert score.raw_value['confirmed'] == 0
+        assert score.raw_value['denied'] == 1
+
+    def test_negated_temporal_true(self, wikidata):
+        """'Einstein was not born in 1900' → confirmed (he was born in 1879)."""
+        dim = TemporalAccuracy(wikidata=wikidata)
+        claims = [Claim(
+            subject="Albert Einstein", predicate="bear", object="in 1900",
+            source_sentence="Albert Einstein was not born in 1900.",
+            temporal_anchor="1900",
+            negated=True
+        )]
+        score = dim.evaluate("", claims=claims)
+        assert score.value == 1.0
+
+    def test_negated_temporal_false(self, wikidata):
+        """'Einstein was not born in 1879' → denied (he WAS born in 1879)."""
+        dim = TemporalAccuracy(wikidata=wikidata)
+        claims = [Claim(
+            subject="Albert Einstein", predicate="bear", object="in 1879",
+            source_sentence="Albert Einstein was not born in 1879.",
+            temporal_anchor="1879",
+            negated=True
+        )]
+        score = dim.evaluate("", claims=claims)
+        assert score.value == 0.0
+
+    def test_negation_integration_true(self, prong):
+        """'Tromsø is not the capital of France' → high accuracy (true claim)."""
+        result = prong.evaluate("Tromsø is not the capital of France.")
+        accuracy = next(d for d in result.dimensions if d.name == "Factual Accuracy")
+        assert accuracy.value == 1.0
+
+    def test_negation_integration_false(self, prong):
+        """'Paris is not the capital of France' → low accuracy (false claim)."""
+        result = prong.evaluate("Paris is not the capital of France.")
+        accuracy = next(d for d in result.dimensions if d.name == "Factual Accuracy")
+        assert accuracy.value == 0.0
+
+    def test_negation_metadata(self, prong):
+        """Negated claims record negated=True and effective_result in metadata."""
+        result = prong.evaluate("Tromsø is not the capital of France.")
+        accuracy = next(d for d in result.dimensions if d.name == "Factual Accuracy")
+        details = accuracy.metadata['claim_details']
+        negated_claims = [d for d in details if d.get('negated')]
+        assert len(negated_claims) >= 1
+        assert negated_claims[0]['effective_result'] == 'confirmed'

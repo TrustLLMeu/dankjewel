@@ -16,6 +16,9 @@ transformers>=4.36.0
 # Prong 3: Extraction-based evaluation
 networkx>=3.0
 
+# Localization & lexicon templates
+PyYAML>=6.0
+
 # API server + vLLM text generation
 # Tested versions (as installed on 2026-02-27):
 #   vllm==0.16.0, torch==2.9.1+cu128, fastapi (bundled w/ vllm),

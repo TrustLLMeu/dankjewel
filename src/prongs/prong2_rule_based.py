@@ -27,12 +27,17 @@ class Prong2RuleBased(Evaluator):
         self.register_dimension(FormalityDimension())
         self.register_dimension(HedgingDetection())
 
-    def evaluate(self, text: str) -> ProngResult:
+    def evaluate(self, text: str, **kwargs) -> ProngResult:
         """
         Evaluate text using rule-based approaches.
 
+        Args:
+            text: The text to evaluate.
+            **kwargs: Extra options forwarded to each dimension
+                      (e.g. ``lang="nl"``).
+
         Evaluates:
-        - Fluency (Flesch Reading Ease, LIX)
+        - Fluency (language-aware Flesch readability)
         - Politeness (lexical cues)
         - Emotional Intensity (VADER + punctuation)
         - Formality (formal/informal markers)
@@ -44,7 +49,7 @@ class Prong2RuleBased(Evaluator):
 
         try:
             for dimension in self.dimensions.values():
-                score = dimension.evaluate(text)
+                score = dimension.evaluate(text, **kwargs)
                 dimensions.append(score)
         except Exception as e:
             error = str(e)

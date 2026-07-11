@@ -6,6 +6,11 @@ Five dimensions that use claim extraction + offline Wikidata verification:
   - Temporal Accuracy: verify date claims against Wikidata time properties
   - Comparative Factuality: verify superlative/comparative claims
   - Modality Awareness: classify claims as hedged vs. asserted
+
+Negation handling: when a Claim has negated=True, CONFIRMED and DENIED
+verification results are inverted — a negated claim that the triple is
+true (CONFIRMED) means the claim itself is false (DENIED), and vice versa.
+UNKNOWN stays UNKNOWN (can't invert what we don't know).
 """
 
 import time
@@ -19,12 +24,25 @@ from src.resources.wikidata_offline import (
 )
 
 
+def _invert_result(result: VerificationResult) -> VerificationResult:
+    """Invert a verification result for negated claims.
+
+    CONFIRMED → DENIED, DENIED → CONFIRMED, UNKNOWN → UNKNOWN.
+    """
+    if result == VerificationResult.CONFIRMED:
+        return VerificationResult.DENIED
+    if result == VerificationResult.DENIED:
+        return VerificationResult.CONFIRMED
+    return VerificationResult.UNKNOWN
+
+
 class FactualAccuracy(ScorableDimension):
     """Factual accuracy: verify extracted triples against offline Wikidata.
 
     Score = confirmed / (confirmed + denied).
     UNKNOWN triples are excluded from the ratio.
     Returns 0.5 when no triples are verifiable.
+    Negated claims have their verification result inverted.
     """
 
     def __init__(self, wikidata: Optional[OfflineWikidata] = None):
@@ -46,22 +64,33 @@ class FactualAccuracy(ScorableDimension):
         claim_details = []
 
         for claim in claims:
-            # Skip existential claims (no object to verify)
-            if claim.predicate == 'exist' or not claim.object:
+            # Skip claims with no object — unless existential, which
+            # verify_triple handles by parsing the subject into (name, type).
+            # Previously ALL 'exist' claims were skipped, dropping a large
+            # fraction of FEVER 2.0 claims ("There is a cat called X").
+            if not claim.object and claim.predicate != 'exist':
                 unknown += 1
                 continue
 
             detail = self.wikidata.verify_triple(
                 claim.subject, claim.predicate, claim.object
             )
+
+            # Invert result for negated claims
+            effective_result = detail.result
+            if claim.negated:
+                effective_result = _invert_result(detail.result)
+
             claim_details.append({
                 'claim': claim.to_dict(),
                 'verification': detail.to_dict(),
+                'negated': claim.negated,
+                'effective_result': effective_result.value,
             })
 
-            if detail.result == VerificationResult.CONFIRMED:
+            if effective_result == VerificationResult.CONFIRMED:
                 confirmed += 1
-            elif detail.result == VerificationResult.DENIED:
+            elif effective_result == VerificationResult.DENIED:
                 denied += 1
             else:
                 unknown += 1
@@ -111,7 +140,6 @@ class FactualConsistency(ScorableDimension):
         subject_groups = {}
         for claim in claims:
             key = claim.subject.lower().strip()
-            # Also normalize: "Troms" -> "tromsø" etc. via Wikidata lookup
             if self.wikidata:
                 qid = self.wikidata.lookup_entity(claim.subject)
                 if qid:
@@ -128,7 +156,6 @@ class FactualConsistency(ScorableDimension):
             if len(group) < 2:
                 continue
 
-            # Compare all pairs within this subject group
             for i in range(len(group)):
                 for j in range(i + 1, len(group)):
                     c1, c2 = group[i], group[j]
@@ -166,26 +193,32 @@ class FactualConsistency(ScorableDimension):
         """
         # If predicates are different, they describe different aspects — no contradiction
         if c1.predicate.lower() != c2.predicate.lower():
-            # But if both are copula "be" claims, the objects might still conflict
             if not (c1.predicate.lower() == 'be' and c2.predicate.lower() == 'be'):
                 return False, 'predicate_mismatch'
 
-        # Both claims have the same subject and predicate → compare objects
+        # If exactly one claim is negated, that's a potential contradiction
+        # (one says X, the other says NOT X about the same subject+predicate)
+        if c1.negated != c2.negated:
+            obj1 = c1.object.strip().lower()
+            obj2 = c2.object.strip().lower()
+            if obj1 == obj2:
+                return True, 'negation_polarity'
+            # If objects overlap, it's a contradiction
+            if obj1 in obj2 or obj2 in obj1:
+                return True, 'negation_polarity'
+
         obj1 = c1.object.strip().lower()
         obj2 = c2.object.strip().lower()
 
-        # If objects are identical, no contradiction
         if obj1 == obj2:
             return False, 'identical'
 
         # Try Wikidata-based conflict detection
         if self.wikidata and isinstance(subject_key, str) and subject_key.startswith('Q'):
-            # We have a QID — try to find the right property
             for prop_id in ('P17', 'P131', 'P30', 'P36', 'P1376'):
                 if self.wikidata.check_object_conflict(subject_key, prop_id, c1.object, c2.object):
                     return True, 'wikidata'
 
-            # If Wikidata has data for this entity, check if one matches and other doesn't
             all_claims = self.wikidata.get_claims(subject_key)
             if all_claims:
                 obj1_found = any(
@@ -199,10 +232,8 @@ class FactualConsistency(ScorableDimension):
                 if obj1_found != obj2_found:
                     return True, 'wikidata'
                 if obj1_found and obj2_found:
-                    return False, 'wikidata'  # Both confirmed = consistent
+                    return False, 'wikidata'
 
-        # String fallback: same predicate, different objects = potential contradiction
-        # Only flag if objects are meaningfully different (not just stylistic variation)
         if obj1 != obj2 and not (obj1 in obj2 or obj2 in obj1):
             return True, 'string_fallback'
 
@@ -216,6 +247,7 @@ class TemporalAccuracy(ScorableDimension):
     P585 (point in time), P580 (start time), P582 (end time), P569 (birth),
     P570 (death), P571 (inception).
     Score = fraction of date claims verified correctly.
+    Negated claims have their verification result inverted.
     """
 
     DATE_PROPERTIES = {'P585', 'P580', 'P582', 'P569', 'P570', 'P571'}
@@ -232,7 +264,6 @@ class TemporalAccuracy(ScorableDimension):
                 metadata={'status': 'no_claims' if not claims else 'no_wikidata'}
             )
 
-        # Filter claims with temporal anchors
         temporal_claims = [c for c in claims if c.temporal_anchor]
         if not temporal_claims:
             return self.create_score(
@@ -276,47 +307,56 @@ class TemporalAccuracy(ScorableDimension):
         )
 
     def _verify_temporal(self, claim: Claim) -> str:
-        """Verify a temporal claim's date against Wikidata."""
+        """Verify a temporal claim's date against Wikidata.
+
+        Inverts the result for negated claims.
+        """
         subj_qid = self.wikidata.lookup_entity(claim.subject)
         if not subj_qid:
             return 'unknown'
 
         date_str = claim.temporal_anchor.strip()
+        raw_result = None
 
-        # Get all date-related properties for this entity
         for prop in self.DATE_PROPERTIES:
             wd_claims = self.wikidata.get_claims(subj_qid, prop)
             for wc in wd_claims:
                 wd_date = wc['value']
                 if self._dates_match(date_str, wd_date):
-                    return 'confirmed'
+                    raw_result = 'confirmed'
+                    break
+            if raw_result:
+                break
 
-        # If entity exists but no date matches, it could be a different date
-        # Only deny if we have date claims that conflict
-        all_date_claims = []
-        for prop in self.DATE_PROPERTIES:
-            all_date_claims.extend(self.wikidata.get_claims(subj_qid, prop))
+        if raw_result is None:
+            all_date_claims = []
+            for prop in self.DATE_PROPERTIES:
+                all_date_claims.extend(self.wikidata.get_claims(subj_qid, prop))
+            if all_date_claims:
+                raw_result = 'denied'
+            else:
+                raw_result = 'unknown'
 
-        if all_date_claims:
-            # We have date data but it doesn't match
-            return 'denied'
+        # Invert for negated claims
+        if claim.negated:
+            if raw_result == 'confirmed':
+                return 'denied'
+            elif raw_result == 'denied':
+                return 'confirmed'
 
-        return 'unknown'
+        return raw_result
 
     def _dates_match(self, extracted: str, wikidata: str) -> bool:
         """Check if extracted date matches Wikidata date (flexible matching)."""
         ext = extracted.strip().lower()
         wd = wikidata.strip().lower()
 
-        # Exact match
         if ext == wd:
             return True
 
-        # Year match: "1986" in "1986-08-09"
         if ext in wd or wd in ext:
             return True
 
-        # Extract year from both
         import re
         ext_years = re.findall(r'\d{4}', ext)
         wd_years = re.findall(r'\d{4}', wd)
@@ -331,6 +371,7 @@ class ComparativeFactuality(ScorableDimension):
 
     Filters claims with comparative_tag (JJR/JJS), verifies via Wikidata.
     Score = fraction of verified comparative/superlative claims.
+    Negated claims have their verification result inverted.
     """
 
     def __init__(self, wikidata: Optional[OfflineWikidata] = None):
@@ -345,7 +386,6 @@ class ComparativeFactuality(ScorableDimension):
                 metadata={'status': 'no_claims' if not claims else 'no_wikidata'}
             )
 
-        # Filter comparative/superlative claims
         comp_claims = [c for c in claims if c.comparative_tag]
         if not comp_claims:
             return self.create_score(
@@ -362,16 +402,23 @@ class ComparativeFactuality(ScorableDimension):
             detail = self.wikidata.verify_triple(
                 claim.subject, claim.predicate, claim.object
             )
-            result_str = detail.result.value
+
+            # Invert result for negated claims
+            effective_result = detail.result
+            if claim.negated:
+                effective_result = _invert_result(detail.result)
+
             details.append({
                 'claim': claim.to_dict(),
                 'verification': detail.to_dict(),
                 'comparative_type': claim.comparative_tag,
+                'negated': claim.negated,
+                'effective_result': effective_result.value,
             })
 
-            if detail.result == VerificationResult.CONFIRMED:
+            if effective_result == VerificationResult.CONFIRMED:
                 confirmed += 1
-            elif detail.result == VerificationResult.DENIED:
+            elif effective_result == VerificationResult.DENIED:
                 denied += 1
             else:
                 unknown += 1
@@ -401,6 +448,11 @@ class ModalityAwareness(ScorableDimension):
     detected at the dependency-tree level by ClaimExtractor.
     Score = hedged_claims / total_claims (higher = more hedged text).
     Returns 0.0 (fully asserted) when no hedging is detected.
+
+    Descriptive/style axis — appropriate hedging is good for genuinely
+    uncertain claims and bad for well-established facts, so there is no
+    universal "better" direction. Excluded from aggregation
+    (aggregate=False) and reported for information only.
     """
 
     def __init__(self):
@@ -411,7 +463,8 @@ class ModalityAwareness(ScorableDimension):
         if not claims:
             return self.create_score(
                 value=0.5,
-                metadata={'status': 'no_claims'}
+                metadata={'status': 'no_claims'},
+                aggregate=False,
             )
 
         hedged = 0
@@ -444,5 +497,6 @@ class ModalityAwareness(ScorableDimension):
                 'num_claims': total,
                 'details': details,
                 'evaluation_time_ms': elapsed,
-            }
+            },
+            aggregate=False,
         )
