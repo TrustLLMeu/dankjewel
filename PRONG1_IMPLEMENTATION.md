@@ -217,7 +217,7 @@ transformers>=4.36.0
 
 ### References
 
-- **Protocol:** Deliverable 7.5 (D7_5.txt) — Lars Bungum, NTNU
+- **Protocol:** TrustLLM Deliverable 7.5 — Lars Bungum, NTNU
 - **Embedding Model:** Sentence-Transformers (Reimers & Gurevych, 2019)
 - **Toxicity Model:** unitary/toxic-bert (Jigsaw/Google Perspective API)
 - **Dataset:** Jigsaw Unintended Bias in Toxicity Classification

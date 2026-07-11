@@ -171,7 +171,7 @@ result = prong4.evaluate(text, intrinsic_data=intrinsic_data)
 
 ### References
 
-- **Protocol:** Deliverable 7.5 (D7_5.txt) — Intrinsic metrics section
+- **Protocol:** TrustLLM Deliverable 7.5 — Intrinsic metrics section
 - **Metrics:**
   - Uncertainty: Token-level softmax confidence
   - Perplexity: Standard NLP metric (exp of NLL)

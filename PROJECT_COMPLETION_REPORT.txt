@@ -110,8 +110,6 @@ DOCUMENTATION:
   26. IMPLEMENTATION_SUMMARY.txt       - Implementation details
   27. PROJECT_COMPLETION_REPORT.txt    - This file
 ORIGINAL DOCUMENTS:
-  28. D7_5.txt                         - Original protocol (from TrustLLM)
-  29. D7_5.pdf                         - Original PDF
 ================================================================================
 LINES OF CODE SUMMARY
 ================================================================================

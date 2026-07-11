@@ -272,7 +272,7 @@ See [TODO.md](TODO.md). Key next steps:
 
 ### References
 
-- **Protocol:** Deliverable 7.5 — Multi-Dimensional Evaluation Metric (D7_5.pdf)
+- **Protocol:** TrustLLM Deliverable 7.5 — Multi-Dimensional Evaluation Metric
 - **Danescu-Niculescu-Mizil et al.** (2013) — Politeness cue lists
 - **Aly et al.** (2021) — FEVER 2.0 benchmark
 - **Flesch** (1948), **Amstad** (1978), **Douma** (1960), **Matricciani** (2023) — Readability formulas

@@ -2,7 +2,7 @@
 Main entry point for the online evaluation system.
 
 This demonstrates the multi-dimensional text evaluation pipeline
-based on the protocol defined in D7_5.txt (TrustLLM project).
+based on the TrustLLM Deliverable 7.5 protocol.
 """
 
 import json
