@@ -6,15 +6,17 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `1265aba` — Add tiny-judge toggle and dual-track display to the evaluator UI
+- **Latest commit:** `a5dbb8d` — Add optional LLM atomic-claim extraction track for Prong 3 (dual output)
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** pre-existing 390px horizontal overflow on the evaluator page (scrollWidth 485, present before this change; slice 3's 390px check covered /commits); judge latency row for the Phase-4 table; slice 6 Prong 3 extraction waits on Go (Claimify flag)
+- **Open slices:** pre-existing 390px evaluator overflow (485px); judge latency row for the Phase-4 table; slice 6b (5-way relation labels + MiniCheck/AlignScore verifier, then seed expansion); full FEVER 2.0 fixers set unavailable publicly — the harness uses FEVER 1.0 shared-task dev
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-14 | `PENDING` | chore / index | Record slice 5 UI land in commit index | chore |
+| 2026-11-14 | `PENDING` | chore / index | Record slice 6a LLM claim extraction in commit index | chore |
+| 2026-11-14 | `a5dbb8d` | prong 3 / extraction | Add optional LLM atomic-claim extraction track for Prong 3 (dual output) | wXze coverage <10% (extraction recall) |
+| 2026-11-14 | `c71b57d` | chore / index | Record slice 5 UI land in commit index | chore |
 | 2026-11-14 | `1265aba` | dashboard / tiny judge | Add tiny-judge toggle and dual-track display to the evaluator UI | wXze Prong 1 no LLM (UI half) |
 | 2026-11-14 | `8cbb11d` | chore / index | Record slice 5 tiny judge land in commit index | chore |
 | 2026-11-14 | `86b397d` | chore / ignore | Ignore local crew worktrees and verification screenshots | chore |
@@ -35,9 +37,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record slice 5 UI land in commit index (2026-11-14)
+### `PENDING` — Record slice 6a LLM claim extraction in commit index (2026-11-14)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the slice 6a land and the FEVER dataset deviation (public FEVER 2.0 fixers set unavailable; the harness uses the official FEVER 1.0 shared-task dev set).
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `a5dbb8d` — Add optional LLM atomic-claim extraction track for Prong 3 (dual output) (2026-11-14)
+
+- **Hash:** `a5dbb8dc01ad5c27bdf91bd7cdc4a77ba132b6de`
+- **Why:** Slice 6a, per the claim-extraction scout re-rank (Claimify/FActScore mechanism, MPropositionneur pattern). The 0.5B judge failed claim extraction (verbatim echo, no pronoun resolution, one hallucinated negation), so the `[CLAIMS]` task runs on a new local 1.5B server (127.0.0.1:18093, Qwen2.5-1.5B-Instruct, same `DANKJEWEL_JUDGE_API_KEY`); `[JUDGE]` stays on the 0.5B. `src/extraction/llm_claim_extractor.py` makes one `[CLAIMS]` call per paragraph, re-runs the existing spaCy triple logic on each decontextualized atomic claim (MPropositionneur), merges the tracks, and dedups identical triples to `source="both"`. Claims gain backward-compatible `source`/`atomic_text`; `ExtractionResult` gains `metadata` (`llm_paragraphs`/`llm_claims`/`llm_errors`). The client gains a `[CLAIMS]` task with JSON repair for the 1.5B's dropped commas. Opt-in `llm_extract` flag on `/evaluate` (default false = identical behavior) plus a UI toggle, per-claim Source column chips (spacy/llm/both), and a dual-count summary line. `eval_fever2.py` gains `--extractor {spacy,llm,dual}`.
+- **Files:** `src/llm_judge_client.py`, `src/extraction/claim_extractor.py`, `src/extraction/llm_claim_extractor.py`, `src/prongs/prong3_extraction.py`, `src/pipeline.py`, `src/api.py`, `frontend/index.html`, `frontend/locales/en.json`, `scripts/eval_fever2.py`, `tests/test_llm_claim_extractor.py`
+- **Closes:** the extraction-recall half of review.txt wXze coverage <10% (recall is the bottleneck) and the paraphrased/embedded-fact spaCy gap — NOT the coverage/AUC items themselves (the verifier is KB-bound; see Verify)
+- **Verify:** implementer pytest 257 passed + 2 skipped (no key) / 259 passed (with key); Captain reran the full suite in the main tree (257+2) and Selenium 11/11 (headless Chromium, three server states): default off → Source column all "spacy", summary "2 of 3 claims covered"; `llm_extract` on → chips ["both","spacy","both","llm"], summary "2 of 4 claims covered · spacy 1 / llm 1 / both 2", pronoun "It is known for the Eiffel Tower" decontextualized to "Paris is known for the Eiffel Tower"; both `tiny_judge`+`llm_extract` together render; 390px no overflow regression (485=485 vs c71b57d baseline). API spot check: 4 claims, 2 verifiable, both confirmed. FEVER subsample (30/class, seed 42, seed DB): spacy 74 claims vs dual 88 claims extracted; coverage 0/90 and AUC 0.500 in both conditions — the ~86-entity seed DB contains none of the sampled entities, which is the honest lower-bound "86 entities are not Wikidata" result, not an extractor failure. Dataset deviation: the public FEVER 2.0 fixers file is unavailable (HF 401, facebookresearch repo 404), so the harness fetches the official FEVER 1.0 shared-task dev set (19,998 claims, converted to `{claim,label,id}`; provenance in a `.provenance.txt` sidecar and both reports).
+
+### `c71b57d` — Record slice 5 UI land in commit index (2026-11-14)
+
+- **Hash:** `c71b57d7584a9872f1fceb859719a0b764142a0d`
 - **Why:** Record the slice 5 UI lands.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
