@@ -19,6 +19,10 @@ scripts/snippet2.py
 *.fls
 *.synctex.gz
 
+# Local crew worktrees and browser verification screenshots
+.worktrees/
+.shots/
+
 # Python environments, bytecode, test tooling, and local IDE state
 .venv/
 venv/
