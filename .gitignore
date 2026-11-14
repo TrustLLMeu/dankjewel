@@ -1,6 +1,11 @@
 # Local writing/notes artifacts — not part of the tracked repo
 architecture_diagram.tex
 architecture_section.tex
+
+# Agentic inspiration only — never ship in the product
+inspiration.txt
+review.txt
+deliverable/
 snippet.py
 snippet2.py
 scripts/snippet.py
