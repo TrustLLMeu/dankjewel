@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `d0a9fb0` — Dispatch crew work through herdr panes, not subagents
+- **Latest commit:** `7fd15b9` — Pin qualifier-gate abstentions and document seed pruning
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
 - **Open slices:** pre-existing 390px evaluator overflow (485px); judge/verifier latency rows for the Phase-4 table; seed coverage still 0.3% on FEVER; slice 6b follow-ups (AVeriTeC/LLM-AggreFact second benchmark, Nordic seed, partially_supported reachable mainly via the authored eval)
 
@@ -14,7 +14,9 @@ Newest first. `git log` remains the source of truth for hashes.
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-14 | `PENDING` | chore / index | Record herdr dispatch rule in commit index | chore |
+| 2026-11-14 | `PENDING` | chore / index | Record slice 6c qualifier gates in commit index | chore |
+| 2026-11-14 | `7fd15b9` | prong 3 / tests+docs | Pin qualifier-gate abstentions and document seed pruning | wXze coverage robustness (qualifier gates) |
+| 2026-11-14 | `5204f67` | chore / index | Record herdr dispatch rule in commit index | chore |
 | 2026-11-14 | `d0a9fb0` | chore / crew | Dispatch crew work through herdr panes, not subagents | chore |
 | 2026-11-14 | `f869ba6` | chore / index | Record slice 6b verifier land in commit index | chore |
 | 2026-11-14 | `af6339a` | prong 3 / verifier | Add MiniCheck verifier, five-way Prong 3 relations, and seed expansion | wXze+V55p Prong 3 discriminative signal (five-way + verifier track) |
@@ -41,9 +43,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record herdr dispatch rule in commit index (2026-11-14)
+### `PENDING` — Record slice 6c qualifier gates in commit index (2026-11-14)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the slice 6c qualifier-gate land.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `7fd15b9` — Pin qualifier-gate abstentions and document seed pruning (2026-11-14)
+
+- **Hash:** `7fd15b9cf3bd3fad34c5743f9e9ad98c50c11960`
+- **Why:** Slice 6c — the two follow-ups the 6b reviewer authorised (no verifier or UI work). The qualifier gate in `src/resources/wikidata_offline.py` previously had no regression coverage: 13 new tests pin that role ("directed by X" with absent/contradicted director data), ordinal-series ("the third James Bond film") and temporal ("before 1990") qualifiers abstain or deny and never confirm through a weak fuzzy match; every UNKNOWN pin is paired with a control proving the same claim would confirm without the qualifier (non-vacuous). No gate fix was needed. `scripts/extend_wikidata_db.py` gains `--prune-label-only` with module-docstring documentation of which label-only rows survive (cited via P17/P131/P30/P36/P1376/P361), why the rest are pruned (227 label-only values fetched, no claims = no verification value), and the reproduction recipe for the 122-entity seed (start from the 86-entity seed, --entities list, --prune-label-only).
+- **Files:** `scripts/extend_wikidata_db.py`, `tests/test_five_way.py`
+- **Closes:** the 6b reviewer's blocker (unreproducible seed pruning) and should-fix (gate regression tests). Contradicted directors deny (slice 6b design: deny on explicit contradiction, abstain without data)
+- **Verify:** implementer pytest 320 passed + 2 skipped in the worktree; Captain reran the full suite in the main tree (320 + 2 skipped, pre-existing live-model skips). Historian reran `tests/test_five_way.py` before committing: 49 passed. No UI or runtime scoring change.
+
+### `5204f67` — Record herdr dispatch rule in commit index (2026-11-14)
+
+- **Hash:** `5204f67b0da4957a8a634e8c023d5aeb1d9e989c`
 - **Why:** Record the herdr dispatch rule land.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
