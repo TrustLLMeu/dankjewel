@@ -121,16 +121,22 @@ def summarize(values):
 def git_ref() -> str:
     import subprocess
     try:
-        out = subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD", "HEAD"],
+        branch = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,
             timeout=10,
-        )
-        lines = out.stdout.split()
-        if len(lines) == 2:
-            return f"{lines[0]} @ {lines[1]}"
+        ).stdout.strip()
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        ).stdout.strip()[:7]
+        if branch and commit:
+            return f"{branch} @ {commit}"
     except Exception:
         pass
     return UNMEASURED
@@ -316,6 +322,11 @@ def main():
     lines.append("")
     lines.append("prong `processing_time` is reported by the pipeline in seconds "
                  "(time.time() deltas); converted to ms (x1000) above.")
+    lines.append("")
+    lines.append("Note: on `/evaluate` there is no vLLM `intrinsic_data`, so Prong 4 "
+                 "returns its Phase-1 neutral placeholders (its processing_time is "
+                 "trivially ~0 ms); Prong 4 real-logit latency is measured only via "
+                 "the generation paths.")
     lines.append("")
     lines.append("## Not measured (this slice)")
     lines.append("")
