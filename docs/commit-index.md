@@ -6,19 +6,28 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `7ae5801` — Add herdr crew charter and D7.5 v2 plan
-- **Index update:** the rows below land one commit after `7ae5801`
-- **Tree:** clean
-- **Open slices:** slice 1 — measure the current system (Eval); slice 2 — honesty core (Implementer)
+- **Latest commit:** `9c1e9a1` — Add /evaluate latency harness and CPU baseline numbers
+- **Tree:** dirty only if commit-index is mid-update
+- **Open slices:** slice 2 — honesty core (Implementer)
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
+| 2026-11-14 | `9c1e9a1` | eval / latency | Add /evaluate latency harness and CPU baseline numbers | YE7H / wXze real-time unmeasured |
+| 2026-11-14 | `455dee8` | chore / index | Record first two lands in commit index | chore |
 | 2026-11-14 | `7ae5801` | chore / crew | Add herdr crew charter and D7.5 v2 plan | chore — slice 0 |
 | 2026-11-14 | `df3f47a` | chore / ignore | Ignore local agentic inspiration files | chore |
 
 ## Commits
+
+### `9c1e9a1` — Add /evaluate latency harness and CPU baseline numbers (2026-11-14)
+
+- **Hash:** `9c1e9a199604cf491ded411e9f4139f5a25944b5`
+- **Why:** Slice 1 — wall-clock numbers for `/evaluate` on the current system, before scoring changes.
+- **Files:** `scripts/measure_latency.py`, `evaluation_results/latency_baseline.json`, `evaluation_results/latency_baseline.md`
+- **Closes:** YE7H / wXze “real-time is unmeasured” for the `/evaluate` path (not `/generate-and-evaluate`)
+- **Verify:** `.venv/bin/python -m pytest tests/ -q` → 172 passed; `.venv/bin/python scripts/measure_latency.py` → HTTP mean 661.7 ms on malvik CPU
 
 ### `7ae5801` — Add herdr crew charter and D7.5 v2 plan (2026-11-14)
 
