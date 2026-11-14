@@ -6,20 +6,30 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `9c1e9a1` — Add /evaluate latency harness and CPU baseline numbers
-- **Tree:** dirty only if commit-index is mid-update
-- **Open slices:** slice 2 — honesty core (Implementer)
+- **Latest commit:** `38e3731` — Add scored/unknown/error status so missing evidence is not 0.5
+- **Tree:** clean after index land
+- **Open slices:** slice 3 — instrument panel (Dashboard)
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
+| 2026-11-14 | `38e3731` | honesty | Add scored/unknown/error status so missing evidence is not 0.5 | wXze / V55p unknown≠0.5 |
+| 2026-11-14 | `90ab84d` | eval / latency | Refresh /evaluate latency baseline with a second timed run | YE7H |
 | 2026-11-14 | `9c1e9a1` | eval / latency | Add /evaluate latency harness and CPU baseline numbers | YE7H / wXze real-time unmeasured |
 | 2026-11-14 | `455dee8` | chore / index | Record first two lands in commit index | chore |
 | 2026-11-14 | `7ae5801` | chore / crew | Add herdr crew charter and D7.5 v2 plan | chore — slice 0 |
 | 2026-11-14 | `df3f47a` | chore / ignore | Ignore local agentic inspiration files | chore |
 
 ## Commits
+
+### `38e3731` — Add scored/unknown/error status so missing evidence is not 0.5 (2026-11-14)
+
+- **Hash:** `38e373193b809fb7f5d85217420c438be2fce62c`
+- **Why:** Slice 2 — missing evidence must not look like a middling quality score; Prong 1 labelled as embeddings; languages scoped.
+- **Files:** `src/base.py`, aggregator, prong 1/3/4 dimensions, `pipeline.py`, `README.md`, `tests/test_honesty_status.py`
+- **Closes:** wXze / V55p silent 0.5; Prong 1 naming honesty; nine-language overclaim in README
+- **Verify:** `.venv/bin/python -m pytest tests/ -q` → 191 passed
 
 ### `9c1e9a1` — Add /evaluate latency harness and CPU baseline numbers (2026-11-14)
 
