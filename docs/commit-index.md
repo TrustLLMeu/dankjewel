@@ -6,14 +6,17 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `37fa6e4` — Add a browsable commit history page at /commits
+- **Latest commit:** `9013249` — Add optional tiny-LLM judge track on Prong 1 Relevance (dual output)
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** slice 5 tiny 0.5B judge; slice 6 Prong 3 extraction waits on Go (Claimify flag)
+- **Open slices:** slice 5 UI half (tiny-judge toggle + dual-track display in frontend); slice 6 Prong 3 extraction waits on Go (Claimify flag); judge latency row for the Phase-4 table
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
+| 2026-11-14 | `PENDING` | chore / index | Record slice 5 tiny judge land in commit index | chore |
+| 2026-11-14 | `86b397d` | chore / ignore | Ignore local crew worktrees and verification screenshots | chore |
+| 2026-11-14 | `9013249` | tiny judge / Prong 1 | Add optional tiny-LLM judge track on Prong 1 Relevance (dual output) | wXze Prong 1 no LLM (API half) |
 | 2026-11-14 | `37fa6e4` | dashboard | Add a browsable commit history page at /commits | YE7H / wXze history in the UI |
 | 2026-11-14 | `0e1be7d` | chore / index | Complete slice 3 entries in the commit index | chore |
 | 2026-11-14 | `28d2464` | dashboard | Show Equal as the active weight preset on load | wXze weights / active preset |
@@ -29,6 +32,30 @@ Newest first. `git log` remains the source of truth for hashes.
 | 2026-11-14 | `df3f47a` | chore / ignore | Ignore local agentic inspiration files | chore |
 
 ## Commits
+
+### `PENDING` — Record slice 5 tiny judge land in commit index (2026-11-14)
+
+- **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the slice 5 lands.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `86b397d` — Ignore local crew worktrees and verification screenshots (2026-11-14)
+
+- **Hash:** `86b397d4a5984e0649475130e20273d3c9d7be71`
+- **Why:** Keep local crew artifacts out of the tree.
+- **Files:** `.gitignore`
+- **Closes:** chore
+- **Verify:** untested (gitignore only)
+
+### `9013249` — Add optional tiny-LLM judge track on Prong 1 Relevance (dual output) (2026-11-14)
+
+- **Hash:** `9013249bf5349c89b39ca7ec2931e21ddbdb754a`
+- **Why:** Slice 5 — Prong 1 can now call a real LLM judge (plan Phase 2 / attack order 5). Shared sync client `src/llm_judge_client.py` (httpx, env config `DANKJEWEL_JUDGE_*` defaulting to the local 0.5B server at 127.0.0.1:18092, `[JUDGE]` task prefix, few-shot strict-JSON prompt verified live 2026-11-14, 30 s timeout). Relevance gains a dual-output track: the baseline embedding score stays the aggregated value; the judge adds `llm_value`/`rationale`/`judge_status` (scored|unknown|error) to metadata. `POST /evaluate` accepts `tiny_judge` (default false; off = identical behavior).
+- **Files:** `src/api.py`, `src/pipeline.py`, `src/prongs/prong1_dimensions.py`, `src/prongs/prong1_llm_as_judge.py`, `src/llm_judge_client.py`, `tests/test_tiny_judge.py`
+- **Closes:** API half of review.txt “Prong 1 does not use an LLM” (UI toggle is the second half)
+- **Verify:** pytest 223 passed + 1 skipped (no key) / 224 passed (with key) in the worktree; Captain reran the full suite in the main tree (223+1) and verified live end-to-end via `/evaluate`: default off unchanged (Relevance 0.93, no judge metadata), `tiny_judge=true` dual track (baseline 0.93, llm 1.0, judge 192 ms, rationale “Directly answers the question about the capital of Norway.”), irrelevant answer discriminates (baseline 0.55, llm 0.0). Known 0.5B limitations recorded in client docstring: partial answers anchor to 0; verbatim exemplar repeats echo the exemplar score.
 
 ### `37fa6e4` — Add a browsable commit history page at /commits (2026-11-14)
 
