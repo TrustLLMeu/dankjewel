@@ -6,14 +6,16 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `28d2464` — Show Equal as the active weight preset on load
-- **Tree:** clean after this index land
-- **Open slices:** slice 4 — Reviewer vs `review.txt`, then tiny 0.5B judge
+- **Latest commit:** `37fa6e4` — Add a browsable commit history page at /commits
+- **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
+- **Open slices:** slice 5 tiny 0.5B judge; slice 6 Prong 3 extraction waits on Go (Claimify flag)
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
+| 2026-11-14 | `37fa6e4` | dashboard | Add a browsable commit history page at /commits | YE7H / wXze history in the UI |
+| 2026-11-14 | `0e1be7d` | chore / index | Complete slice 3 entries in the commit index | chore |
 | 2026-11-14 | `28d2464` | dashboard | Show Equal as the active weight preset on load | wXze weights / active preset |
 | 2026-11-14 | `873d651` | chore / index | Record slice 3 instrument panel in commit index | chore |
 | 2026-11-14 | `7129c89` | dashboard | Add instrument panel: unknown marks, weight presets, radar | wXze / YE7H panel, unknown≠0.5 |
@@ -27,6 +29,22 @@ Newest first. `git log` remains the source of truth for hashes.
 | 2026-11-14 | `df3f47a` | chore / ignore | Ignore local agentic inspiration files | chore |
 
 ## Commits
+
+### `37fa6e4` — Add a browsable commit history page at /commits (2026-11-14)
+
+- **Hash:** `37fa6e4922d292c77f3e6de4d62e7b9fc20490b0`
+- **Why:** Slice 4 extra — a human can browse `feature/d75-v2` without `git log`. Git Historian wrote the page and routes; the named pane dropped before committing, so Captain landed them.
+- **Files:** `frontend/commits.html`, `frontend/index.html`, `src/api.py`
+- **Closes:** browsable history (`docs/commit-index.md` plus `/commits`)
+- **Verify:** TestClient GET `/commits` 200, GET `/api/commits` 200 branch `feature/d75-v2` 12 commits; Selenium: header link, honesty chip, empty search, expand, Evaluator back-link, 390px no horizontal overflow
+
+### `0e1be7d` — Complete slice 3 entries in the commit index (2026-11-14)
+
+- **Hash:** `0e1be7d4d9024ffe294bb3fe41d8ef263fb7b9c5`
+- **Why:** The previous index land only rewrote the Latest line. Record the instrument-panel commit, the active-preset glue, and the missing slice 1–2 index rows.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
 
 ### `28d2464` — Show Equal as the active weight preset on load (2026-11-14)
 
