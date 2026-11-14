@@ -439,7 +439,7 @@ footer {
               <span class="preset-desc" data-i18n="preset_fluency_desc">Upweight Prong 2 and Prong 1 coherence</span>
             </div>
           </div>
-          <div style="font-size:0.72rem;color:var(--text3);margin-top:0.25rem;" id="active-preset-label"></div>
+          <div style="font-size:0.72rem;color:var(--text3);margin-top:0.25rem;" id="active-preset-label">Active: Equal</div>
           <details>
             <summary style="font-size:0.78rem;font-weight:600;color:var(--text2);margin:0.5rem 0 0.25rem;text-transform:uppercase;letter-spacing:0.03em;" data-i18n="custom_weights">Custom Weights</summary>
             <div class="param-grid" style="margin-top:0.3rem;">
@@ -598,6 +598,7 @@ async function setLocale(lang) {
   localStorage.setItem('dj_locale', lang);
   document.getElementById('lang-select').value = lang;
   translatePage();
+  if (typeof updateActivePresetLabel === 'function') updateActivePresetLabel();
 }
 
 function translatePage() {
