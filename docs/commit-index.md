@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `af6339a` — Add MiniCheck verifier, five-way Prong 3 relations, and seed expansion
+- **Latest commit:** `d0a9fb0` — Dispatch crew work through herdr panes, not subagents
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
 - **Open slices:** pre-existing 390px evaluator overflow (485px); judge/verifier latency rows for the Phase-4 table; seed coverage still 0.3% on FEVER; slice 6b follow-ups (AVeriTeC/LLM-AggreFact second benchmark, Nordic seed, partially_supported reachable mainly via the authored eval)
 
@@ -14,7 +14,9 @@ Newest first. `git log` remains the source of truth for hashes.
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-14 | `PENDING` | chore / index | Record slice 6b verifier land in commit index | chore |
+| 2026-11-14 | `PENDING` | chore / index | Record herdr dispatch rule in commit index | chore |
+| 2026-11-14 | `d0a9fb0` | chore / crew | Dispatch crew work through herdr panes, not subagents | chore |
+| 2026-11-14 | `f869ba6` | chore / index | Record slice 6b verifier land in commit index | chore |
 | 2026-11-14 | `af6339a` | prong 3 / verifier | Add MiniCheck verifier, five-way Prong 3 relations, and seed expansion | wXze+V55p Prong 3 discriminative signal (five-way + verifier track) |
 | 2026-11-14 | `fe29386` | chore / index | Record slice 6a LLM claim extraction in commit index | chore |
 | 2026-11-14 | `a5dbb8d` | prong 3 / extraction | Add optional LLM atomic-claim extraction track for Prong 3 (dual output) | wXze coverage <10% (extraction recall) |
@@ -39,9 +41,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record slice 6b verifier land in commit index (2026-11-14)
+### `PENDING` — Record herdr dispatch rule in commit index (2026-11-14)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the herdr dispatch rule land.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `d0a9fb0` — Dispatch crew work through herdr panes, not subagents (2026-11-14)
+
+- **Hash:** `d0a9fb098130738b9616c9dfa8eeb300a736fd73`
+- **Why:** The user follows the work in the herdr tabs; in-session subagents hide it. The charter now names the panes, the brief-file + `herdr agent prompt` pattern, the status-polling rule (`herdr agent get` / `agent read --source visible`; `prompt --wait` often times out), and the tab-focus restore. No model or rate-window change.
+- **Files:** `.grok/HERDR.md`
+- **Closes:** chore / crew process
+- **Verify:** untested (docs only); `herdr agent prompt dj-reviewer` + status polling used for the slice 6b review this same day
+
+### `f869ba6` — Record slice 6b verifier land in commit index (2026-11-14)
+
+- **Hash:** `f869ba6bb71d53ee521d90dac39467b28ecdccbb`
 - **Why:** Record the slice 6b land.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
