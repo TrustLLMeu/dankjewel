@@ -167,12 +167,12 @@ details[open] summary::before { transform: rotate(90deg); }
 .prong-bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
 .prong-details { padding: 0 0.9rem 0.7rem; }
 
-.dim-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+.dim-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.4rem; }
 .dim-name { font-size: 0.75rem; width: 140px; flex-shrink: 0; color: var(--text2); }
 .dim-bar-wrap { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
 .dim-bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
 .dim-value { font-family: var(--mono); font-size: 0.72rem; min-width: 36px; text-align: right; }
-.dim-tags { display: flex; gap: 0.3rem; flex-shrink: 0; }
+.dim-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; flex-shrink: 0; justify-content: flex-end; }
 .dim-method {
   font-size: 0.62rem; color: var(--text3); background: var(--bg);
   padding: 0.1rem 0.4rem; border-radius: 10px; border: 1px solid var(--border);
@@ -488,6 +488,13 @@ footer {
         <summary class="card-header" style="border-bottom:none;" data-i18n="paste_text_header">Paste Text (evaluate only)</summary>
         <div class="card-body" style="padding-top:0;">
           <textarea id="paste-text" rows="5" data-i18n-placeholder="paste_text_placeholder" placeholder="Paste text to evaluate without vLLM generation…"></textarea>
+          <div class="field" style="margin-top:0.5rem;display:flex;align-items:center;gap:0.4rem;">
+            <input type="checkbox" id="tiny-judge-toggle" style="width:auto;">
+            <label for="tiny-judge-toggle" style="margin:0;text-transform:none;font-weight:400;" data-i18n="tiny_judge_label">Tiny LLM judge (Prong 1 Relevance)</label>
+          </div>
+          <p style="font-size:0.7rem;color:var(--text3);margin:-0.4rem 0 0.75rem;" data-i18n="tiny_judge_hint">
+            Runs the local 0.5B judge as a second opinion; embeddings stay the scored baseline.
+          </p>
         </div>
       </details>
     </div>
@@ -928,7 +935,7 @@ async function evaluateOnly() {
     const r = await fetch(`${API}/evaluate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, prompt }),
+      body: JSON.stringify({ text, prompt, tiny_judge: document.getElementById('tiny-judge-toggle').checked }),
     });
     const d = await r.json();
     document.getElementById('eval-spinner').classList.remove('active');
@@ -1484,7 +1491,10 @@ function renderScores(evalData) {
     // Prong 1 subtitle
     let prongNameHtml = `<span class="prong-name">${esc(prong.prong_name)}</span>`;
     if (prong.prong_name.includes('LLM-as-Judge') && prong1Backend === 'embeddings') {
-      prongNameHtml = `<span class="prong-name">${esc(prong.prong_name)}<span class="prong-subtitle">${t('prong1_subtitle_embeddings')}</span></span>`;
+      // Check if any dimension in this prong has judge_status
+      const hasJudge = prong.dimensions.some(d => d.metadata?.judge_status);
+      const subtitleKey = hasJudge ? 'prong1_subtitle_embeddings_tinyllm' : 'prong1_subtitle_embeddings';
+      prongNameHtml = `<span class="prong-name">${esc(prong.prong_name)}<span class="prong-subtitle">${t(subtitleKey)}</span></span>`;
     }
     
     summary.innerHTML = `
@@ -1515,6 +1525,8 @@ function renderScores(evalData) {
       const v = dim.value;
       const isPpl = dim.name === 'Perplexity';
       const displayVal = isPpl ? v.toFixed(2) : (v != null && !isNaN(v) ? v.toFixed(3) : '—');
+
+      // ── Dual-track: Tiny LLM judge second opinion for Prong 1 Relevance ─────
 
       // Use orientation-corrected agg_value for bar length/color
       const hasAggValue = dim.agg_value != null && !isNaN(dim.agg_value);
@@ -1588,6 +1600,69 @@ function renderScores(evalData) {
         tag.className = 'dim-method';
         tag.textContent = method;
         tags.appendChild(tag);
+      }
+
+      // Dual-track: Tiny LLM judge tags
+      const judgeStatus = dim.metadata?.judge_status;
+      if (judgeStatus) {
+        const judgeTag = document.createElement('span');
+        judgeTag.className = 'dim-method';
+        
+        if (judgeStatus === 'scored') {
+          const llmValue = dim.metadata?.llm_value;
+          const model = dim.metadata?.judge_model || '';
+          const processingMs = dim.metadata?.llm_processing_time_ms || 0;
+          const rationale = dim.metadata?.rationale || '';
+          
+          // Clean model name: strip "Qwen/Qwen2.5-" prefix
+          const shortModel = model.replace('Qwen/Qwen2.5-', '');
+          
+          // Tooltip: rationale, model, and ms
+          const tooltipParts = [];
+          if (rationale) tooltipParts.push(rationale);
+          if (model) tooltipParts.push(`Model: ${model}`);
+          if (processingMs) tooltipParts.push(`${processingMs.toFixed(0)}ms`);
+          
+          judgeTag.title = tooltipParts.join(' | ');
+          judgeTag.textContent = `judge: ${llmValue != null ? llmValue.toFixed(3) : '—'}`;
+          
+          // Add model chip
+          if (shortModel) {
+            const modelChip = document.createElement('span');
+            modelChip.className = 'latency-chip';
+            modelChip.title = model;
+            modelChip.textContent = shortModel;
+            tags.appendChild(modelChip);
+          }
+          
+          // Add processing time chip
+          if (processingMs) {
+            const timeChip = document.createElement('span');
+            timeChip.className = 'latency-chip';
+            timeChip.textContent = `${processingMs.toFixed(0)}ms`;
+            tags.appendChild(timeChip);
+          }
+          
+        } else if (judgeStatus === 'unknown') {
+          const judgeError = dim.metadata?.judge_error || t('judge_unavailable');
+          judgeTag.className = 'dim-method';
+          judgeTag.title = judgeError;
+          judgeTag.textContent = 'judge: unknown';
+          // Style: grey dashed
+          judgeTag.style.borderStyle = 'dashed';
+          judgeTag.style.color = '#9aa0a6';
+          judgeTag.style.borderColor = '#9aa0a6';
+        } else if (judgeStatus === 'error') {
+          const judgeError = dim.metadata?.judge_error || t('judge_error');
+          judgeTag.className = 'dim-method';
+          judgeTag.title = judgeError;
+          judgeTag.textContent = 'judge: error';
+          // Style: muted red
+          judgeTag.style.color = 'var(--red)';
+          judgeTag.style.borderColor = 'var(--red)';
+        }
+        
+        tags.appendChild(judgeTag);
       }
 
       if (tags.childNodes.length) row.appendChild(tags);
