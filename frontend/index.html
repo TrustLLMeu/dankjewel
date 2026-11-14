@@ -226,6 +226,85 @@ footer {
   font-family: inherit; cursor: pointer;
 }
 #lang-select option { background: var(--header-bg); color: var(--header-text); }
+
+/* ── Weight presets ──────────────────────────────────────────────── */
+.preset-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.preset-btn {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem;
+  padding: 0.5rem 0.7rem; border: 1.5px solid var(--border); border-radius: 6px;
+  background: var(--bg); cursor: pointer; transition: all 0.15s;
+  font-size: 0.8rem; font-weight: 600; color: var(--text2); text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.preset-btn:hover { background: var(--border); }
+.preset-btn.active {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.preset-btn .preset-name { font-size: 0.8rem; }
+.preset-btn .preset-desc { font-size: 0.65rem; color: var(--text3); font-weight: 400; }
+.preset-btn.active .preset-desc { color: rgba(255,255,255,0.7); }
+
+/* ── Coverage meter ──────────────────────────────────────────────── */
+.coverage-meter {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.9rem;
+  font-size: 0.72rem; color: var(--text2);
+  border-bottom: 1px solid var(--border);
+}
+.coverage-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+.coverage-value {
+  font-family: var(--mono); font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px;
+  background: var(--bg); border: 1px solid var(--border);
+}
+.coverage-full { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+.coverage-partial { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+.coverage-none { background: #f3f4f6; color: #6b7280; border-color: #d1d5db; }
+
+/* ── Latency chips ────────────────────────────────────────────────── */
+.latency-chip {
+  font-family: var(--mono); font-size: 0.65rem; color: var(--text3);
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.1rem 0.4rem; white-space: nowrap;
+}
+
+/* ── Radar plot ──────────────────────────────────────────────────── */
+.radar-container {
+  padding: 1rem 0.5rem; text-align: center;
+}
+.radar-svg {
+  width: 100%; max-width: 220px; height: auto;
+}
+.radar-label {
+  font-size: 0.7rem; color: var(--text3); margin-top: 0.5rem;
+}
+
+/* ── Unknown/Error state styling ──────────────────────────────────── */
+.unknown-bar {
+  background: #9aa0a6 !important; border-style: dashed !important;
+}
+.error-bar {
+  background: #9aa0a6 !important; border-style: dashed !important;
+}
+.prong-unknown .prong-bar { background: #9aa0a6 !important; border-style: dashed !important; }
+.prong-unknown .prong-score { color: #9aa0a6 !important; }
+.unknown-value { color: #9aa0a6 !important; }
+
+/* ── Prong subtitle ───────────────────────────────────────────────── */
+.prong-subtitle {
+  display: block; font-size: 0.65rem; color: var(--text3); font-style: italic; font-weight: 400;
+}
+
+/* ── Claims coverage ──────────────────────────────────────────────── */
+.claims-summary {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.9rem;
+  font-size: 0.72rem; color: var(--text3);
+  background: var(--bg); border-radius: 4px;
+}
+.claims-summary .claims-count {
+  font-family: var(--mono); font-weight: 700; color: var(--text2);
+}
 </style>
 </head>
 <body>
@@ -340,6 +419,51 @@ footer {
           </div>
         </details>
 
+        <div class="field">
+          <label data-i18n="weight_presets">Weight Presets</label>
+          <div class="preset-grid">
+            <div class="preset-btn active" data-preset="equal" onclick="setPreset('equal')">
+              <span class="preset-name" data-i18n="preset_equal">Equal</span>
+              <span class="preset-desc" data-i18n="preset_equal_desc">0.25 each — explore</span>
+            </div>
+            <div class="preset-btn" data-preset="factual_qa" onclick="setPreset('factual_qa')">
+              <span class="preset-name" data-i18n="preset_factual_qa">Factual QA</span>
+              <span class="preset-desc" data-i18n="preset_factual_qa_desc">Upweight Extraction (Prong 3) and LLM-as-Judge (Prong 1)</span>
+            </div>
+            <div class="preset-btn" data-preset="safety" onclick="setPreset('safety')">
+              <span class="preset-name" data-i18n="preset_safety">Safety</span>
+              <span class="preset-desc" data-i18n="preset_safety_desc">Upweight Prong 1 (toxicity) and Prong 2 (politeness)</span>
+            </div>
+            <div class="preset-btn" data-preset="fluency" onclick="setPreset('fluency')">
+              <span class="preset-name" data-i18n="preset_fluency">Fluency</span>
+              <span class="preset-desc" data-i18n="preset_fluency_desc">Upweight Prong 2 and Prong 1 coherence</span>
+            </div>
+          </div>
+          <div style="font-size:0.72rem;color:var(--text3);margin-top:0.25rem;" id="active-preset-label"></div>
+          <details>
+            <summary style="font-size:0.78rem;font-weight:600;color:var(--text2);margin:0.5rem 0 0.25rem;text-transform:uppercase;letter-spacing:0.03em;" data-i18n="custom_weights">Custom Weights</summary>
+            <div class="param-grid" style="margin-top:0.3rem;">
+              <div class="field">
+                <label style="text-transform:none;" data-i18n="LLM-as-Judge (Prong 1)">LLM-as-Judge (Prong 1)</label>
+                <input type="number" id="weight-prong1" min="0" max="1" step="0.05" value="0.25" onchange="updateWeights()">
+              </div>
+              <div class="field">
+                <label style="text-transform:none;" data-i18n="Rule-Based (Prong 2)">Rule-Based (Prong 2)</label>
+                <input type="number" id="weight-prong2" min="0" max="1" step="0.05" value="0.25" onchange="updateWeights()">
+              </div>
+              <div class="field">
+                <label style="text-transform:none;" data-i18n="Extraction-Based (Prong 3)">Extraction-Based (Prong 3)</label>
+                <input type="number" id="weight-prong3" min="0" max="1" step="0.05" value="0.25" onchange="updateWeights()">
+              </div>
+              <div class="field">
+                <label style="text-transform:none;" data-i18n="Intrinsic (Prong 4)">Intrinsic (Prong 4)</label>
+                <input type="number" id="weight-prong4" min="0" max="1" step="0.05" value="0.25" onchange="updateWeights()">
+              </div>
+            </div>
+            <div style="font-size:0.72rem;color:var(--text3);margin-top:0.5rem;" data-i18n="weights_must_sum_to_1">Weights must sum to 1.0</div>
+          </details>
+        </div>
+
         <div class="btn-row" style="flex-direction:column;">
           <button class="btn btn-primary" id="btn-generate" onclick="generateStream()">
             <span class="spinner" id="gen-spinner"></span>
@@ -413,6 +537,12 @@ footer {
     <div class="card" id="scores-card">
       <div class="card-header" data-i18n="evaluation_scores">Evaluation Scores</div>
 
+      <!-- Coverage meter -->
+      <div class="coverage-meter" id="coverage-meter" style="display:none;">
+        <span class="coverage-label" data-i18n="coverage">Coverage</span>
+        <span class="coverage-value" id="coverage-value"></span>
+      </div>
+
       <div class="total-score-container" id="total-score-container" style="display:none;">
         <svg class="gauge-svg" viewBox="0 0 140 80" id="gauge-svg">
           <path d="M 15 70 A 55 55 0 0 1 125 70" fill="none" stroke="var(--border)" stroke-width="8" stroke-linecap="round"/>
@@ -420,6 +550,12 @@ footer {
         </svg>
         <div class="gauge-value" id="gauge-value">—</div>
         <div class="gauge-label" data-i18n="total_score">Total Score</div>
+      </div>
+
+      <!-- Radar plot -->
+      <div class="radar-container" id="radar-container" style="display:none;">
+        <svg class="radar-svg" id="radar-svg" viewBox="0 0 240 240"></svg>
+        <div class="radar-label" data-i18n="radar_plot">Radar Plot</div>
       </div>
 
       <div class="eval-spinner" id="eval-spinner" data-i18n="evaluating">⏳ Evaluating…</div>
@@ -734,7 +870,7 @@ async function generateStream() {
         if (event.type === 'evaluation') {
           document.getElementById('eval-spinner').classList.remove('active');
           lastResult = { generation: lastGenerationData, evaluation: event.data };
-          renderScores(event.data);
+          reaggregateAndRender();
           document.getElementById('btn-export').style.display = '';
 
           // Save to history
@@ -788,7 +924,7 @@ async function evaluateOnly() {
     const d = await r.json();
     document.getElementById('eval-spinner').classList.remove('active');
     lastResult = { generation: null, evaluation: d };
-    renderScores(d);
+    reaggregateAndRender();
     document.getElementById('btn-export').style.display = '';
     saveToHistory(prompt || '(evaluate only)', d);
   } catch (err) {
@@ -798,157 +934,7 @@ async function evaluateOnly() {
   btn.disabled = false;
 }
 
-// ── Render scores ─────────────────────────────────────────────────
-function renderScores(evalData) {
-  const agg = evalData.aggregated_scores || {};
-  const totalScore = agg.total_score;
-
-  // Gauge
-  if (totalScore != null) {
-    document.getElementById('total-score-container').style.display = '';
-    document.getElementById('gauge-value').textContent = totalScore.toFixed(3);
-    document.getElementById('gauge-value').style.color = scoreColor(totalScore);
-    // Arc: 173 is full arc length
-    const arc = document.getElementById('gauge-arc');
-    const len = Math.min(totalScore, 1.0) * 173;
-    arc.setAttribute('stroke-dasharray', `${len} 173`);
-    arc.setAttribute('stroke', scoreColor(totalScore));
-  }
-
-  // Prong cards
-  const container = document.getElementById('prongs-container');
-  container.innerHTML = '';
-
-  const prongs = evalData.prong_results || [];
-  const prongScores = agg.prong_scores || {};
-
-  prongs.forEach(prong => {
-    const score = prongScores[prong.prong_name];
-    const card = document.createElement('div');
-    card.className = 'prong-card';
-
-    const details = document.createElement('details');
-    const summary = document.createElement('summary');
-    summary.className = 'prong-header';
-    summary.innerHTML = `
-      <span class="prong-name">${esc(prong.prong_name)}</span>
-      <div class="prong-bar-wrap"><div class="prong-bar" style="width:${clamp01(score)*100}%;background:${scoreColor(score)}"></div></div>
-      <span class="prong-score" style="color:${scoreColor(score)}">${score != null ? score.toFixed(3) : '—'}</span>
-    `;
-    details.appendChild(summary);
-
-    const body = document.createElement('div');
-    body.className = 'prong-details';
-
-    (prong.dimensions || []).forEach(dim => {
-      const v = dim.value;
-      const isPpl = dim.name === 'Perplexity';
-      const displayVal = isPpl ? v.toFixed(2) : v.toFixed(3);
-
-      // Use the orientation-corrected agg_value (if the backend supplied
-      // one) for the bar length/color, so a "higher=worse" dimension like
-      // Toxicity/Uncertainty or an unbounded one like Perplexity doesn't
-      // render as if a high raw number were a good thing.
-      const hasAggValue = dim.agg_value != null;
-      const barVal = hasAggValue ? clamp01(dim.agg_value)
-                    : isPpl ? Math.min(1, 1 / v)
-                    : clamp01(v);
-      const barColor = hasAggValue ? scoreColor(dim.agg_value)
-                      : isPpl ? scoreColor(1 - barVal)
-                      : scoreColor(v);
-
-      // Purely descriptive/style dimensions (aggregate === false) have no
-      // universal "better" direction — show them as neutral/gray instead
-      // of implying good/bad, and label them so it's clear they don't
-      // feed into the prong/total score.
-      const isDescriptive = dim.aggregate === false;
-
-      const row = document.createElement('div');
-      row.className = 'dim-row';
-      row.innerHTML = `
-        <span class="dim-name">${esc(dim.name)}</span>
-        <div class="dim-bar-wrap"><div class="dim-bar" style="width:${(isDescriptive ? clamp01(v) : barVal)*100}%;background:${isDescriptive ? '#9aa0a6' : barColor}"></div></div>
-        <span class="dim-value">${displayVal}</span>
-      `;
-
-      const tags = document.createElement('div');
-      tags.className = 'dim-tags';
-
-      if (isDescriptive) {
-        const tag = document.createElement('span');
-        tag.className = 'dim-method dim-tag-info';
-        tag.title = 'Informational only — not included in the prong/total score (no universal "better" direction).';
-        tag.textContent = 'info';
-        tags.appendChild(tag);
-      }
-
-      // Friendly label + tooltip for the raw computation-method metadata,
-      // instead of dumping the internal snake_case identifier verbatim.
-      const method = dim.metadata?.method;
-      const METHOD_LABELS = {
-        log_likelihoods: { label: 'exact', title: 'Computed from exact per-token log-probabilities.', cls: 'dim-tag-exact' },
-        logits: { label: 'exact', title: 'Computed from full-vocabulary model logits.', cls: 'dim-tag-exact' },
-        top_k_approximation: { label: 'approx.', title: 'Approximated from only the top-k logprobs returned by the API (full vocabulary distribution unavailable). See ASSUMPTIONS.md A1.', cls: 'dim-tag-approx' },
-      };
-      if (method && METHOD_LABELS[method]) {
-        const info = METHOD_LABELS[method];
-        const tag = document.createElement('span');
-        tag.className = `dim-method ${info.cls}`;
-        tag.title = info.title;
-        tag.textContent = info.label;
-        tags.appendChild(tag);
-      } else if (method) {
-        const tag = document.createElement('span');
-        tag.className = 'dim-method';
-        tag.textContent = method;
-        tags.appendChild(tag);
-      }
-
-      if (tags.childNodes.length) row.appendChild(tags);
-      body.appendChild(row);
-    });
-
-    details.appendChild(body);
-    card.appendChild(details);
-    container.appendChild(card);
-
-    // Prong 3 claims
-    if (prong.prong_name.includes('Extraction')) {
-      const facDim = (prong.dimensions || []).find(d => d.name === 'Factual Accuracy');
-      if (facDim?.metadata?.claim_details?.length > 0) {
-        renderClaims(facDim.metadata.claim_details);
-      }
-    }
-  });
-}
-
-function renderClaims(claims) {
-  const card = document.getElementById('claims-card');
-  card.hidden = false;
-  const body = document.getElementById('claims-body');
-  let html = '<table class="claims-table"><thead><tr><th>Subject</th><th>Predicate</th><th>Object</th><th>Verdict</th></tr></thead><tbody>';
-  claims.forEach(c => {
-    const cl = c.claim || {};
-    // Use the negation-adjusted verdict (effective_result), not the raw
-    // pre-inversion verification.result — a negated claim like "Marie
-    // Curie did not win a Nobel Prize" internally CONFIRMS the underlying
-    // fact (she did win) and then INVERTS it to DENIED because the claim
-    // asserts the opposite. Showing the raw result here would display
-    // "confirmed" for a claim that the system correctly scored as false.
-    const v = c.effective_result || c.verification?.result || 'unknown';
-    const cls = v === 'confirmed' ? 'verdict-confirmed' : v === 'denied' ? 'verdict-denied' : 'verdict-unknown';
-    const negated = c.negated || cl.negated;
-    const predicate = negated ? `¬ ${esc(cl.predicate||'')}` : esc(cl.predicate||'');
-    const title = negated
-      ? `title="negated claim — raw fact check: ${esc(c.verification?.result || 'unknown')}, inverted because the sentence asserts the opposite"`
-      : '';
-    html += `<tr ${title}><td>${esc(cl.subject||'')}</td><td>${predicate}</td><td>${esc(cl.object||'')}</td><td><span class="verdict ${cls}">${v}</span></td></tr>`;
-  });
-  html += '</tbody></table>';
-  body.innerHTML = html;
-}
-
-// ── History (localStorage) ────────────────────────────────────────
+//  ── History (localStorage) ────────────────────────────────────────
 const HISTORY_KEY = 'dj_history';
 const MAX_HISTORY = 50;
 
@@ -1068,6 +1054,571 @@ function exportJSON() {
   URL.revokeObjectURL(url);
 }
 
+// ── Weight presets and client-side aggregation ────────────────
+const PRESET_WEIGHTS = {
+  equal: {
+    'LLM-as-Judge (Prong 1)': 0.25,
+    'Rule-Based (Prong 2)': 0.25,
+    'Extraction-Based (Prong 3)': 0.25,
+    'Intrinsic (Prong 4)': 0.25
+  },
+  factual_qa: {
+    'LLM-as-Judge (Prong 1)': 0.4,
+    'Rule-Based (Prong 2)': 0.2,
+    'Extraction-Based (Prong 3)': 0.3,
+    'Intrinsic (Prong 4)': 0.1
+  },
+  safety: {
+    'LLM-as-Judge (Prong 1)': 0.4,
+    'Rule-Based (Prong 2)': 0.4,
+    'Extraction-Based (Prong 3)': 0.1,
+    'Intrinsic (Prong 4)': 0.1
+  },
+  fluency: {
+    'LLM-as-Judge (Prong 1)': 0.35,
+    'Rule-Based (Prong 2)': 0.45,
+    'Extraction-Based (Prong 3)': 0.1,
+    'Intrinsic (Prong 4)': 0.1
+  }
+};
+
+let currentWeights = { ...PRESET_WEIGHTS.equal };
+let activePreset = 'equal';
+let useCustomWeights = false;
+
+function setPreset(preset) {
+  activePreset = preset;
+  useCustomWeights = false;
+  currentWeights = { ...PRESET_WEIGHTS[preset] };
+  
+  // Update button states
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.preset === preset) btn.classList.add('active');
+  });
+  
+  // Update active preset label
+  updateActivePresetLabel();
+  
+  // Update slider values
+  updateSliderValues();
+  
+  // Recalculate and render scores if we have results
+  if (lastResult && lastResult.evaluation) {
+    reaggregateAndRender();
+  }
+}
+
+function updateSliderValues() {
+  if (useCustomWeights) return;
+  document.getElementById('weight-prong1').value = currentWeights['LLM-as-Judge (Prong 1)'];
+  document.getElementById('weight-prong2').value = currentWeights['Rule-Based (Prong 2)'];
+  document.getElementById('weight-prong3').value = currentWeights['Extraction-Based (Prong 3)'];
+  document.getElementById('weight-prong4').value = currentWeights['Intrinsic (Prong 4)'];
+}
+
+function updateWeights() {
+  useCustomWeights = true;
+  activePreset = null;
+  
+  // Clear preset buttons
+  document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+  
+  const w1 = parseFloat(document.getElementById('weight-prong1').value) || 0;
+  const w2 = parseFloat(document.getElementById('weight-prong2').value) || 0;
+  const w3 = parseFloat(document.getElementById('weight-prong3').value) || 0;
+  const w4 = parseFloat(document.getElementById('weight-prong4').value) || 0;
+  
+  currentWeights = {
+    'LLM-as-Judge (Prong 1)': w1,
+    'Rule-Based (Prong 2)': w2,
+    'Extraction-Based (Prong 3)': w3,
+    'Intrinsic (Prong 4)': w4
+  };
+  
+  updateActivePresetLabel();
+  
+  if (lastResult && lastResult.evaluation) {
+    reaggregateAndRender();
+  }
+}
+
+function updateActivePresetLabel() {
+  const label = document.getElementById('active-preset-label');
+  if (useCustomWeights) {
+    label.textContent = t('active_preset').replace('{{preset}}', t('custom_weights'));
+  } else if (activePreset) {
+    label.textContent = t('active_preset').replace('{{preset}}', t('preset_' + activePreset));
+  } else {
+    label.textContent = '';
+  }
+}
+
+function clientSideAggregate(evalData, weights) {
+  const agg = evalData.aggregated_scores || {};
+  const prongs = evalData.prong_results || [];
+  const prongScores = agg.prong_scores || {};
+  
+  // Calculate prong scores from dimensions (replicate server logic)
+  const calculatedProngScores = {};
+  
+  for (const prong of prongs) {
+    const scorable = prong.dimensions.filter(d => d.aggregate && d.status === 'scored');
+    if (scorable.length > 0) {
+      const score = scorable.reduce((sum, d) => {
+        const val = d.agg_value !== null && d.agg_value !== undefined ? d.agg_value : d.value;
+        return sum + val;
+      }, 0) / scorable.length;
+      calculatedProngScores[prong.prong_name] = score;
+    }
+  }
+  
+  // Calculate total with custom weights
+  let total = 0;
+  let totalWeight = 0;
+  
+  for (const [prongName, weight] of Object.entries(weights)) {
+    if (weight > 0 && calculatedProngScores[prongName] !== undefined) {
+      total += calculatedProngScores[prongName] * weight;
+      totalWeight += weight;
+    }
+  }
+  
+  // Renormalize
+  const totalScore = totalWeight > 0 ? total / totalWeight : null;
+  
+  // Calculate coverage
+  const weightedProngs = Object.entries(weights).filter(([, w]) => w > 0).map(([n]) => n);
+  const scoredProngs = new Set(Object.keys(calculatedProngScores));
+  let coverage = 'none';
+  if (scoredProngs.size === 0) {
+    coverage = 'none';
+  } else if (weightedProngs.length > 0 && weightedProngs.every(p => scoredProngs.has(p))) {
+    coverage = 'full';
+  } else {
+    coverage = 'partial';
+  }
+  
+  return {
+    total_score: totalScore,
+    prong_scores: calculatedProngScores,
+    coverage: coverage
+  };
+}
+
+function reaggregateAndRender() {
+  if (!lastResult || !lastResult.evaluation) return;
+  
+  const customAgg = clientSideAggregate(lastResult.evaluation, currentWeights);
+  lastResult.evaluation.aggregated_scores.custom_total_score = customAgg.total_score;
+  lastResult.evaluation.aggregated_scores.custom_coverage = customAgg.coverage;
+  lastResult.evaluation.aggregated_scores.custom_weights = currentWeights;
+  
+  renderScores(lastResult.evaluation);
+}
+
+// ── Radar plot rendering ───────────────────────────────────────────
+function renderRadarPlot(aggScores, dimensionsMap) {
+  const container = document.getElementById('radar-container');
+  const svg = document.getElementById('radar-svg');
+  
+  const scoredDims = [];
+  const categories = [];
+  const values = [];
+  
+  // Collect all scored dimensions that should be in the radar
+  if (aggScores.prong_scores) {
+    // Use prong scores as axes
+    for (const [prongName, score] of Object.entries(aggScores.prong_scores)) {
+      if (score !== null && !isNaN(score)) {
+        const short = {
+          'LLM-as-Judge (Prong 1)': 'P1',
+          'Rule-Based (Prong 2)': 'P2',
+          'Extraction-Based (Prong 3)': 'P3',
+          'Intrinsic (Prong 4)': 'P4',
+        };
+        categories.push(short[prongName] || prongName.replace(/\s*\(Prong \d+\)/, ''));
+        values.push(score);
+      }
+    }
+  }
+  
+  if (values.length < 2) {
+    container.style.display = 'none';
+    return;
+  }
+  
+  container.style.display = '';
+  
+  // Radar plot dimensions
+  const size = 240;
+  const center = size / 2;
+  const radius = center * 0.85;
+  const numAxes = Math.max(2, values.length);
+  
+  // Clear and rebuild SVG
+  svg.innerHTML = '';
+  
+  // Draw concentric circles
+  for (let i = 0; i <= 5; i++) {
+    const r = (i / 5) * radius;
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', center);
+    circle.setAttribute('cy', center);
+    circle.setAttribute('r', r);
+    circle.setAttribute('fill', 'none');
+    circle.setAttribute('stroke', 'var(--border)');
+    circle.setAttribute('stroke-width', '1');
+    svg.appendChild(circle);
+    
+    // Add value labels
+    if (i > 0 && r > 15) {
+      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      label.setAttribute('x', center);
+      label.setAttribute('y', center - r);
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('dominant-baseline', 'central');
+      label.setAttribute('font-size', '8');
+      label.setAttribute('fill', 'var(--text3)');
+      label.textContent = (i / 5).toFixed(1);
+      svg.appendChild(label);
+    }
+  }
+  
+  // Draw axes
+  for (let i = 0; i < numAxes; i++) {
+    const angle = (i / numAxes) * Math.PI * 2 - Math.PI / 2; // Start from top
+    const x1 = center;
+    const y1 = center;
+    const x2 = center + Math.cos(angle) * radius;
+    const y2 = center + Math.sin(angle) * radius;
+    
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1);
+    line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2);
+    line.setAttribute('y2', y2);
+    line.setAttribute('stroke', 'var(--border)');
+    line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+    
+    // Axis label
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const labelRadius = radius + 15;
+    const labelX = center + Math.cos(angle) * labelRadius;
+    const labelY = center + Math.sin(angle) * labelRadius;
+    label.setAttribute('x', labelX);
+    label.setAttribute('y', labelY);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('dominant-baseline', 'central');
+    label.setAttribute('font-size', '10');
+    label.setAttribute('font-weight', '600');
+    label.setAttribute('fill', 'var(--text2)');
+    
+    const shortName = categories[i].split(' ')[0]; // Use first word
+    label.textContent = shortName;
+    
+    // Position label better based on quadrant
+    if (Math.cos(angle) < -0.7) {
+      label.setAttribute('text-anchor', 'end');
+    } else if (Math.cos(angle) > 0.7) {
+      label.setAttribute('text-anchor', 'start');
+    }
+    
+    svg.appendChild(label);
+  }
+  
+  // Draw the data polygon
+  if (values.length >= 2) {
+    const polygonValues = values.concat([values[0]]);
+    const pathData = [];
+    
+    for (let i = 0; i < polygonValues.length; i++) {
+      const angle = ((i % numAxes) / numAxes) * Math.PI * 2 - Math.PI / 2;
+      const r = polygonValues[i] * radius;
+      const x = center + Math.cos(angle) * r;
+      const y = center + Math.sin(angle) * r;
+      if (i === 0) {
+        pathData.push(`M ${x} ${y}`);
+      } else {
+        pathData.push(`L ${x} ${y}`);
+      }
+    }
+    pathData.push('Z');
+    
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', pathData.join(' '));
+    path.setAttribute('fill', 'rgba(59, 130, 246, 0.15)');
+    path.setAttribute('stroke', 'var(--accent)');
+    path.setAttribute('stroke-width', '2');
+    svg.appendChild(path);
+    
+    // Draw dots at each vertex
+    for (let i = 0; i < values.length; i++) {
+      const angle = (i / numAxes) * Math.PI * 2 - Math.PI / 2;
+      const r = values[i] * radius;
+      const x = center + Math.cos(angle) * r;
+      const y = center + Math.sin(angle) * r;
+      
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', x);
+      dot.setAttribute('cy', y);
+      dot.setAttribute('r', 4);
+      dot.setAttribute('fill', 'var(--accent)');
+      svg.appendChild(dot);
+    }
+  }
+}
+
+// ── Updated renderScores with all new features ────────────────────
+function renderScores(evalData) {
+  const agg = evalData.aggregated_scores || {};
+  const customAgg = agg.custom_total_score !== undefined ? 
+    { total_score: agg.custom_total_score, coverage: agg.custom_coverage } : 
+    { total_score: agg.total_score, coverage: agg.metadata?.coverage };
+  
+  const totalScore = customAgg.total_score;
+  const coverage = customAgg.coverage || agg.metadata?.coverage || 'none';
+  const prongScores = agg.prong_scores || {};
+  const prong1Backend = evalData.metadata?.prong1_backend;
+
+  // Coverage meter
+  const coverageMeter = document.getElementById('coverage-meter');
+  const coverageValue = document.getElementById('coverage-value');
+  if (agg.metadata) {
+    coverageMeter.style.display = 'flex';
+    coverageValue.textContent = t(`coverage_${coverage}`);
+    coverageValue.className = `coverage-value coverage-${coverage}`;
+  } else {
+    coverageMeter.style.display = 'none';
+  }
+
+  // Gauge
+  const gaugeContainer = document.getElementById('total-score-container');
+  const gaugeValueEl = document.getElementById('gauge-value');
+  const gaugeArc = document.getElementById('gauge-arc');
+  
+  if (totalScore != null && !isNaN(totalScore)) {
+    gaugeContainer.style.display = '';
+    gaugeValueEl.textContent = totalScore.toFixed(3);
+    gaugeValueEl.style.color = scoreColor(totalScore);
+    const len = Math.min(totalScore, 1.0) * 173;
+    gaugeArc.setAttribute('stroke-dasharray', `${len} 173`);
+    gaugeArc.setAttribute('stroke', scoreColor(totalScore));
+  } else {
+    gaugeContainer.style.display = '';
+    gaugeValueEl.textContent = '—';
+    gaugeValueEl.style.color = 'var(--text3)';
+    gaugeArc.setAttribute('stroke-dasharray', '0 173');
+    gaugeArc.setAttribute('stroke', 'var(--border)');
+  }
+
+  // Radar plot
+  const radarContainer = document.getElementById('radar-container');
+  if (prongScores && Object.keys(prongScores).filter(k => prongScores[k] !== null).length >= 2) {
+    renderRadarPlot(agg, evalData);
+  } else {
+    radarContainer.style.display = 'none';
+  }
+
+  // Prong cards
+  const container = document.getElementById('prongs-container');
+  container.innerHTML = '';
+
+  const prongs = evalData.prong_results || [];
+
+  // Build a map of prong processing times
+  const prongTimes = {};
+  prongs.forEach(p => {
+    prongTimes[p.prong_name] = p.processing_time;
+  });
+
+  prongs.forEach(prong => {
+    const score = customAgg.total_score !== undefined ? 
+      (prongScores[prong.prong_name] !== undefined ? prongScores[prong.prong_name] : null) :
+      prongScores[prong.prong_name];
+    
+    const card = document.createElement('div');
+    card.className = 'prong-card';
+
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.className = 'prong-header';
+    
+    // Build prong header with latency chip
+    const latencyMs = (prongTimes[prong.prong_name] || 0) * 1000;
+    const processingTime = Math.round(latencyMs).toLocaleString();
+    
+    let scoreDisplay = '—';
+    let barColor = 'var(--text3)';
+    let barStyle = '';
+    let scoreColorVal = 'var(--text3)';
+    
+    if (score != null && !isNaN(score)) {
+      scoreDisplay = score.toFixed(3);
+      barColor = scoreColor(score);
+      scoreColorVal = barColor;
+    }
+    
+    // Check if this prong has any scored dimensions
+    const hasScoredDim = prong.dimensions.some(d => d.status === 'scored' && d.aggregate);
+    const hasUnknownOrError = prong.dimensions.some(d => d.status === 'unknown' || d.status === 'error');
+    
+    if (!hasScoredDim && hasUnknownOrError) {
+      scoreDisplay = t('unknown');
+      barColor = '#9aa0a6';
+      barStyle = 'dashed';
+      scoreColorVal = '#9aa0a6';
+      card.classList.add('prong-unknown');
+    }
+    
+    // Prong 1 subtitle
+    let prongNameHtml = `<span class="prong-name">${esc(prong.prong_name)}</span>`;
+    if (prong.prong_name.includes('LLM-as-Judge') && prong1Backend === 'embeddings') {
+      prongNameHtml = `<span class="prong-name">${esc(prong.prong_name)}<span class="prong-subtitle">${t('prong1_subtitle_embeddings')}</span></span>`;
+    }
+    
+    summary.innerHTML = `
+      ${prongNameHtml}
+      <span class="latency-chip">⏱ ${processingTime} ${t('latency_ms')}</span>
+      <div class="prong-bar-wrap"><div class="prong-bar" style="width:${hasScoredDim ? clamp01(score) * 100 : 100}%;background:${barColor};border-style:${barStyle}"></div></div>
+      <span class="prong-score" style="color:${scoreColorVal}">${scoreDisplay}</span>
+    `;
+    details.appendChild(summary);
+
+    const body = document.createElement('div');
+    body.className = 'prong-details';
+
+    // Add claims summary for Prong 3 Factual Accuracy
+    if (prong.prong_name.includes('Extraction')) {
+      const facDim = prong.dimensions.find(d => d.name === 'Factual Accuracy');
+      if (facDim?.metadata?.num_claims !== undefined && facDim?.metadata?.verifiable !== undefined) {
+        const covered = facDim.metadata.verifiable;
+        const total = facDim.metadata.num_claims;
+        const claimsSummary = document.createElement('div');
+        claimsSummary.className = 'claims-summary';
+        claimsSummary.innerHTML = `<span>${t('claims_covered').replace('{{n}}', covered).replace('{{m}}', total)}</span>`;
+        body.appendChild(claimsSummary);
+      }
+    }
+
+    (prong.dimensions || []).forEach(dim => {
+      const v = dim.value;
+      const isPpl = dim.name === 'Perplexity';
+      const displayVal = isPpl ? v.toFixed(2) : (v != null && !isNaN(v) ? v.toFixed(3) : '—');
+
+      // Use orientation-corrected agg_value for bar length/color
+      const hasAggValue = dim.agg_value != null && !isNaN(dim.agg_value);
+      const barVal = hasAggValue ? clamp01(dim.agg_value)
+                    : isPpl ? Math.min(1, 1 / v)
+                    : clamp01(v);
+      const barColor = hasAggValue ? scoreColor(dim.agg_value)
+                      : isPpl ? scoreColor(1 - barVal)
+                      : scoreColor(v);
+
+      const isDescriptive = dim.aggregate === false;
+      const isUnknownOrErrorStatus = dim.status === 'unknown' || dim.status === 'error';
+
+      let finalBarColor = barColor;
+      let finalBarWidth = (isDescriptive ? clamp01(v) : barVal) * 100;
+      let finalBarStyle = '';
+      let finalValueDisplay = displayVal;
+      
+      if (isUnknownOrErrorStatus) {
+        finalBarColor = '#9aa0a6';
+        finalBarWidth = 100;
+        finalBarStyle = 'dashed';
+        finalValueDisplay = dim.status === 'unknown' ? t('unknown') : t('error');
+      }
+
+      const row = document.createElement('div');
+      row.className = 'dim-row';
+      const barCls = isUnknownOrErrorStatus ? 'dim-bar unknown-bar' : 'dim-bar';
+      const valCls = isUnknownOrErrorStatus ? 'dim-value unknown-value' : 'dim-value';
+      row.innerHTML = `
+        <span class="dim-name">${esc(dim.name)}</span>
+        <div class="dim-bar-wrap"><div class="${barCls}" style="width:${finalBarWidth}%;background:${finalBarColor}"></div></div>
+        <span class="${valCls}">${finalValueDisplay}</span>
+      `;
+
+      const tags = document.createElement('div');
+      tags.className = 'dim-tags';
+
+      if (isDescriptive && !isUnknownOrErrorStatus) {
+        const tag = document.createElement('span');
+        tag.className = 'dim-method dim-tag-info';
+        tag.title = t('dimension_info') || 'Informational only — not included in the prong/total score (no universal "better" direction).';
+        tag.textContent = 'info';
+        tags.appendChild(tag);
+      }
+
+      if (isUnknownOrErrorStatus) {
+        const tag = document.createElement('span');
+        tag.className = 'dim-method';
+        tag.title = dim.status === 'unknown' ? 'Missing evidence for this dimension' : 'Computation failed';
+        tag.textContent = dim.status;  
+        tags.appendChild(tag);
+      }
+
+      // Method tags
+      const method = dim.metadata?.method;
+      const METHOD_LABELS = {
+        log_likelihoods: { label: 'exact', title: 'Computed from exact per-token log-probabilities.', cls: 'dim-tag-exact' },
+        logits: { label: 'exact', title: 'Computed from full-vocabulary model logits.', cls: 'dim-tag-exact' },
+        top_k_approximation: { label: 'approx.', title: 'Approximated from only the top-k logprobs returned by the API.', cls: 'dim-tag-approx' },
+      };
+      if (method && METHOD_LABELS[method] && !isUnknownOrErrorStatus) {
+        const info = METHOD_LABELS[method];
+        const tag = document.createElement('span');
+        tag.className = `dim-method ${info.cls}`;
+        tag.title = info.title;
+        tag.textContent = info.label;
+        tags.appendChild(tag);
+      } else if (method && !isUnknownOrErrorStatus) {
+        const tag = document.createElement('span');
+        tag.className = 'dim-method';
+        tag.textContent = method;
+        tags.appendChild(tag);
+      }
+
+      if (tags.childNodes.length) row.appendChild(tags);
+      body.appendChild(row);
+    });
+
+    details.appendChild(body);
+    card.appendChild(details);
+    container.appendChild(card);
+
+    // Prong 3 claims
+    if (prong.prong_name.includes('Extraction')) {
+      const facDim = (prong.dimensions || []).find(d => d.name === 'Factual Accuracy');
+      if (facDim?.metadata?.claim_details?.length > 0) {
+        renderClaims(facDim.metadata.claim_details);
+      }
+    }
+  });
+}
+
+function renderClaims(claims) {
+  const card = document.getElementById('claims-card');
+  card.hidden = false;
+  const body = document.getElementById('claims-body');
+  let html = '<table class="claims-table"><thead><tr><th>Subject</th><th>Predicate</th><th>Object</th><th>Verdict</th></tr></thead><tbody>';
+  claims.forEach(c => {
+    const cl = c.claim || {};
+    const v = c.effective_result || c.verification?.result || 'unknown';
+    const cls = v === 'confirmed' ? 'verdict-confirmed' : v === 'denied' ? 'verdict-denied' : 'verdict-unknown';
+    const negated = c.negated || cl.negated;
+    const predicate = negated ? `¬ ${esc(cl.predicate||'')}` : esc(cl.predicate||'');
+    const title = negated
+      ? `title="negated claim — raw fact check: ${esc(c.verification?.result || 'unknown')}, inverted because the sentence asserts the opposite"`
+      : '';
+    html += `<tr ${title}><td>${esc(cl.subject||'')}</td><td>${predicate}</td><td>${esc(cl.object||'')}</td><td><span class="verdict ${cls}">${v}</span></td></tr>`;
+  });
+  html += '</tbody></table>';
+  body.innerHTML = html;
+}
+
 // ── Utilities ─────────────────────────────────────────────────────
 function scoreColor(v) {
   if (v == null) return 'var(--text3)';
@@ -1075,7 +1626,10 @@ function scoreColor(v) {
   if (v >= 0.4) return 'var(--amber)';
   return 'var(--red)';
 }
-function clamp01(v) { return Math.max(0, Math.min(1, v || 0)); }
+function clamp01(v) { 
+  const num = v || 0;
+  return Math.max(0, Math.min(1, num));
+}
 function esc(s) {
   const d = document.createElement('div');
   d.textContent = s || '';
