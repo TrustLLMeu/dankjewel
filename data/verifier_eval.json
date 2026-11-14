@@ -1,0 +1,89 @@
+{
+  "_comment": "Authored verifier-evaluation pairs for the Dankjewel Prong 3 MiniCheck PoC (slice 6b, 2026-11-14). These claims are hand-written for this proof of concept and are NOT a public benchmark: 'subject' is the seed-DB entity whose formatted KB facts form the grounding document, and 'expected' is the author's ground truth for how the verifier should relate the claim to that document — 'refuted' (the document contradicts the claim), or 'partial' (only part of the claim is covered by the document: either a supported core plus an unverifiable detail such as a population figure, or one supported fact mixed with one the document does not state). True claims come from data/benchmark_claims.json instead; this file only adds the false/partial half. Scoring thresholds: p >= 0.8 supported, p <= 0.2 refuted, else partial. MiniCheck is a strict entailment model, so supported-plus-unverifiable-detail pairs are expected misses for the 'partial' class — they are kept deliberately to document that behavior.",
+  "pairs": [
+    {
+      "id": "auth_r01",
+      "claim": "Reykjavík is the capital of Denmark.",
+      "subject": "Reykjavík",
+      "expected": "refuted"
+    },
+    {
+      "id": "auth_r02",
+      "claim": "Bergen is located in Sweden.",
+      "subject": "Bergen",
+      "expected": "refuted"
+    },
+    {
+      "id": "auth_r03",
+      "claim": "Trondheim is located in Sweden.",
+      "subject": "Trondheim",
+      "expected": "refuted"
+    },
+    {
+      "id": "auth_r04",
+      "claim": "SINTEF is headquartered in Oslo.",
+      "subject": "SINTEF",
+      "expected": "refuted"
+    },
+    {
+      "id": "auth_r05",
+      "claim": "The Norwegian University of Science and Technology is located in Bergen.",
+      "subject": "Norwegian University of Science and Technology",
+      "expected": "refuted"
+    },
+    {
+      "id": "auth_r06",
+      "claim": "Oslo is the capital of Sweden.",
+      "subject": "Oslo",
+      "expected": "refuted"
+    },
+    {
+      "id": "auth_r07",
+      "claim": "Helsinki is the capital of Sweden.",
+      "subject": "Helsinki",
+      "expected": "refuted"
+    },
+    {
+      "id": "auth_r08",
+      "claim": "Iceland is located in Asia.",
+      "subject": "Iceland",
+      "expected": "refuted"
+    },
+    {
+      "id": "auth_r09",
+      "claim": "SINTEF was founded in 1980.",
+      "subject": "SINTEF",
+      "expected": "refuted"
+    },
+    {
+      "id": "auth_p01",
+      "claim": "Trondheim is a Norwegian city and the capital of Norway.",
+      "subject": "Trondheim",
+      "expected": "partial"
+    },
+    {
+      "id": "auth_p02",
+      "claim": "Oslo is the capital of Norway and located in Europe.",
+      "subject": "Oslo",
+      "expected": "partial"
+    },
+    {
+      "id": "auth_p03",
+      "claim": "Bergen is a city in Norway with about 285,000 inhabitants.",
+      "subject": "Bergen",
+      "expected": "partial"
+    },
+    {
+      "id": "auth_p04",
+      "claim": "SINTEF is headquartered in Trondheim and has more than 2,000 employees.",
+      "subject": "SINTEF",
+      "expected": "partial"
+    },
+    {
+      "id": "auth_p05",
+      "claim": "Iceland is an island country in Europe with a population of about 380,000.",
+      "subject": "Iceland",
+      "expected": "partial"
+    }
+  ]
+}

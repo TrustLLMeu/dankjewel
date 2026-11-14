@@ -190,6 +190,8 @@ details[open] summary::before { transform: rotate(90deg); }
 .verdict-confirmed { background: #d1fae5; color: #065f46; }
 .verdict-denied { background: #fee2e2; color: #991b1b; }
 .verdict-unknown { background: #f3f4f6; color: #6b7280; }
+.verdict-partially_supported { background: #fef3c7; color: #92400e; }
+.verdict-conflated { background: #ede9fe; color: #5b21b6; }
 
 /* ── History ──────────────────────────────────────────────────────── */
 .history-list { max-height: 300px; overflow-y: auto; }
@@ -501,6 +503,13 @@ footer {
           </div>
           <p style="font-size:0.7rem;color:var(--text3);margin:-0.4rem 0 0.75rem;" data-i18n="llm_extract_hint">
             Runs the local 1.5B model to decompose the text into atomic claims; the spaCy track stays the baseline.
+          </p>
+          <div class="field" style="margin-top:0.5rem;display:flex;align-items:center;gap:0.4rem;">
+            <input type="checkbox" id="llm-verify-toggle" style="width:auto;">
+            <label for="llm-verify-toggle" style="margin:0;text-transform:none;font-weight:400;" data-i18n="llm_verify_label">NLI verifier (Prong 3)</label>
+          </div>
+          <p style="font-size:0.7rem;color:var(--text3);margin:-0.4rem 0 0.75rem;" data-i18n="llm_verify_hint">
+            Scores covered claims against the local KB with the 770M MiniCheck model; opt-in, first run loads the model (~30 s).
           </p>
         </div>
       </details>
@@ -942,7 +951,7 @@ async function evaluateOnly() {
     const r = await fetch(`${API}/evaluate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, prompt, tiny_judge: document.getElementById('tiny-judge-toggle').checked, llm_extract: document.getElementById('llm-extract-toggle').checked }),
+      body: JSON.stringify({ text, prompt, tiny_judge: document.getElementById('tiny-judge-toggle').checked, llm_extract: document.getElementById('llm-extract-toggle').checked, llm_verify: document.getElementById('llm-verify-toggle').checked }),
     });
     const d = await r.json();
     document.getElementById('eval-spinner').classList.remove('active');
@@ -1533,6 +1542,18 @@ function renderScores(evalData) {
             .replace('{{b}}', srcCounts.llm)
             .replace('{{c}}', srcCounts.both);
         }
+        // Five-way relation counts — only appended when the new labels
+        // (partially_supported / conflated) are present, so the default
+        // render stays unchanged.
+        const relCounts = facDim.metadata.relation_counts;
+        if (relCounts && (relCounts.partially_supported > 0 || relCounts.conflated > 0)) {
+          summaryText += ' · ' + t('claims_relation_counts')
+            .replace('{{a}}', relCounts.confirmed)
+            .replace('{{b}}', relCounts.denied)
+            .replace('{{c}}', relCounts.partially_supported)
+            .replace('{{d}}', relCounts.conflated)
+            .replace('{{e}}', relCounts.unknown);
+        }
         claimsSummary.innerHTML = `<span>${summaryText}</span>`;
         body.appendChild(claimsSummary);
       }
@@ -1718,8 +1739,17 @@ function renderClaims(claims) {
   let html = '<table class="claims-table"><thead><tr><th>Subject</th><th>Predicate</th><th>Object</th><th>Verdict</th><th>Source</th></tr></thead><tbody>';
   claims.forEach(c => {
     const cl = c.claim || {};
-    const v = c.effective_result || c.verification?.result || 'unknown';
-    const cls = v === 'confirmed' ? 'verdict-confirmed' : v === 'denied' ? 'verdict-denied' : 'verdict-unknown';
+    // Five-way relation label (confirmed/denied/partially_supported/
+    // conflated/unknown) when the richer track is present; otherwise the
+    // binary result, exactly as before.
+    const v = c.relation || c.effective_result || c.verification?.result || 'unknown';
+    const cls = v === 'confirmed' ? 'verdict-confirmed'
+      : v === 'denied' ? 'verdict-denied'
+      : v === 'partially_supported' ? 'verdict-partially_supported'
+      : v === 'conflated' ? 'verdict-conflated'
+      : 'verdict-unknown';
+    const vTitle = v === 'partially_supported' ? ` title="${esc(t('claim_relation_partially_supported'))}"`
+      : v === 'conflated' ? ` title="${esc(t('claim_relation_conflated'))}"` : '';
     const negated = c.negated || cl.negated;
     const predicate = negated ? `¬ ${esc(cl.predicate||'')}` : esc(cl.predicate||'');
     const title = negated
@@ -1734,7 +1764,7 @@ function renderClaims(claims) {
     };
     const meta = SRC_META[src] || SRC_META.spacy;
     const srcChip = `<span class="${meta.cls}" title="${esc(t(meta.key))}">${esc(src)}</span>`;
-    html += `<tr ${title}><td>${esc(cl.subject||'')}</td><td>${predicate}</td><td>${esc(cl.object||'')}</td><td><span class="verdict ${cls}">${v}</span></td><td>${srcChip}</td></tr>`;
+    html += `<tr ${title}><td>${esc(cl.subject||'')}</td><td>${predicate}</td><td>${esc(cl.object||'')}</td><td><span class="verdict ${cls}"${vTitle}>${v}</span></td><td>${srcChip}</td></tr>`;
   });
   html += '</tbody></table>';
   body.innerHTML = html;

@@ -5,6 +5,8 @@ them against offline Wikidata. Shares a single ClaimExtractor and
 OfflineWikidata instance across all five dimensions. The optional
 llm_extract flag routes extraction through LLMClaimExtractor (dual
 track: spaCy triples + LLM atomic claims, MPropositionneur pattern).
+The optional llm_verify flag runs the MiniCheck NLI verifier on
+FactualAccuracy's five-way relation track for KB-unknown claims.
 """
 
 import time
@@ -13,6 +15,7 @@ from typing import Optional
 from src.base import Evaluator, ProngResult
 from src.extraction.claim_extractor import ClaimExtractor
 from src.extraction.llm_claim_extractor import LLMClaimExtractor
+from src.resources.nli_verifier import NliVerifier
 from src.resources.wikidata_offline import OfflineWikidata
 from src.dimensions.prong3_dimensions import (
     FactualAccuracy,
@@ -33,7 +36,8 @@ class Prong3Extraction(Evaluator):
     """
 
     def __init__(self, wikidata_db_path: str = None,
-                 llm_extractor: Optional[LLMClaimExtractor] = None):
+                 llm_extractor: Optional[LLMClaimExtractor] = None,
+                 verifier: Optional[NliVerifier] = None):
         """Initialize Prong 3.
 
         Args:
@@ -42,6 +46,10 @@ class Prong3Extraction(Evaluator):
             llm_extractor: injected LLMClaimExtractor for the
                 llm_extract track (tests / eval scripts). None creates
                 one lazily around the shared spaCy extractor.
+            verifier: injected NliVerifier for the llm_verify track
+                (tests / eval scripts). None means FactualAccuracy
+                lazily creates the real MiniCheck verifier on first
+                opt-in use.
         """
         super().__init__(prong_name="Extraction-Based (Prong 3)")
         self._extractor = ClaimExtractor()
@@ -50,17 +58,19 @@ class Prong3Extraction(Evaluator):
             self._wikidata = OfflineWikidata(db_path=wikidata_db_path)
         except Exception:
             self._wikidata = None
-        self._init_dimensions()
+        self._init_dimensions(verifier=verifier)
 
-    def _init_dimensions(self) -> None:
+    def _init_dimensions(self, verifier: Optional[NliVerifier] = None) -> None:
         """Initialize all extraction-based dimensions with shared resources."""
-        self.register_dimension(FactualAccuracy(wikidata=self._wikidata))
+        self.register_dimension(FactualAccuracy(
+            wikidata=self._wikidata, verifier=verifier))
         self.register_dimension(FactualConsistency(wikidata=self._wikidata))
         self.register_dimension(TemporalAccuracy(wikidata=self._wikidata))
         self.register_dimension(ComparativeFactuality(wikidata=self._wikidata))
         self.register_dimension(ModalityAwareness())
 
-    def evaluate(self, text: str, llm_extract: bool = False) -> ProngResult:
+    def evaluate(self, text: str, llm_extract: bool = False,
+                 llm_verify: bool = False) -> ProngResult:
         """
         Evaluate text using extraction-based approaches.
 
@@ -76,6 +86,12 @@ class Prong3Extraction(Evaluator):
                 (source "llm"/"both") merged and deduped, passed to the
                 dimensions as today. False (the default) is identical to
                 the previous spaCy-only behavior.
+            llm_verify: opt in to the MiniCheck NLI verifier on
+                FactualAccuracy's five-way relation track: KB-unknown
+                claims with a resolvable subject are scored against the
+                subject's formatted KB facts (confirmed / denied /
+                partially_supported). Default False: rule-based five-way
+                labels only, no model load, binary math unchanged.
 
         Evaluates:
         - Factual Accuracy (claim extraction + Wikidata verification)
@@ -99,8 +115,12 @@ class Prong3Extraction(Evaluator):
 
             # Evaluate each dimension with pre-extracted claims
             verification_start = time.perf_counter()
-            for dimension in self.dimensions.values():
-                score = dimension.evaluate(text, claims=claims)
+            for dim_name, dimension in self.dimensions.items():
+                if dim_name == "Factual Accuracy":
+                    score = dimension.evaluate(text, claims=claims,
+                                               llm_verify=llm_verify)
+                else:
+                    score = dimension.evaluate(text, claims=claims)
                 dimensions.append(score)
             verification_time_ms = (time.perf_counter() - verification_start) * 1000
 

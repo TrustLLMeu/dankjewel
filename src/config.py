@@ -85,8 +85,9 @@ API_PORT = int(os.environ.get("IE_API_PORT", "8080"))
 # Prong 3: Extraction-based configurations
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Prefer the extended FEVER-derived DB (thousands of entities pulled from
-# claim text + evidence pages) over the small hand-curated seed DB (~86
-# entities: Paris/Tromsø/Mount Everest — used by unit tests in
+# claim text + evidence pages) over the small hand-curated seed DB (~122
+# entities: Paris/Tromsø/Mount Everest plus the slice-6b Nordic/TrustLLM
+# expansion — used by unit tests in
 # tests/test_prong3.py, which instantiate OfflineWikidata()/Prong3Extraction()
 # directly and are unaffected by this constant). Falls back to the seed DB
 # if the extended DB hasn't been built yet (e.g. fresh clone).

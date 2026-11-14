@@ -118,6 +118,7 @@ class EvaluateRequest(BaseModel):
     language: str = Field("en", description="Language code for Prong 2 lexicons (e.g. en, nl, da)")
     tiny_judge: bool = Field(False, description="Opt in: also run the local tiny-LLM judge (Qwen2.5-0.5B) on Relevance, adding a dual llm_value/rationale track to that dimension's metadata. Default off: embeddings baseline only, identical behavior and latency.")
     llm_extract: bool = Field(False, description="Opt in: also run the local 1.5B claim-extraction track (Qwen2.5-1.5B, [CLAIMS] task) on Prong 3, merging decontextualized LLM atomic claims (claim.source 'llm'/'both') with the spaCy triples in claim_details. Default off: spaCy-only extraction, identical behavior and latency.")
+    llm_verify: bool = Field(False, description="Opt in: also run the MiniCheck-Flan-T5-Large (770M) NLI verifier on Prong 3 FactualAccuracy's five-way relation track — KB-unknown claims are scored against the subject's formatted KB facts (relation/relation_counts/verifier_score in metadata; confirmed/denied/partially_supported/conflated labels). Default off: rule-based five-way labels only, no model load. First run loads the model (~30 s).")
 
 class GenerateAndEvaluateRequest(BaseModel):
     prompt: str = Field(..., description="The input prompt for the LLM")
@@ -372,7 +373,8 @@ async def evaluate(req: EvaluateRequest):
         raise HTTPException(status_code=503, detail="Evaluator not initialized.")
     try:
         result = evaluator.evaluate(text=req.text, prompt=req.prompt, lang=req.language,
-                                    tiny_judge=req.tiny_judge, llm_extract=req.llm_extract)
+                                    tiny_judge=req.tiny_judge, llm_extract=req.llm_extract,
+                                    llm_verify=req.llm_verify)
         return result
     except Exception as e:
         logger.exception("Evaluation failed")

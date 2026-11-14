@@ -17,10 +17,21 @@ from typing import Optional, List, Dict
 
 
 class VerificationResult(Enum):
-    """Result of verifying a triple against Wikidata."""
+    """Result of verifying a triple against Wikidata.
+
+    Five-way relation labels (OmniProv scheme, descriptive track):
+    CONFIRMED (entailment), DENIED (contradiction), UNKNOWN (neutral /
+    no evidence), PARTIALLY_SUPPORTED (partial), CONFLATED (the claim
+    attributes to the subject a property value that belongs to a
+    different entity). PARTIALLY_SUPPORTED and CONFLATED never change
+    the binary confirmed/(confirmed+denied) math — see the conflation
+    rule on verify_triple and the FactualAccuracy five-way track.
+    """
     CONFIRMED = "confirmed"
     DENIED = "denied"
     UNKNOWN = "unknown"
+    PARTIALLY_SUPPORTED = "partially_supported"
+    CONFLATED = "conflated"
 
 
 @dataclass
@@ -246,6 +257,18 @@ OBJECT_OF_PATTERNS = {
     'member': 'P54',
     'subclass': 'P279',
 }
+
+
+# Reverse of PREDICATE_TO_PROPERTY: Wikidata property ID → a natural-
+# language predicate phrase, for formatting a subject's KB facts as the
+# MiniCheck verifier's grounding document (one
+# "<label> <predicate phrase> <value>." line per claim row). The first
+# phrase in PREDICATE_TO_PROPERTY order wins — deterministic and
+# testable; properties with no mapped phrase fall back to the raw PID.
+PROPERTY_TO_PHRASE = {}
+for _phrase, _pid in PREDICATE_TO_PROPERTY.items():
+    PROPERTY_TO_PHRASE.setdefault(_pid, _phrase)
+del _phrase, _pid
 
 
 # ── Qualifier-gating: guard against over-confident weak matches ────────────
@@ -477,6 +500,18 @@ class OfflineWikidata:
 
         Tries multiple strategies: direct verification, reverse "X is Y of Z"
         patterns, and location relationship fallback.
+
+        Conflation rule (deterministic, always-on): when a triple ends
+        up UNKNOWN after every strategy, but the direct attempt had
+        resolved the subject AND a property for which the subject has
+        its own value, and the object resolves to a KB entity that is a
+        value of that SAME property for a DIFFERENT subject, the result
+        is CONFLATED instead of UNKNOWN — e.g. "X is the capital of Y"
+        where Y is another capital's country: X's own capital-of value
+        differs, so the claim conflates X with that other capital. The
+        rule only upgrades UNKNOWN results; exact-match CONFIRMED and
+        DENIED (including the reverse "X is the capital of Y" denial
+        when Y's capital is known and differs) are unchanged.
         """
         start = time.perf_counter()
         self._ensure_loaded()
@@ -517,6 +552,29 @@ class OfflineWikidata:
         if result.result != VerificationResult.UNKNOWN:
             result.verification_time_ms = (time.perf_counter() - start) * 1000
             return result
+
+        # ── Conflation rule (deterministic, always-on) ─────────────────
+        # Only fires on a final UNKNOWN, so no previous CONFIRMED/DENIED
+        # ever changes (binary math is untouched). By this point the
+        # direct attempt resolved the subject (detail.subject_qid) and a
+        # property for it (detail.property_id), and no later path
+        # matched the object — so the subject has its own value(s) for
+        # the property, the object missed them, and if the object also
+        # resolves to a KB entity that is a value of that SAME property
+        # for a DIFFERENT subject, the claim conflates two entities'
+        # attributes (e.g. "X is the capital of Y" where Y is another
+        # capital's country).
+        if detail.result == VerificationResult.UNKNOWN and detail.subject_qid \
+                and detail.property_id:
+            wd_claims = self.get_claims(detail.subject_qid, detail.property_id)
+            obj_missed = not any(
+                self._values_match(clean_obj, c['value'], c.get('value_qid'))
+                for c in wd_claims
+            )
+            if wd_claims and obj_missed and self._is_conflated(
+                    detail.subject_qid, detail.property_id, clean_obj):
+                detail.result = VerificationResult.CONFLATED
+                detail.wikidata_value = wd_claims[0]['value']
 
         detail.verification_time_ms = (time.perf_counter() - start) * 1000
         return detail
@@ -750,6 +808,60 @@ class OfflineWikidata:
         detail.result = VerificationResult.DENIED
         detail.wikidata_value = wd_claims[0]['value']
         return detail
+
+    def _is_conflated(self, subj_qid: str, property_id: str, obj: str) -> bool:
+        """Deterministic conflation check for a subject+property miss.
+
+        True when `obj` resolves to a KB entity that is a value of the
+        SAME `property_id` on a DIFFERENT subject, while the subject's
+        own value for that property differs (established by the caller:
+        this only runs after the object missed every value match).
+
+        Args:
+            subj_qid: QID of the claim's subject (has claims for the property).
+            property_id: the resolved Wikidata property ID.
+            obj: the claim's object text.
+        """
+        obj_qid = self.lookup_entity(obj)
+        if not obj_qid:
+            return False
+        self._ensure_loaded()
+        row = self._conn.execute(
+            "SELECT 1 FROM claims WHERE property = ? AND value_qid = ? "
+            "AND qid != ? LIMIT 1",
+            (property_id, obj_qid, subj_qid)
+        ).fetchone()
+        return row is not None
+
+    def format_entity_facts(self, qid: str) -> Optional[str]:
+        """Format an entity's KB claims as a grounding document.
+
+        One "<label> <predicate phrase> <value>." line per claim row,
+        with the phrase from PROPERTY_TO_PHRASE (the reverse of
+        PREDICATE_TO_PROPERTY); properties with no mapped phrase fall
+        back to the raw PID. This is the document the MiniCheck verifier
+        scores claims against on the five-way track.
+
+        Args:
+            qid: QID of the subject entity.
+
+        Returns:
+            The formatted facts, or None when the entity is unknown or
+            has no claims (the caller keeps relation "unknown").
+        """
+        self._ensure_loaded()
+        label = self.get_entity_label(qid)
+        if not label:
+            return None
+        claims = self.get_claims(qid)
+        if not claims:
+            return None
+        lines = []
+        for claim in claims:
+            phrase = PROPERTY_TO_PHRASE.get(claim['property'], claim['property'])
+            value = claim.get('value') or ''
+            lines.append(f"{label} {phrase} {value}.")
+        return "\n".join(lines)
 
     def _try_reverse_verification(self, subject: str, predicate: str,
                                    obj: str, detail: VerificationDetail) -> VerificationDetail:

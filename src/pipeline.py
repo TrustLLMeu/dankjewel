@@ -37,7 +37,8 @@ class EvaluationPipeline:
             self.prongs['Prong 4'] = Prong4Intrinsic()
 
     def evaluate(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en",
-                 tiny_judge: bool = False, llm_extract: bool = False) -> dict:
+                 tiny_judge: bool = False, llm_extract: bool = False,
+                 llm_verify: bool = False) -> dict:
         """
         Evaluate text across all enabled prongs.
 
@@ -57,6 +58,11 @@ class EvaluationPipeline:
                 decontextualized LLM atomic claims, claim.source/
                 atomic_text in claim_details). Default False: spaCy-only
                 extraction, identical behavior.
+            llm_verify: Opt in to the MiniCheck NLI verifier on Prong 3
+                FactualAccuracy's five-way relation track (dual output:
+                relation/relation_counts/verifier_score in metadata;
+                the binary value math is unchanged). Default False:
+                rule-based five-way labels only, no model load.
 
         Returns:
             Dictionary containing all prong results and aggregated scores
@@ -73,7 +79,8 @@ class EvaluationPipeline:
                 elif prong_name == 'Prong 2':
                     result = prong.evaluate(text, lang=lang)
                 elif prong_name == 'Prong 3':
-                    result = prong.evaluate(text, llm_extract=llm_extract)
+                    result = prong.evaluate(text, llm_extract=llm_extract,
+                                            llm_verify=llm_verify)
                 else:
                     result = prong.evaluate(text)
                 results.append(result)
@@ -98,7 +105,8 @@ class EvaluationPipeline:
         return output
 
     def evaluate_to_json(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en",
-                         tiny_judge: bool = False, llm_extract: bool = False) -> str:
+                         tiny_judge: bool = False, llm_extract: bool = False,
+                         llm_verify: bool = False) -> str:
         """
         Evaluate text and return results as JSON string.
 
@@ -111,11 +119,14 @@ class EvaluationPipeline:
                 Relevance (dual output). Default False.
             llm_extract: Opt in to the LLM claim-extraction track on
                 Prong 3 (dual output). Default False.
+            llm_verify: Opt in to the MiniCheck NLI verifier track on
+                Prong 3 (dual output). Default False.
 
         Returns:
             JSON string of evaluation results
         """
         results = self.evaluate(text, prompt=prompt, intrinsic_data=intrinsic_data, lang=lang,
-                                tiny_judge=tiny_judge, llm_extract=llm_extract)
+                                tiny_judge=tiny_judge, llm_extract=llm_extract,
+                                llm_verify=llm_verify)
         return json.dumps(results, indent=2)
 

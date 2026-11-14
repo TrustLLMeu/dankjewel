@@ -9,8 +9,10 @@ Wikipedia page may not have been annotated as evidence.
 
 This script bridges that gap:
 
-  1. Read a set of FEVER-style claims (JSONL).
-  2. Extract named entities from the claim text with spaCy NER.
+  1. Read a set of FEVER-style claims (JSONL), or take an explicit list
+     of entity names via --entities "Name1,Name2,...".
+  2. Extract named entities from the claim text with spaCy NER
+     (claims mode only; --entities names are used verbatim).
   3. Also pull subject/object entity names out via ClaimExtractor so that
      structurally important entities get added even without NER tags.
   4. Resolve entity names → Wikipedia → Wikidata QIDs (batched, cached).
@@ -28,6 +30,11 @@ Usage:
         --claims  data/fever2_sample.jsonl \\
         --db-path data/wikidata_fever.db \\
         --max-entities 200
+
+    # Extend a DB with a hand-picked entity list (no claim file needed)
+    python scripts/extend_wikidata_db.py \\
+        --entities "Bergen,Trondheim,NTNU,SINTEF" \\
+        --db-path data/wikidata_seed.db
 
     # Dry-run: just show which entities would be fetched
     python scripts/extend_wikidata_db.py \\
@@ -569,10 +576,14 @@ def augment_database(db_path: str, entities_data: dict, label_map: dict) -> dict
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Extend an existing Wikidata DB with claim-text entities"
+        description="Extend an existing Wikidata DB with claim-text or named entities"
     )
     parser.add_argument("--claims", default="data/fever2_oracle_sample.jsonl",
                         help="FEVER-style JSONL claim file (default: oracle sample)")
+    parser.add_argument("--entities", default=None,
+                        help="Comma-separated entity names to fetch directly, "
+                             "bypassing claim-text extraction "
+                             '(e.g. "Bergen,Trondheim,NTNU")')
     parser.add_argument("--db-path", default="data/wikidata_fever.db",
                         help="Existing SQLite DB to augment")
     parser.add_argument("--max-entities", type=int, default=None,
@@ -586,13 +597,18 @@ def main():
               f"Run build_fever_wikidata.py first.")
         sys.exit(1)
 
-    print(f"Loading claims from {args.claims} ...")
-    claims = load_claims(args.claims)
-    print(f"  Loaded {len(claims)} claims.")
+    if args.entities:
+        names = {n.strip() for n in args.entities.split(",") if n.strip()}
+        print(f"Using {len(names)} entity names from --entities "
+              f"(claim-text extraction skipped).")
+    else:
+        print(f"Loading claims from {args.claims} ...")
+        claims = load_claims(args.claims)
+        print(f"  Loaded {len(claims)} claims.")
 
-    print(f"\nExtracting entity names from claim text ...")
-    names = extract_entity_names_from_claims(claims)
-    print(f"  {len(names)} candidate entity names extracted.")
+        print(f"\nExtracting entity names from claim text ...")
+        names = extract_entity_names_from_claims(claims)
+        print(f"  {len(names)} candidate entity names extracted.")
 
     print(f"\nFiltering out names already well-covered in DB ...")
     names = filter_already_present(names, args.db_path)
@@ -646,8 +662,9 @@ def main():
     stats = augment_database(args.db_path, entities_data, label_map)
 
     print(f"\n{'='*60}")
-    print(f"  Claims processed:         {len(claims)}")
-    print(f"  Entity names extracted:   {len(names) + (len(names) - len(names))}")
+    print(f"  Source:                   "
+          f"{'--entities list' if args.entities else args.claims}")
+    print(f"  Entity names considered:  {len(names)}")
     print(f"  Names resolved to QIDs:   {len(qid_map)}")
     print(f"  Entities fetched:         {len(entities_data)}")
     print(f"  Entities added to DB:     {stats['entities_added']}")

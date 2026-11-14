@@ -66,7 +66,7 @@ online-eval-base/
 ├── scripts/
 │   ├── build_wikidata_db.py        # Build local Wikidata seed DB
 │   ├── build_fever_wikidata.py     # Build FEVER-coverage Wikidata DB
-│   ├── extend_wikidata_db.py       # Extend DB with entities from claim text
+│   ├── extend_wikidata_db.py       # Extend DB with entities from claim text or a named list
 │   ├── eval_fever2.py              # Prong 3 benchmark on FEVER 2.0
 │   ├── filter_oracle_claims.py     # Filter oracle claims for benchmarking
 │   └── run_benchmark.py            # Multi-model benchmarking script
@@ -261,12 +261,17 @@ Prong 3 has been benchmarked on the FEVER 2.0 *fixers* development set
 
 | Condition | Coverage | Binary AUC | Conditional AUC |
 |-----------|----------|------------|-----------------|
-| Seed DB (~86 entities) | 9.0% | 0.494 | 0.500 |
+| Seed DB (~122 entities — a small seed, not Wikidata) | 0.3% | 0.497 | n/a (0 covered REFUTES) |
 | Oracle DB (FEVER-targeted) | 8.7% | 0.538 | 0.682 |
 
 Coverage (fraction of claims where Wikidata returned CONFIRMED or DENIED) is
 the primary bottleneck — uncovered claims are reported as `unknown`
 (excluded from scoring, not treated as a neutral 0.5).
+The seed row is re-measured on the current pipeline (2026-11-14, expanded
+seed DB): the earlier 9.0% / 0.494 figures predate the qualifier gates that
+now abstain on unverifiable embedded details, and the modest Nordic/TrustLLM
+seed expansion does not cover any additional FEVER fixers entities (identical
+4/1174 covered on the old and new seed).
 See [DB_EXTENSION_GUIDE.md](DB_EXTENSION_GUIDE.md) and `scripts/eval_fever2.py`
 for details.
 

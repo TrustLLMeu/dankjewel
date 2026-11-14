@@ -10,7 +10,17 @@ Five dimensions that use claim extraction + offline Wikidata verification:
 Negation handling: when a Claim has negated=True, CONFIRMED and DENIED
 verification results are inverted — a negated claim that the triple is
 true (CONFIRMED) means the claim itself is false (DENIED), and vice versa.
-UNKNOWN stays UNKNOWN (can't invert what we don't know).
+UNKNOWN stays UNKNOWN (can't invert what we don't know); the five-way
+CONFLATED and PARTIALLY_SUPPORTED labels are also left unchanged by
+inversion (they are descriptive relations, not binary verdicts).
+
+Five-way relation track (OmniProv scheme: entailment / neutral /
+contradiction / partial / conflation): FactualAccuracy records a
+per-claim `relation` (confirmed / denied / partially_supported /
+conflated / unknown) and `relation_counts` in metadata, in addition to
+the unchanged binary math. The rule-based CONFLATED label is always-on;
+the MiniCheck verifier path (PARTIALLY_SUPPORTED band) is opt-in via
+llm_verify and never changes the binary score.
 """
 
 import time
@@ -19,21 +29,31 @@ from typing import List, Optional
 from src.dimensions.base_dimension import ScorableDimension
 from src.base import DimensionScore
 from src.extraction.claim_extractor import Claim
+from src.resources.nli_verifier import NliVerifier, VerifierUnavailableError
 from src.resources.wikidata_offline import (
     OfflineWikidata, VerificationResult
 )
+
+# Verifier support-probability thresholds for the five-way track:
+# p >= 0.8 -> confirmed, p <= 0.2 -> denied, else partially_supported.
+VERIFIER_CONFIRM_THRESHOLD = 0.8
+VERIFIER_DENY_THRESHOLD = 0.2
+
+# Error strings kept short in metadata (full tracebacks are long).
+_MAX_ERROR_LEN = 120
 
 
 def _invert_result(result: VerificationResult) -> VerificationResult:
     """Invert a verification result for negated claims.
 
-    CONFIRMED → DENIED, DENIED → CONFIRMED, UNKNOWN → UNKNOWN.
+    CONFIRMED → DENIED, DENIED → CONFIRMED, everything else unchanged
+    (UNKNOWN, PARTIALLY_SUPPORTED and CONFLATED are not binary verdicts).
     """
     if result == VerificationResult.CONFIRMED:
         return VerificationResult.DENIED
     if result == VerificationResult.DENIED:
         return VerificationResult.CONFIRMED
-    return VerificationResult.UNKNOWN
+    return result
 
 
 class FactualAccuracy(ScorableDimension):
@@ -45,13 +65,55 @@ class FactualAccuracy(ScorableDimension):
     dimension reports status="unknown" — the placeholder value is for
     display only and is never aggregated into a quality score.
     Negated claims have their verification result inverted.
+
+    Five-way relation track (dual output): every claim detail carries a
+    `relation` label — confirmed / denied / partially_supported /
+    conflated / unknown — and metadata carries `relation_counts`.
+    The always-on rule-based CONFLATED label (see
+    OfflineWikidata.verify_triple) replaces UNKNOWN in that track. With
+    llm_verify=True, still-unknown claims with a resolvable subject and
+    KB facts are scored by the MiniCheck NLI verifier against the
+    subject's formatted KB facts: p >= 0.8 -> confirmed, p <= 0.2 ->
+    denied, else partially_supported. The binary `value` math is
+    exactly the same with and without the flag (confirmed/verifiable
+    over triple-match CONFIRMED/DENIED only), so binary AUC stays
+    comparable across conditions; the five-way counts are the
+    upgraded track.
     """
 
-    def __init__(self, wikidata: Optional[OfflineWikidata] = None):
+    def __init__(self, wikidata: Optional[OfflineWikidata] = None,
+                 verifier: Optional[NliVerifier] = None):
+        """Create the dimension.
+
+        Args:
+            wikidata: offline KB handle (None = no KB, always unknown).
+            verifier: NliVerifier for the llm_verify track. None
+                (the default) means "lazily create the real MiniCheck
+                verifier on first verifier use"; tests can inject a
+                stub with a score(claim, context) -> float method.
+        """
         super().__init__(name="Factual Accuracy")
         self.wikidata = wikidata
+        self._verifier = verifier
 
-    def evaluate(self, text: str, claims: List[Claim] = None) -> DimensionScore:
+    def _get_verifier(self) -> NliVerifier:
+        """Lazily create the MiniCheck verifier on first opt-in use."""
+        if self._verifier is None:
+            self._verifier = NliVerifier()
+        return self._verifier
+
+    def evaluate(self, text: str, claims: List[Claim] = None,
+                 llm_verify: bool = False) -> DimensionScore:
+        """Evaluate factual accuracy over pre-extracted claims.
+
+        Args:
+            text: the evaluated text (unused; claims carry the content).
+            claims: pre-extracted Claim list.
+            llm_verify: opt in to the MiniCheck verifier on the
+                five-way track for claims the KB exact match left
+                UNKNOWN. Default False: rule-based five-way labels
+                only, no model load, binary math byte-identical.
+        """
         start = time.perf_counter()
         if not claims or not self.wikidata:
             return self.create_score(
@@ -64,7 +126,12 @@ class FactualAccuracy(ScorableDimension):
         confirmed = 0
         denied = 0
         unknown = 0
+        relation_counts = {
+            'confirmed': 0, 'denied': 0, 'partially_supported': 0,
+            'conflated': 0, 'unknown': 0,
+        }
         claim_details = []
+        verifier_errors: List[str] = []
 
         for claim in claims:
             # Skip claims with no object — unless existential, which
@@ -73,6 +140,7 @@ class FactualAccuracy(ScorableDimension):
             # fraction of FEVER 2.0 claims ("There is a cat called X").
             if not claim.object and claim.predicate != 'exist':
                 unknown += 1
+                relation_counts['unknown'] += 1
                 continue
 
             detail = self.wikidata.verify_triple(
@@ -84,13 +152,28 @@ class FactualAccuracy(ScorableDimension):
             if claim.negated:
                 effective_result = _invert_result(detail.result)
 
-            claim_details.append({
+            # ── Five-way relation track (always-on) ─────────────────────
+            relation = effective_result
+            verifier_score = None
+            if llm_verify and relation == VerificationResult.UNKNOWN:
+                relation, verifier_score, err = self._verifier_relation(claim)
+                if err:
+                    verifier_errors.append(err)
+
+            relation_counts[relation.value] += 1
+
+            claim_detail = {
                 'claim': claim.to_dict(),
                 'verification': detail.to_dict(),
                 'negated': claim.negated,
                 'effective_result': effective_result.value,
-            })
+                'relation': relation.value,
+            }
+            if verifier_score is not None:
+                claim_detail['verifier_score'] = round(verifier_score, 4)
+            claim_details.append(claim_detail)
 
+            # ── Binary math: triple-match CONFIRMED/DENIED only ─────────
             if effective_result == VerificationResult.CONFIRMED:
                 confirmed += 1
             elif effective_result == VerificationResult.DENIED:
@@ -109,17 +192,63 @@ class FactualAccuracy(ScorableDimension):
             status = 'scored'
 
         elapsed = (time.perf_counter() - start) * 1000
+        metadata = {
+            'num_claims': len(claims),
+            'verifiable': verifiable,
+            'claim_details': claim_details,
+            'verification_time_ms': elapsed,
+            'relation_counts': relation_counts,
+        }
+        if llm_verify:
+            metadata['verifier_errors'] = verifier_errors
         return self.create_score(
             value=score,
             raw_value={'confirmed': confirmed, 'denied': denied, 'unknown': unknown},
-            metadata={
-                'num_claims': len(claims),
-                'verifiable': verifiable,
-                'claim_details': claim_details,
-                'verification_time_ms': elapsed,
-            },
+            metadata=metadata,
             status=status,
         )
+
+    def _verifier_relation(self, claim: Claim) -> tuple:
+        """Score one KB-unknown claim with the MiniCheck verifier.
+
+        Formats the subject's KB facts as the grounding document and
+        scores the claim text (the decontextualized atomic_text when
+        present, else "subject predicate object"). No facts or an
+        unresolved subject keep the relation UNKNOWN. Negated spaCy
+        triples (no atomic_text to carry the negation) get the verifier
+        verdict inverted, mirroring the triple-match negation rule.
+
+        Returns:
+            (relation: VerificationResult, verifier_score: float or
+            None, error: str or None). The score is None and the
+            relation UNKNOWN on verifier failure — never fabricated.
+        """
+        subj_qid = self.wikidata.lookup_entity(claim.subject)
+        doc = self.wikidata.format_entity_facts(subj_qid) if subj_qid else None
+        if not doc:
+            # No facts / entity unresolved -> UNKNOWN (never invented).
+            return VerificationResult.UNKNOWN, None, None
+
+        claim_text = claim.atomic_text or f"{claim.subject} {claim.predicate} {claim.object}"
+        try:
+            p = self._get_verifier().score(claim_text, doc)
+        except VerifierUnavailableError as e:
+            return VerificationResult.UNKNOWN, None, f"{type(e).__name__}: {e}"[:_MAX_ERROR_LEN]
+        except Exception as e:  # defensive: a verifier bug must not kill the prong
+            return VerificationResult.UNKNOWN, None, f"{type(e).__name__}: {e}"[:_MAX_ERROR_LEN]
+
+        if p >= VERIFIER_CONFIRM_THRESHOLD:
+            relation = VerificationResult.CONFIRMED
+        elif p <= VERIFIER_DENY_THRESHOLD:
+            relation = VerificationResult.DENIED
+        else:
+            relation = VerificationResult.PARTIALLY_SUPPORTED
+
+        # The constructed triple text carries no negation, so invert the
+        # verdict for negated spaCy claims; atomic_text is self-contained.
+        if claim.negated and not claim.atomic_text:
+            relation = _invert_result(relation)
+        return relation, p, None
 
 
 class FactualConsistency(ScorableDimension):

@@ -37,6 +37,8 @@ data/wikidata_fever.db
 data/fever2_*.jsonl
 evaluation_results/fever2_*.json
 evaluation_results/fever2_*.md
+evaluation_results/verifier_eval.json
+evaluation_results/verifier_eval.md
 
 # Vendored upstream FEVER checkout; obtain separately when needed
 fever/

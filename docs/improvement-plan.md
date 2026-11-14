@@ -17,7 +17,7 @@ A FastAPI dashboard with four prongs:
 |-------|----------------------|---------------------|----------------|
 | 1 | LLM-as-judge | MiniLM cosine + toxic-bert. **No LLM.** | Name is misleading (wXze). |
 | 2 | Rule-based | Flesch + unvalidated lexicons + VADER | Fluency ≠ Flesch; nine-language claim oversold. |
-| 3 | Extraction | spaCy triples vs ~86-entity Wikidata | Coverage <10%, AUC ≈ chance. |
+| 3 | Extraction | spaCy triples vs ~122-entity Wikidata seed | Coverage <10%, AUC ≈ chance. |
 | 4 | Intrinsic | top-k logprobs from generator | Unmeasured; remote backends often have no logprobs. |
 
 Plus: equal weights with no guidance; 0.5 used as a silent fallback
@@ -145,7 +145,7 @@ whole story.
    LLM) and coverage meter.
 
 Exit: coverage is reported honestly; LLM extractor is comparable to
-spaCy on the tiny English set; nobody can think 86 entities are
+spaCy on the tiny English set; nobody can think ~122 entities are
 “Wikidata”.
 
 ## Phase 4 — Measurement and extensibility
