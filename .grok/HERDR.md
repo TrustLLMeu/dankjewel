@@ -213,11 +213,32 @@ Captain
 Captain merges worktree, then Historian records it.
 ```
 
-A Grok workflow (`.grok/workflows/d75-slice.rhai`) can encode this
-after the crew is approved. The script must refuse a second NTNU
-`agent()` while one is in flight during the rate window, and must
-pass `model: "Qwen/Qwen3.8-27B-FP8"` vs `"Qwen/Qwen3.8-27B"` from
-the clock. Not written yet.
+### Dispatch mechanics — herdr panes (mandatory)
+
+Crew work runs in the herdr panes of workspace `w0`, never as
+in-session subagents, so the user can watch each pane live. Panes:
+`dj-scout` w0:t3, `dj-protocol` t4, `dj-implementer` t5,
+`dj-dashboard` t6, `dj-eval` t7, `dj-reviewer` t8, `dj-nordic` t9,
+`dj-git` tA. Captain is w0:t1.
+
+1. Write the brief to a file (e.g. `/tmp/slice-<n>-<role>.md`) and send
+   the short pointer: `herdr agent prompt <name> "Read <path> and
+   execute it."`.
+2. `herdr agent prompt --wait` often times out while the pane is still
+   working. Poll instead: `herdr agent get <name>` (status
+   idle/working/done) and `herdr agent read <name> --source visible
+   --lines N`. `--source recent-unwrapped` fails while an agent is
+   working.
+3. `herdr tab focus <tab_id>` restores the Captain tab afterwards.
+4. The one-NTNU-job-at-a-time rule counts all panes; serialise there
+   exactly as the rate-window table says.
+5. Panes own their worktrees when a slice needs isolation; the pane
+   creates and reports it, the Captain merges as before.
+
+In-session `spawn_subagent` is only for incidental officer work the
+user has not asked to watch. A Grok workflow
+(`.grok/workflows/d75-slice.rhai`) remains unimplemented; crew slices
+use the panes above.
 
 ---
 
