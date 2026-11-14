@@ -6,15 +6,17 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `7fd15b9` — Pin qualifier-gate abstentions and document seed pruning
+- **Latest commit:** `8adab97` — Wrap the header on narrow viewports (fix 390px overflow)
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** pre-existing 390px evaluator overflow (485px); judge/verifier latency rows for the Phase-4 table; seed coverage still 0.3% on FEVER; slice 6b follow-ups (AVeriTeC/LLM-AggreFact second benchmark, Nordic seed, partially_supported reachable mainly via the authored eval)
+- **Open slices:** judge/verifier latency rows for the Phase-4 table; seed coverage still 0.3% on FEVER; slice 6b follow-ups (AVeriTeC/LLM-AggreFact second benchmark, Nordic seed, partially_supported reachable mainly via the authored eval)
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-14 | `PENDING` | chore / index | Record slice 6c qualifier gates in commit index | chore |
+| 2026-11-14 | `PENDING` | chore / index | Record 390px header fix in commit index | chore |
+| 2026-11-14 | `8adab97` | dashboard / responsive | Wrap the header on narrow viewports (fix 390px overflow) | chore / honesty (measured claims) |
+| 2026-11-14 | `906c099` | chore / index | Record slice 6c qualifier gates in commit index | chore |
 | 2026-11-14 | `7fd15b9` | prong 3 / tests+docs | Pin qualifier-gate abstentions and document seed pruning | wXze coverage robustness (qualifier gates) |
 | 2026-11-14 | `5204f67` | chore / index | Record herdr dispatch rule in commit index | chore |
 | 2026-11-14 | `d0a9fb0` | chore / crew | Dispatch crew work through herdr panes, not subagents | chore |
@@ -43,9 +45,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record slice 6c qualifier gates in commit index (2026-11-14)
+### `PENDING` — Record 390px header fix in commit index (2026-11-14)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the 390px header fix land.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `8adab97` — Wrap the header on narrow viewports (fix 390px overflow) (2026-11-14)
+
+- **Hash:** `8adab973938f82cd67daa5bdc537d0ff4ceddf58`
+- **Why:** The header was a single non-wrapping flex row (title, status, Commits, language select, model badge); at a true 390px viewport the select and badge pushed document scrollWidth to 485 (110px overflow), before and after an evaluation. A <=640px media query now lets the header wrap (two rows), hides the desktop spacer, and right-aligns the language select. Nothing below the header overflowed. Correction worth recording: earlier "390px" Selenium runs used --window-size, which headless Chrome clamps to a 500px minimum, so the reported 485px scrollWidth was first misread as a page-layout defect; the true measurement uses CDP `Emulation.setDeviceMetricsOverride` at 390.
+- **Files:** `frontend/index.html`
+- **Closes:** the open "pre-existing 390px evaluator overflow" item
+- **Verify:** Selenium with true CDP emulation — 390px: overflow 0 on load AND after a real evaluate-only run with the text card open (4 prongs rendered, no error); breakpoints 500/639/641/700/1280 all overflow 0; header height 84px below 640 (two rows) and 53px at/above 640 (single row); desktop 1280 unchanged (the added CSS is scoped to max-width:640px, so >640px rendering is structurally unaffected); pytest 320 passed + 2 skipped (no backend change).
+
+### `906c099` — Record slice 6c qualifier gates in commit index (2026-11-14)
+
+- **Hash:** `906c099521a3798abdeb115de6626ab892685b6c`
 - **Why:** Record the slice 6c qualifier-gate land.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
