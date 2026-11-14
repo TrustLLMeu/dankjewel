@@ -25,6 +25,8 @@ class Claim:
     temporal_anchor: Optional[str] = None                     # DATE entity if present
     comparative_tag: Optional[str] = None                     # JJR/JJS tag if present
     negated: bool = False                                     # True if verb has a 'neg' child
+    source: str = "spacy"                                     # extraction track: "spacy" | "llm" | "both"
+    atomic_text: Optional[str] = None                        # LLM track: the decontextualized atomic claim
 
     def to_dict(self) -> dict:
         return {
@@ -36,21 +38,30 @@ class Claim:
             'temporal_anchor': self.temporal_anchor,
             'comparative_tag': self.comparative_tag,
             'negated': self.negated,
+            'source': self.source,
+            'atomic_text': self.atomic_text,
         }
 
 
 @dataclass
 class ExtractionResult:
-    """Result of claim extraction with timing metadata."""
+    """Result of claim extraction with timing metadata.
+
+    `metadata` carries dual-track info from the LLM extractor
+    (llm_paragraphs / llm_claims / llm_errors); rule-based extraction
+    leaves it empty.
+    """
     claims: List[Claim]
     extraction_time_ms: float
     num_sentences: int
+    metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
             'claims': [c.to_dict() for c in self.claims],
             'extraction_time_ms': self.extraction_time_ms,
             'num_sentences': self.num_sentences,
+            'metadata': self.metadata,
         }
 
 
@@ -105,6 +116,29 @@ class ClaimExtractor:
             extraction_time_ms=elapsed_ms,
             num_sentences=len(list(doc.sents)),
         )
+
+    def extract_from_sentence_text(self, text: str) -> List[Claim]:
+        """Run the per-sentence triple logic on a standalone text fragment.
+
+        Same dependency-parse logic as extract(), but on caller-provided
+        text — e.g. a decontextualized atomic claim from the LLM track —
+        instead of the original document. No behavior change for extract().
+
+        Args:
+            text: the fragment to parse (usually one atomic claim sentence).
+
+        Returns:
+            List of Claim objects extracted from the fragment.
+        """
+        doc = self._nlp(text)
+        claims = []
+        for sent in doc.sents:
+            claims.extend(self._extract_from_sentence(sent))
+        return claims
+
+    def count_sentences(self, text: str) -> int:
+        """Count sentences in text with the shared spaCy pipeline."""
+        return len(list(self._nlp(text).sents))
 
     def _extract_from_sentence(self, sent) -> List[Claim]:
         """Extract claims from a single spaCy Span (sentence)."""

@@ -1,13 +1,15 @@
 """Synchronous client for the shared tiny LLM judge.
 
-Talks to the single local OpenAI-compatible server (llama.cpp/vLLM on
-Malvik) that hosts the ≤1.5B judge for the whole product — one process,
-one client per interpreter, task prefixes ("[JUDGE]", later "[CLAIMS]"
-and "[READABILITY]") instead of one server per dimension. The evaluation
+Talks to the local OpenAI-compatible servers (llama.cpp/vLLM on
+Malvik) that host the ≤1.5B judge and claim extractor for the whole
+product — task prefixes ("[JUDGE]", "[CLAIMS]", later "[READABILITY]")
+instead of one server per dimension. The evaluation
 pipeline is synchronous, so this client is sync httpx — do not couple it
 to src/vllm_client.py, which is async and serves generation/logprobs.
 
-Configuration (environment, read at construction):
+Configuration (environment, read at construction).
+
+[JUDGE] task:
     DANKJEWEL_JUDGE_BASE_URL    default http://127.0.0.1:18092/v1
     DANKJEWEL_JUDGE_MODEL       default Qwen/Qwen2.5-0.5B-Instruct
     DANKJEWEL_JUDGE_API_KEY     optional; sent as Authorization: Bearer
@@ -16,10 +18,24 @@ Configuration (environment, read at construction):
                                 cut off and surfaced as "unknown", not
                                 block the evaluate path
 
-The client never fabricates a score: a connection/timeout failure raises
-JudgeUnavailableError, and an unparseable reply or a score outside [0,1]
-raises JudgeParseError. Callers translate those into the dual-output
-metadata (judge_status "unknown" / "error") and keep the baseline score.
+[CLAIMS] task (the 0.5B judge fails at claim extraction — it echoes
+input sentences verbatim and never resolves pronouns, so claims run on
+the 1.5B):
+    DANKJEWEL_CLAIMS_BASE_URL    default http://127.0.0.1:18093/v1
+    DANKJEWEL_CLAIMS_MODEL       default Qwen/Qwen2.5-1.5B-Instruct
+    DANKJEWEL_CLAIMS_API_KEY     optional; falls back to a constructor-
+                                 provided key, then to
+                                 DANKJEWEL_JUDGE_API_KEY; sent as
+                                 Authorization: Bearer only when set
+                                 (never hardcoded)
+    DANKJEWEL_CLAIMS_TIMEOUT_S   default 30
+
+The client never fabricates a score or a claim: a connection/timeout
+failure raises JudgeUnavailableError, and an unparseable reply or a
+score outside [0,1] raises JudgeParseError (its ClaimsParseError
+subclass for the [CLAIMS] task). Callers translate those into the
+dual-output metadata (judge_status "unknown" / "error") and keep the
+baseline score.
 
 Tested with:
     httpx==0.28.1
@@ -29,8 +45,9 @@ Tested with:
 import json
 import logging
 import os
+import re
 import threading
-from typing import Optional
+from typing import List, Optional
 
 import httpx
 
@@ -39,6 +56,10 @@ logger = logging.getLogger(__name__)
 DEFAULT_BASE_URL = "http://127.0.0.1:18092/v1"
 DEFAULT_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
 DEFAULT_TIMEOUT_S = 30.0
+
+CLAIMS_DEFAULT_BASE_URL = "http://127.0.0.1:18093/v1"
+CLAIMS_DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
+CLAIMS_DEFAULT_TIMEOUT_S = 30.0
 
 # The few-shot prompt verified live against the 0.5B judge on
 # 2026-11-14 (relevant→1.0, irrelevant→0.0; the zero-shot variant did
@@ -58,6 +79,26 @@ _JUDGE_SYSTEM_PROMPT = (
     '{"score": 0, "rationale": "No connection to the arithmetic question."}'
 )
 
+# The [CLAIMS] prompt verified live against the 1.5B model on
+# 2026-11-14 (pronoun resolution and decomposition work; opinion
+# filtering does NOT — opinion claims are kept and verify UNKNOWN
+# against the KB, which FactualAccuracy's honest denominator already
+# excludes). The 1.5B sometimes drops the comma between adjacent quoted
+# array elements ('["a" "b"]'); _parse_claims repairs that. Do not
+# rewrite the prompt without re-verifying extraction quality.
+_CLAIMS_SYSTEM_PROMPT = (
+    "[CLAIMS] Extract atomic, self-contained factual claims from the text. "
+    "Rules: (1) resolve pronouns to explicit names; if a referent cannot be "
+    "resolved, omit the claim. (2) Each claim is one verifiable statement "
+    "with an explicit subject and no pronouns. (3) Skip opinions, "
+    "speculation, and pure filler. (4) The output must be valid JSON: a "
+    "JSON array of strings, elements separated by commas. Reply with ONLY "
+    "a JSON array of strings. Example: Text: France won the 2018 World "
+    "Cup. They beat the hosts in the final. -> "
+    '["France won the 2018 FIFA World Cup.", "France beat the host nation '
+    'in the 2018 World Cup final."] Text with no verifiable facts -> []'
+)
+
 
 class JudgeError(Exception):
     """Base class for tiny-judge failures."""
@@ -69,6 +110,10 @@ class JudgeUnavailableError(JudgeError):
 
 class JudgeParseError(JudgeError):
     """The judge replied, but not with a usable {"score", "rationale"} JSON object."""
+
+
+class ClaimsParseError(JudgeParseError):
+    """The claims model replied, but not with a usable JSON array of strings."""
 
 
 def _parse_verdict(content: str) -> dict:
@@ -104,6 +149,60 @@ def _parse_verdict(content: str) -> dict:
     return {"score": float(score), "rationale": rationale}
 
 
+def _strip_code_fence(text: str) -> str:
+    """Strip a leading/trailing ``` (or ```json) markdown fence, if any."""
+    stripped = text.strip()
+    if not stripped.startswith("```"):
+        return stripped
+    stripped = re.sub(r"^```[a-zA-Z0-9_-]*\s*", "", stripped)
+    stripped = re.sub(r"\s*```\s*$", "", stripped)
+    return stripped.strip()
+
+
+def _outermost_array_span(text: str) -> Optional[str]:
+    """Return the outermost [...] span of `text`, or None when absent."""
+    start, end = text.find("["), text.rfind("]")
+    if start != -1 and end > start:
+        return text[start:end + 1]
+    return None
+
+
+def _parse_claims(content: str) -> List[str]:
+    """Parse the claims-model reply into a list of atomic claim strings.
+
+    Tolerates a markdown fence, prose around the array, and the missing
+    comma between adjacent quoted elements that the 1.5B model sometimes
+    drops ('["a" "b"]' — repaired with re.sub(r'"\\s*"', '", "', ...) on
+    the array body). Never invents a claim: anything unrecoverable, or
+    a reply that is not a JSON array of strings, raises ClaimsParseError.
+    """
+    text = _strip_code_fence((content or "").strip())
+    if not text:
+        raise ClaimsParseError("claims reply is empty")
+    candidates = [text]
+    span = _outermost_array_span(text)
+    if span is not None:
+        if span != text:
+            candidates.append(span)  # prose-wrapped array
+        # Missing comma between adjacent quoted elements — only tried
+        # after the raw candidates fail, so valid JSON is never touched.
+        candidates.append(re.sub(r'"\s*"', '", "', span))
+    for candidate in candidates:
+        try:
+            obj = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(obj, list):
+            raise ClaimsParseError(
+                f"claims reply is not a JSON array: {content[:120]!r}")
+        if any(not isinstance(item, str) for item in obj):
+            raise ClaimsParseError(
+                f"claims array has non-string elements: {content[:120]!r}")
+        return [item.strip() for item in obj if item.strip()]
+    raise ClaimsParseError(
+        f"claims reply is not a JSON array of strings: {content[:120]!r}")
+
+
 def _env_float(name: str, default: float) -> float:
     """Read a float env var, falling back to the default when unset/invalid."""
     raw = os.environ.get(name)
@@ -122,7 +221,13 @@ class LLMJudgeClient:
     One client per judge task call site; use `get_shared_judge_client()`
     so later [CLAIMS]/[READABILITY] slices reuse the same instance and
     the same server. Attributes `model_name`/`base_url` are public so
-    dimension metadata can disclose which judge produced a score.
+    dimension metadata can disclose which judge produced a score;
+    `claims_model_name`/`claims_base_url` are the [CLAIMS] task
+    equivalents.
+
+    Constructor arguments configure the [JUDGE] task; the [CLAIMS] task
+    reads its own DANKJEWEL_CLAIMS_* environment configuration (see
+    module docstring).
 
     `transport` is an httpx transport override for tests (MockTransport);
     production code leaves it None.
@@ -138,6 +243,19 @@ class LLMJudgeClient:
             else (os.environ.get("DANKJEWEL_JUDGE_API_KEY") or None)
         self.timeout = float(timeout if timeout is not None
                              else _env_float("DANKJEWEL_JUDGE_TIMEOUT_S", DEFAULT_TIMEOUT_S))
+        # [CLAIMS] task — env-only base URL/model/timeout (separate 1.5B
+        # server). Key precedence: the claims env key, then a constructor-
+        # provided key (test injection), then the judge env key — one key
+        # style works across both servers.
+        self.claims_base_url = (os.environ.get("DANKJEWEL_CLAIMS_BASE_URL")
+                                or CLAIMS_DEFAULT_BASE_URL).rstrip('/')
+        self.claims_model_name = (os.environ.get("DANKJEWEL_CLAIMS_MODEL")
+                                  or CLAIMS_DEFAULT_MODEL)
+        self.claims_api_key = (os.environ.get("DANKJEWEL_CLAIMS_API_KEY")
+                               or api_key
+                               or (os.environ.get("DANKJEWEL_JUDGE_API_KEY") or None))
+        self.claims_timeout = _env_float("DANKJEWEL_CLAIMS_TIMEOUT_S",
+                                         CLAIMS_DEFAULT_TIMEOUT_S)
         self._transport = transport
         self._http: Optional[httpx.Client] = None
 
@@ -201,6 +319,59 @@ class LLMJudgeClient:
         except (KeyError, IndexError, TypeError) as e:
             raise JudgeParseError(f"unexpected judge response shape: {e}") from e
         return _parse_verdict(content)
+
+    def claims(self, text: str) -> List[str]:
+        """Ask the [CLAIMS] model for atomic claims from `text`.
+
+        One call per paragraph is the caller's job (LLMClaimExtractor);
+        this method sends the text as a single "Text: ..." user message
+        so cross-sentence pronouns can resolve.
+
+        Args:
+            text: the text (typically one paragraph) to decompose.
+
+        Returns:
+            List of decontextualized atomic claim strings (may be empty).
+
+        Raises:
+            JudgeUnavailableError: connection error, timeout, or HTTP error status.
+            ClaimsParseError: reply was not a recoverable JSON array of strings.
+        """
+        headers = {"Content-Type": "application/json"}
+        if self.claims_api_key:
+            headers["Authorization"] = f"Bearer {self.claims_api_key}"
+        payload = {
+            "model": self.claims_model_name,
+            "messages": [
+                {"role": "system", "content": _CLAIMS_SYSTEM_PROMPT},
+                {"role": "user", "content": f"Text: {text}"},
+            ],
+            "temperature": 0.0,  # extraction, not creativity
+            "max_tokens": 300,  # a paragraph of atomic claims as JSON
+        }
+        try:
+            http = self._get_http()
+            resp = http.post(f"{self.claims_base_url}/chat/completions",
+                             json=payload, headers=headers,
+                             timeout=self.claims_timeout)
+            resp.raise_for_status()
+            data = resp.json()
+        except httpx.TimeoutException as e:
+            raise JudgeUnavailableError(
+                f"claims model timed out after {self.claims_timeout}s: {e}") from e
+        except httpx.HTTPStatusError as e:
+            raise JudgeUnavailableError(
+                f"claims model returned HTTP {e.response.status_code}") from e
+        except httpx.TransportError as e:
+            raise JudgeUnavailableError(
+                f"cannot reach claims model at {self.claims_base_url}: {e}") from e
+        except json.JSONDecodeError as e:
+            raise ClaimsParseError(f"claims model returned non-JSON body: {e}") from e
+        try:
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as e:
+            raise ClaimsParseError(f"unexpected claims response shape: {e}") from e
+        return _parse_claims(content)
 
     def close(self) -> None:
         """Close the underlying HTTP client (idempotent)."""

@@ -117,6 +117,7 @@ class EvaluateRequest(BaseModel):
     text: str = Field(..., description="The text to evaluate")
     language: str = Field("en", description="Language code for Prong 2 lexicons (e.g. en, nl, da)")
     tiny_judge: bool = Field(False, description="Opt in: also run the local tiny-LLM judge (Qwen2.5-0.5B) on Relevance, adding a dual llm_value/rationale track to that dimension's metadata. Default off: embeddings baseline only, identical behavior and latency.")
+    llm_extract: bool = Field(False, description="Opt in: also run the local 1.5B claim-extraction track (Qwen2.5-1.5B, [CLAIMS] task) on Prong 3, merging decontextualized LLM atomic claims (claim.source 'llm'/'both') with the spaCy triples in claim_details. Default off: spaCy-only extraction, identical behavior and latency.")
 
 class GenerateAndEvaluateRequest(BaseModel):
     prompt: str = Field(..., description="The input prompt for the LLM")
@@ -371,7 +372,7 @@ async def evaluate(req: EvaluateRequest):
         raise HTTPException(status_code=503, detail="Evaluator not initialized.")
     try:
         result = evaluator.evaluate(text=req.text, prompt=req.prompt, lang=req.language,
-                                    tiny_judge=req.tiny_judge)
+                                    tiny_judge=req.tiny_judge, llm_extract=req.llm_extract)
         return result
     except Exception as e:
         logger.exception("Evaluation failed")

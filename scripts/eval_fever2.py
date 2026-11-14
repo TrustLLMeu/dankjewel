@@ -7,6 +7,19 @@ Optionally subsample with --n-per-class N (0 = use all).
 Can evaluate against either the default seed DB or a custom DB (e.g.,
 the oracle-coverage DB built by scripts/build_fever_wikidata.py).
 
+--extractor selects the Prong 3 claim extractor: 'spacy' (default,
+current behavior), 'llm' (LLM atomic-claim track only), or 'dual'
+(spaCy + LLM merged — the plan's "llm-extract + seed" condition).
+The rest of the pipeline stays identical, and the report shape is the
+same for all conditions so numbers are comparable.
+
+If fever/fever2/fever2-fixers-dev.jsonl is absent, it is fetched first:
+the Hugging Face copy of the FEVER 2.0 fixers dev set; if that is
+unavailable, the official FEVER 1.0 shared-task dev set from fever.ai
+(the data location the FEVER GitHub repo, facebookresearch/fever ->
+awslabs/fever, points to) converted to the same {claim, label, id}
+shape. Provenance is printed and recorded in the report.
+
 Outputs (suffix is empty for the default run, or the --output-suffix value):
   data/fever2_sample.jsonl                              — the claims evaluated
   evaluation_results/fever2[_suffix]_eval.json          — raw per-claim results
@@ -14,12 +27,14 @@ Outputs (suffix is empty for the default run, or the --output-suffix value):
   evaluation_results/fever2[_suffix]_eval_report.md     — human-readable report
 
 Usage:
-    python scripts/eval_fever2.py                                  # full dataset, seed DB
+    python scripts/eval_fever2.py                                  # full dataset, seed DB, spaCy extractor
     python scripts/eval_fever2.py --n-per-class 30                 # subsample (90)
     python scripts/eval_fever2.py \
         --db-path data/wikidata_fever.db \
         --sample-path data/fever2_oracle_sample.jsonl \
         --output-suffix oracle                                      # oracle-coverage run
+    python scripts/eval_fever2.py --n-per-class 30 \
+        --extractor dual --output-suffix dual                      # dual-track subsample
 
 Requires the spaCy model:
     python -m spacy download en_core_web_sm
@@ -41,6 +56,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.pipeline import EvaluationPipeline
 
 FEVER2_PATH = "fever/fever2/fever2-fixers-dev.jsonl"
+FEVER2_HF_URL = ("https://huggingface.co/datasets/fever/fever2-fixers-dev/"
+                 "resolve/main/fever2-fixers-dev.jsonl")
+# Fallback: the official FEVER 1.0 shared-task dev set (fever.ai is the
+# download location the FEVER GitHub repo — facebookresearch/fever, now
+# awslabs/fever — points to; the repo itself ships no data files).
+FEVER1_DEV_URL = "https://fever.ai/download/fever/shared_task_dev.jsonl"
 SAMPLE_PATH = "data/fever2_sample.jsonl"
 OUTPUT_DIR = Path("evaluation_results")
 RAW_PATH = OUTPUT_DIR / "fever2_eval.json"
@@ -73,6 +94,83 @@ def load_fever2(path):
             obj["label"] = _normalize_label(obj["label"])
             rows.append(obj)
     return rows
+
+
+def _download_text(url, timeout_s=120):
+    """Download a text file with urllib (stdlib only, no new deps)."""
+    import urllib.request
+    req = urllib.request.Request(url, headers={"User-Agent": "dankjewel-eval/1.0"})
+    with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+        return resp.read().decode("utf-8")
+
+
+def _fever1_dev_to_fever2_shape(text):
+    """Convert FEVER 1.0 dev rows to the fever2-fixers-dev {claim, label, id} shape."""
+    rows = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        obj = json.loads(line)
+        if obj.get("claim") and obj.get("label"):
+            rows.append({"id": obj.get("id"), "claim": obj["claim"],
+                         "label": obj["label"]})
+    return rows
+
+
+def _provenance_path(data_path):
+    """Sidecar file recording how the dataset file was obtained."""
+    return Path(data_path).with_suffix(".provenance.txt")
+
+
+def _read_provenance(data_path):
+    sidecar = _provenance_path(data_path)
+    if sidecar.exists():
+        return sidecar.read_text(encoding="utf-8").strip()
+    return ""
+
+
+def ensure_fever2(path):
+    """Download the FEVER dev set if `path` is absent.
+
+    Tries the Hugging Face copy of fever2-fixers-dev.jsonl first; if that
+    is unavailable (404/401/network error), falls back to the official
+    FEVER 1.0 shared-task dev set from fever.ai converted to the same
+    {claim, label, id} shape. How the file was obtained is recorded in a
+    .provenance.txt sidecar so later runs that reuse the file keep the
+    note; this function returns that note ("" for the HF copy).
+    """
+    if os.path.exists(path):
+        return _read_provenance(path)
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    try:
+        print(f"Fetching FEVER 2.0 fixers dev from Hugging Face:\n  {FEVER2_HF_URL}")
+        text = _download_text(FEVER2_HF_URL)
+        rows = [json.loads(l) for l in text.splitlines() if l.strip()]
+        if not rows or not all("claim" in r and "label" in r for r in rows):
+            raise ValueError("unexpected fever2 jsonl shape")
+        with open(path, "w") as f:
+            for row in rows:
+                f.write(json.dumps({"id": row.get("id"), "claim": row["claim"],
+                                    "label": row["label"]}) + "\n")
+        print(f"Saved {len(rows)} claims to {path}")
+        return ""
+    except Exception as e:
+        print(f"  unavailable ({type(e).__name__}: {e}); falling back to the "
+              f"official FEVER 1.0 shared-task dev set at {FEVER1_DEV_URL}")
+    text = _download_text(FEVER1_DEV_URL)
+    rows = _fever1_dev_to_fever2_shape(text)
+    if not rows:
+        raise RuntimeError(f"FEVER dev fallback at {FEVER1_DEV_URL} returned no claims")
+    with open(path, "w") as f:
+        for row in rows:
+            f.write(json.dumps(row) + "\n")
+    print(f"Saved {len(rows)} claims to {path}")
+    note = ("NOTE: FEVER 2.0 fixers dev was unavailable; this file is the "
+            "official FEVER 1.0 shared-task dev set (fever.ai) converted to "
+            "the same {claim, label, id} shape.")
+    _provenance_path(path).write_text(note, encoding="utf-8")
+    return note
 
 
 def select_claims(rows, n_per_class, seed=42):
@@ -145,7 +243,7 @@ def get_coverage_info(result):
     return False, 0
 
 
-def evaluate(claims, evaluator):
+def evaluate(claims, evaluator, llm_extract=False):
     """Evaluate claims using either the full pipeline or a direct Prong3Extraction."""
     records = []
     total = len(claims)
@@ -153,7 +251,7 @@ def evaluate(claims, evaluator):
         text = item["claim"]
         label = item["label"]
         try:
-            result = evaluator.evaluate(text)
+            result = evaluator.evaluate(text, llm_extract=llm_extract)
             if hasattr(result, "to_dict"):
                 result = result.to_dict()
             factual = get_dim_value(result, "Factual Accuracy")
@@ -275,15 +373,22 @@ def compute_metrics(records):
     return metrics
 
 
-def write_report(records, metrics, n_per_class, db_source):
+def write_report(records, metrics, n_per_class, db_source, extractor="spacy",
+                  provenance=""):
     lines = []
     lines.append("# FEVER 2.0 — Prong 3 Factuality Evaluation")
     lines.append("")
     lines.append(f"Source: `fever/fever2/fever2-fixers-dev.jsonl`")
+    if provenance:
+        lines.append("")
+        lines.append(f"> {provenance}")
     if n_per_class > 0:
         lines.append(f"Sample: {n_per_class} per class (seed=42)")
     else:
         lines.append("Scope: **entire dataset** (no subsampling)")
+    lines.append(f"Extractor: **{extractor}**"
+                 + (" (spaCy triples + LLM atomic claims merged, "
+                    "Qwen2.5-1.5B [CLAIMS] task)" if extractor != "spacy" else ""))
     lines.append(f"Total claims evaluated: {metrics['counts']['total']}")
     lines.append(f"Wikidata DB: `{db_source}`")
     if "oracle" in db_source.lower() or "fever" in db_source.lower():
@@ -383,6 +488,12 @@ def main():
                         help="Path to read/save the claim sample (default: data/fever2_sample.jsonl)")
     parser.add_argument("--output-suffix", default="",
                         help="Suffix for output files (e.g., 'oracle' -> fever2_oracle_eval.json)")
+    parser.add_argument("--extractor", choices=["spacy", "llm", "dual"], default="spacy",
+                        help="Prong 3 claim extractor: 'spacy' = current spaCy-only behavior "
+                             "(default); 'llm' = LLM atomic-claim track only; "
+                             "'dual' = spaCy + LLM merged and deduped "
+                             "(the plan's 'llm-extract + seed' condition). "
+                             "The rest of the pipeline and the report shape are identical.")
     args = parser.parse_args()
 
     if args.output_suffix:
@@ -394,10 +505,13 @@ def main():
 
     # Phase 1: select claims (or reuse existing)
     sample_path = args.sample_path
+    provenance = ""
     if os.path.exists(sample_path) and not args.resample:
         print(f"Reusing existing claims at {sample_path}")
         claims = load_claims(sample_path)
+        provenance = _read_provenance(FEVER2_PATH)
     else:
+        provenance = ensure_fever2(FEVER2_PATH)
         print(f"Loading FEVER 2.0 from {FEVER2_PATH} ...")
         rows = load_fever2(FEVER2_PATH)
         print(f"Loaded {len(rows)} claims. Selecting:")
@@ -405,15 +519,34 @@ def main():
         save_claims(claims, sample_path)
 
     # Phase 2: evaluate
-    print(f"\nEvaluating {len(claims)} claims with Prong 3 ...")
-    if args.db_path:
-        from src.prongs.prong3_extraction import Prong3Extraction
-        print(f"Using custom Wikidata DB: {args.db_path}")
-        evaluator = Prong3Extraction(wikidata_db_path=args.db_path)
+    print(f"\nEvaluating {len(claims)} claims with Prong 3 "
+          f"(extractor={args.extractor}) ...")
+    llm_extract = args.extractor != "spacy"
+    if args.extractor == "spacy":
+        if args.db_path:
+            from src.prongs.prong3_extraction import Prong3Extraction
+            print(f"Using custom Wikidata DB: {args.db_path}")
+            evaluator = Prong3Extraction(wikidata_db_path=args.db_path)
+        else:
+            print("(Using default seed DB via pipeline)")
+            evaluator = EvaluationPipeline(enable_prongs=[3])
+        records = evaluate(claims, evaluator)
     else:
-        print("(Using default seed DB via pipeline)")
-        evaluator = EvaluationPipeline(enable_prongs=[3])
-    records = evaluate(claims, evaluator)
+        # llm / dual: route Prong 3 through LLMClaimExtractor; the
+        # rest of the pipeline (dimensions, Wikidata DB, metrics) is
+        # identical to the spacy condition.
+        from src.extraction.llm_claim_extractor import LLMClaimExtractor
+        from src.prongs.prong3_extraction import Prong3Extraction
+        llm_extractor = LLMClaimExtractor(
+            include_spacy=(args.extractor == "dual"))
+        if args.db_path:
+            print(f"Using custom Wikidata DB: {args.db_path}")
+            evaluator = Prong3Extraction(wikidata_db_path=args.db_path,
+                                         llm_extractor=llm_extractor)
+        else:
+            print("(Using default seed DB)")
+            evaluator = Prong3Extraction(llm_extractor=llm_extractor)
+        records = evaluate(claims, evaluator, llm_extract=llm_extract)
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     with open(RAW_PATH, "w") as f:
@@ -423,9 +556,11 @@ def main():
     # Phase 3: metrics + report
     metrics = compute_metrics(records)
     metrics["db_source"] = db_source
+    metrics["extractor"] = args.extractor
     with open(METRICS_PATH, "w") as f:
         json.dump(metrics, f, indent=2)
-    write_report(records, metrics, args.n_per_class, db_source)
+    write_report(records, metrics, args.n_per_class, db_source,
+                 extractor=args.extractor, provenance=provenance)
 
     print("\n=== Summary ===")
     print(f"  Total claims:     {metrics['counts']['total']}")

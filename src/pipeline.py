@@ -37,7 +37,7 @@ class EvaluationPipeline:
             self.prongs['Prong 4'] = Prong4Intrinsic()
 
     def evaluate(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en",
-                 tiny_judge: bool = False) -> dict:
+                 tiny_judge: bool = False, llm_extract: bool = False) -> dict:
         """
         Evaluate text across all enabled prongs.
 
@@ -52,6 +52,11 @@ class EvaluationPipeline:
             tiny_judge: Opt in to the tiny-LLM judge track on Prong 1
                 Relevance (dual output in that dimension's metadata).
                 Default False: embeddings baseline only, unchanged latency.
+            llm_extract: Opt in to the LLM claim-extraction track on
+                Prong 3 (dual output: spaCy claims merged with
+                decontextualized LLM atomic claims, claim.source/
+                atomic_text in claim_details). Default False: spaCy-only
+                extraction, identical behavior.
 
         Returns:
             Dictionary containing all prong results and aggregated scores
@@ -67,6 +72,8 @@ class EvaluationPipeline:
                     result = prong.evaluate(text, prompt=prompt, tiny_judge=tiny_judge)
                 elif prong_name == 'Prong 2':
                     result = prong.evaluate(text, lang=lang)
+                elif prong_name == 'Prong 3':
+                    result = prong.evaluate(text, llm_extract=llm_extract)
                 else:
                     result = prong.evaluate(text)
                 results.append(result)
@@ -91,7 +98,7 @@ class EvaluationPipeline:
         return output
 
     def evaluate_to_json(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en",
-                         tiny_judge: bool = False) -> str:
+                         tiny_judge: bool = False, llm_extract: bool = False) -> str:
         """
         Evaluate text and return results as JSON string.
 
@@ -102,11 +109,13 @@ class EvaluationPipeline:
             lang: Language code for Prong 2 lexicon selection (default: "en").
             tiny_judge: Opt in to the tiny-LLM judge track on Prong 1
                 Relevance (dual output). Default False.
+            llm_extract: Opt in to the LLM claim-extraction track on
+                Prong 3 (dual output). Default False.
 
         Returns:
             JSON string of evaluation results
         """
         results = self.evaluate(text, prompt=prompt, intrinsic_data=intrinsic_data, lang=lang,
-                                tiny_judge=tiny_judge)
+                                tiny_judge=tiny_judge, llm_extract=llm_extract)
         return json.dumps(results, indent=2)
 

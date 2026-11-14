@@ -495,6 +495,13 @@ footer {
           <p style="font-size:0.7rem;color:var(--text3);margin:-0.4rem 0 0.75rem;" data-i18n="tiny_judge_hint">
             Runs the local 0.5B judge as a second opinion; embeddings stay the scored baseline.
           </p>
+          <div class="field" style="margin-top:0.5rem;display:flex;align-items:center;gap:0.4rem;">
+            <input type="checkbox" id="llm-extract-toggle" style="width:auto;">
+            <label for="llm-extract-toggle" style="margin:0;text-transform:none;font-weight:400;" data-i18n="llm_extract_label">LLM claim extraction (Prong 3)</label>
+          </div>
+          <p style="font-size:0.7rem;color:var(--text3);margin:-0.4rem 0 0.75rem;" data-i18n="llm_extract_hint">
+            Runs the local 1.5B model to decompose the text into atomic claims; the spaCy track stays the baseline.
+          </p>
         </div>
       </details>
     </div>
@@ -935,7 +942,7 @@ async function evaluateOnly() {
     const r = await fetch(`${API}/evaluate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, prompt, tiny_judge: document.getElementById('tiny-judge-toggle').checked }),
+      body: JSON.stringify({ text, prompt, tiny_judge: document.getElementById('tiny-judge-toggle').checked, llm_extract: document.getElementById('llm-extract-toggle').checked }),
     });
     const d = await r.json();
     document.getElementById('eval-spinner').classList.remove('active');
@@ -1516,7 +1523,17 @@ function renderScores(evalData) {
         const total = facDim.metadata.num_claims;
         const claimsSummary = document.createElement('div');
         claimsSummary.className = 'claims-summary';
-        claimsSummary.innerHTML = `<span>${t('claims_covered').replace('{{n}}', covered).replace('{{m}}', total)}</span>`;
+        let summaryText = t('claims_covered').replace('{{n}}', covered).replace('{{m}}', total);
+        // Dual-track counts — only appended when the LLM track contributed,
+        // so the default (spaCy-only) render stays pixel-identical.
+        const srcCounts = claimSourceCounts(facDim.metadata.claim_details);
+        if (srcCounts.llm > 0 || srcCounts.both > 0) {
+          summaryText += ' · ' + t('claims_source_counts')
+            .replace('{{a}}', srcCounts.spacy)
+            .replace('{{b}}', srcCounts.llm)
+            .replace('{{c}}', srcCounts.both);
+        }
+        claimsSummary.innerHTML = `<span>${summaryText}</span>`;
         body.appendChild(claimsSummary);
       }
     }
@@ -1683,11 +1700,22 @@ function renderScores(evalData) {
   });
 }
 
+function claimSourceCounts(claimDetails) {
+  // Per-source claim counts for the dual-track summary. Claims from
+  // older responses without a source field count as spaCy.
+  const counts = { spacy: 0, llm: 0, both: 0 };
+  (claimDetails || []).forEach(d => {
+    const s = d?.claim?.source || 'spacy';
+    if (counts[s] !== undefined) counts[s]++;
+  });
+  return counts;
+}
+
 function renderClaims(claims) {
   const card = document.getElementById('claims-card');
   card.hidden = false;
   const body = document.getElementById('claims-body');
-  let html = '<table class="claims-table"><thead><tr><th>Subject</th><th>Predicate</th><th>Object</th><th>Verdict</th></tr></thead><tbody>';
+  let html = '<table class="claims-table"><thead><tr><th>Subject</th><th>Predicate</th><th>Object</th><th>Verdict</th><th>Source</th></tr></thead><tbody>';
   claims.forEach(c => {
     const cl = c.claim || {};
     const v = c.effective_result || c.verification?.result || 'unknown';
@@ -1697,7 +1725,16 @@ function renderClaims(claims) {
     const title = negated
       ? `title="negated claim — raw fact check: ${esc(c.verification?.result || 'unknown')}, inverted because the sentence asserts the opposite"`
       : '';
-    html += `<tr ${title}><td>${esc(cl.subject||'')}</td><td>${predicate}</td><td>${esc(cl.object||'')}</td><td><span class="verdict ${cls}">${v}</span></td></tr>`;
+    // Dual-track source chip (spaCy triple / LLM atomic claim / both)
+    const src = cl.source || 'spacy';
+    const SRC_META = {
+      spacy: { cls: 'dim-method', key: 'claim_source_spacy' },
+      llm: { cls: 'dim-method dim-tag-exact', key: 'claim_source_llm' },
+      both: { cls: 'dim-method dim-tag-approx', key: 'claim_source_both' },
+    };
+    const meta = SRC_META[src] || SRC_META.spacy;
+    const srcChip = `<span class="${meta.cls}" title="${esc(t(meta.key))}">${esc(src)}</span>`;
+    html += `<tr ${title}><td>${esc(cl.subject||'')}</td><td>${predicate}</td><td>${esc(cl.object||'')}</td><td><span class="verdict ${cls}">${v}</span></td><td>${srcChip}</td></tr>`;
   });
   html += '</tbody></table>';
   body.innerHTML = html;
