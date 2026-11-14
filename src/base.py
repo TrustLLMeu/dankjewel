@@ -30,6 +30,17 @@ class DimensionScore:
         Uncertainty, Toxicity). If None, the aggregator falls back to
         using `value` as-is (only valid when `value` is already
         [0,1]/higher=better).
+
+    `status` records whether a real measurement happened:
+      - "scored": `value` is a genuine measurement (the default, so
+        existing scored paths stay valid).
+      - "unknown": the evidence needed for this dimension was missing
+        (no prompt for Relevance, no verifiable claims, no logprobs,
+        ...). A numeric `value` may still be present for display, but
+        it is a placeholder that must NOT be aggregated or read as a
+        quality score.
+      - "error": the dimension's computation raised an exception.
+        Like "unknown", it never enters prong/total averages.
     """
     name: str
     value: float  # dimension's own natural scale — see class docstring
@@ -37,10 +48,17 @@ class DimensionScore:
     metadata: Dict[str, Any] = None
     aggregate: bool = True
     agg_value: float = None
+    status: str = "scored"  # "scored" | "unknown" | "error"
+
+    STATUS_VALUES = ("scored", "unknown", "error")
 
     def __post_init__(self):
         if self.metadata is None:
             self.metadata = {}
+        if self.status not in self.STATUS_VALUES:
+            raise ValueError(
+                f"Invalid status {self.status!r}; must be one of {self.STATUS_VALUES}"
+            )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -51,6 +69,7 @@ class DimensionScore:
             'metadata': self.metadata,
             'aggregate': self.aggregate,
             'agg_value': self.agg_value,
+            'status': self.status,
         }
 
 

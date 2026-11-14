@@ -19,39 +19,35 @@ class Relevance(ScorableDimension):
 
     def evaluate(self, prompt: Optional[str], response: str) -> DimensionScore:
         start = time.time()
+        if prompt is None or not prompt.strip():
+            # No prompt → relevance to the prompt cannot be measured.
+            # (The old fallback scored the response against a fake
+            # first-sentence pseudo-prompt, which measures cohesion,
+            # not relevance.) Report unknown; the placeholder value is
+            # display-only and never aggregated.
+            return self.create_score(
+                value=0.5,
+                metadata={'reason': 'no prompt provided'},
+                status='unknown',
+            )
         try:
-            if prompt and prompt.strip():
-                p_emb = self.emb.embed_texts([prompt])[0]
-                # split response into sentences
-                from spacy.lang.en import English
-                nlp = English()
-                nlp.add_pipe('sentencizer')
-                doc = nlp(response)
-                sents = [s.text.strip() for s in doc.sents if s.text.strip()]
-                if not sents:
-                    # fallback to whole response
-                    sents = [response]
-                sent_embs = self.emb.embed_texts(sents)
-                sims = [self.emb.cosine_sim(p_emb, se) for se in sent_embs]
-                raw = float(np.mean(sims))
-                score = cos_to_01(raw)
-                metadata = {'model': self.emb.model_name, 'sentences': len(sents)}
-            else:
-                # fallback: self-similarity method (use first sentence as pseudo-prompt)
-                from spacy.lang.en import English
-                nlp = English()
-                nlp.add_pipe('sentencizer')
-                doc = nlp(response)
-                sents = [s.text.strip() for s in doc.sents if s.text.strip()]
-                target = sents[0] if sents else response
-                t_emb = self.emb.embed_texts([target])[0]
-                sent_embs = self.emb.embed_texts(sents or [response])
-                sims = [self.emb.cosine_sim(t_emb, se) for se in sent_embs]
-                raw = float(np.mean(sims))
-                score = cos_to_01(raw)
-                metadata = {'model': self.emb.model_name, 'fallback': True}
+            p_emb = self.emb.embed_texts([prompt])[0]
+            # split response into sentences
+            from spacy.lang.en import English
+            nlp = English()
+            nlp.add_pipe('sentencizer')
+            doc = nlp(response)
+            sents = [s.text.strip() for s in doc.sents if s.text.strip()]
+            if not sents:
+                # fallback to whole response
+                sents = [response]
+            sent_embs = self.emb.embed_texts(sents)
+            sims = [self.emb.cosine_sim(p_emb, se) for se in sent_embs]
+            raw = float(np.mean(sims))
+            score = cos_to_01(raw)
+            metadata = {'model': self.emb.model_name, 'sentences': len(sents)}
         except Exception as e:
-            return self.create_score(value=0.5, metadata={'error': str(e)})
+            return self.create_score(value=0.5, metadata={'error': str(e)}, status='error')
         return self.create_score(value=score, raw_value=raw, metadata={**metadata, 'time': time.time()-start})
 
 
@@ -79,7 +75,7 @@ class SemanticCoherence(ScorableDimension):
             score = cos_to_01(raw)
             return self.create_score(value=score, raw_value=raw, metadata={'sentences': len(sents), 'time': time.time()-start})
         except Exception as e:
-            return self.create_score(value=0.5, metadata={'error': str(e)})
+            return self.create_score(value=0.5, metadata={'error': str(e)}, status='error')
 
 
 class Reliability(ScorableDimension):
@@ -91,7 +87,7 @@ class Reliability(ScorableDimension):
         start = time.time()
         try:
             if not responses:
-                return self.create_score(value=0.5, metadata={'error': 'no responses provided'})
+                return self.create_score(value=0.5, metadata={'reason': 'no responses provided'}, status='unknown')
             if len(responses) == 1:
                 # single response: measure internal consistency
                 resp = responses[0]
@@ -119,13 +115,13 @@ class Reliability(ScorableDimension):
                     for j in range(i+1, len(emb)):
                         sims.append(self.emb.cosine_sim(emb[i], emb[j]))
                 if not sims:
-                    return self.create_score(value=0.5, metadata={'error': 'no pairwise sims'})
+                    return self.create_score(value=0.5, metadata={'reason': 'no pairwise similarities computable'}, status='unknown')
                 mean_sim = float(np.mean(sims))
                 var_sim = float(np.var(sims))
                 score = cos_to_01(mean_sim) * (1.0 - min(1.0, var_sim*2.0))
                 return self.create_score(value=score, raw_value={'mean_sim': mean_sim, 'var_sim': var_sim, 'time': time.time()-start})
         except Exception as e:
-            return self.create_score(value=0.5, metadata={'error': str(e)})
+            return self.create_score(value=0.5, metadata={'error': str(e)}, status='error')
 
 
 class Toxicity(ScorableDimension):
@@ -150,5 +146,7 @@ class Toxicity(ScorableDimension):
                 agg_value=1.0 - prob,
             )
         except Exception as e:
-            return self.create_score(value=0.0, metadata={'error': str(e)}, agg_value=1.0)
+            # A failed toxicity check must not contribute a perfect
+            # agg_value=1.0 to the average — status="error" excludes it.
+            return self.create_score(value=0.0, metadata={'error': str(e)}, agg_value=1.0, status='error')
 

@@ -76,7 +76,7 @@ class FluidityDimension(ScorableDimension):
                 }
             )
         except Exception as e:
-            return self.create_score(value=0.0, metadata={'error': str(e)})
+            return self.create_score(value=0.0, metadata={'error': str(e)}, status='error')
 
 
 class PolitenessDetection(ScorableDimension):
@@ -106,7 +106,7 @@ class PolitenessDetection(ScorableDimension):
                           'lang': lang}
             )
         except Exception as e:
-            return self.create_score(value=0.5, metadata={'error': str(e)})
+            return self.create_score(value=0.5, metadata={'error': str(e)}, status='error')
 
 
 class EmotionalIntensity(ScorableDimension):
@@ -128,7 +128,7 @@ class EmotionalIntensity(ScorableDimension):
         """Evaluate emotional intensity."""
         try:
             if self.vader is None:
-                return self.create_score(value=0.0, metadata={'error': 'VADER not available'}, aggregate=False)
+                return self.create_score(value=0.0, metadata={'error': 'VADER not available'}, aggregate=False, status='error')
 
             scores = self.vader.polarity_scores(text)
             # Use compound score as baseline
@@ -148,7 +148,7 @@ class EmotionalIntensity(ScorableDimension):
                 aggregate=False,
             )
         except Exception as e:
-            return self.create_score(value=0.0, metadata={'error': str(e)}, aggregate=False)
+            return self.create_score(value=0.0, metadata={'error': str(e)}, aggregate=False, status='error')
 
 
 class FormalityDimension(ScorableDimension):
@@ -184,7 +184,7 @@ class FormalityDimension(ScorableDimension):
                 aggregate=False,
             )
         except Exception as e:
-            return self.create_score(value=0.5, metadata={'error': str(e)}, aggregate=False)
+            return self.create_score(value=0.5, metadata={'error': str(e)}, aggregate=False, status='error')
 
 
 class HedgingDetection(ScorableDimension):
@@ -221,5 +221,5 @@ class HedgingDetection(ScorableDimension):
                 aggregate=False,
             )
         except Exception as e:
-            return self.create_score(value=0.0, metadata={'error': str(e)}, aggregate=False)
+            return self.create_score(value=0.0, metadata={'error': str(e)}, aggregate=False, status='error')
 

@@ -214,10 +214,11 @@ class TestFactualAccuracy:
         assert score.raw_value['denied'] == 1
 
     def test_no_claims(self):
-        """No claims → 0.5 fallback."""
+        """No claims → status unknown, not a fake 0.5 quality score."""
         dim = FactualAccuracy(wikidata=OfflineWikidata())
         score = dim.evaluate("Hello world.", claims=[])
-        assert score.value == 0.5
+        assert score.status == 'unknown'
+        assert score.value == 0.5  # display-only placeholder
 
     def test_mixed_claims(self, wikidata):
         """Mix of true and false claims."""
@@ -292,12 +293,13 @@ class TestTemporalAccuracy:
         assert score.value == 0.0
 
     def test_no_temporal_claims(self, wikidata):
-        """No temporal claims → 0.5 fallback."""
+        """No temporal claims → status unknown, not a fake 0.5 quality score."""
         dim = TemporalAccuracy(wikidata=wikidata)
         claims = [Claim(subject="Paris", predicate="be", object="a city",
                         source_sentence="Paris is a city.")]
         score = dim.evaluate("", claims=claims)
-        assert score.value == 0.5
+        assert score.status == 'unknown'
+        assert score.value == 0.5  # display-only placeholder
 
 
 class TestComparativeFactuality:
@@ -315,12 +317,13 @@ class TestComparativeFactuality:
         assert score.value == 1.0
 
     def test_no_comparative_claims(self, wikidata):
-        """No comparative claims → 0.5 fallback."""
+        """No comparative claims → status unknown, not a fake 0.5 quality score."""
         dim = ComparativeFactuality(wikidata=wikidata)
         claims = [Claim(subject="Paris", predicate="be", object="a city",
                         source_sentence="Paris is a city.")]
         score = dim.evaluate("", claims=claims)
-        assert score.value == 0.5
+        assert score.status == 'unknown'
+        assert score.value == 0.5  # display-only placeholder
 
 
 class TestModalityAwareness:

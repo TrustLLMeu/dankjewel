@@ -41,7 +41,9 @@ class FactualAccuracy(ScorableDimension):
 
     Score = confirmed / (confirmed + denied).
     UNKNOWN triples are excluded from the ratio.
-    Returns 0.5 when no triples are verifiable.
+    When no claims / no Wikidata / no verifiable triples exist, the
+    dimension reports status="unknown" — the placeholder value is for
+    display only and is never aggregated into a quality score.
     Negated claims have their verification result inverted.
     """
 
@@ -55,7 +57,8 @@ class FactualAccuracy(ScorableDimension):
             return self.create_score(
                 value=0.5,
                 metadata={'status': 'no_claims' if not claims else 'no_wikidata',
-                          'num_claims': 0}
+                          'num_claims': 0},
+                status='unknown',
             )
 
         confirmed = 0
@@ -97,9 +100,13 @@ class FactualAccuracy(ScorableDimension):
 
         verifiable = confirmed + denied
         if verifiable == 0:
-            score = 0.5  # No verifiable claims
+            # Every triple came back UNKNOWN: nothing was verified, so
+            # this is missing evidence (status=unknown), not a quality 0.5.
+            score = 0.5
+            status = 'unknown'
         else:
             score = confirmed / verifiable
+            status = 'scored'
 
         elapsed = (time.perf_counter() - start) * 1000
         return self.create_score(
@@ -110,7 +117,8 @@ class FactualAccuracy(ScorableDimension):
                 'verifiable': verifiable,
                 'claim_details': claim_details,
                 'verification_time_ms': elapsed,
-            }
+            },
+            status=status,
         )
 
 
@@ -247,6 +255,8 @@ class TemporalAccuracy(ScorableDimension):
     P585 (point in time), P580 (start time), P582 (end time), P569 (birth),
     P570 (death), P571 (inception).
     Score = fraction of date claims verified correctly.
+    When no claims / no Wikidata / no temporal claims / nothing verifiable
+    exist, reports status="unknown" (placeholder value, never aggregated).
     Negated claims have their verification result inverted.
     """
 
@@ -261,14 +271,16 @@ class TemporalAccuracy(ScorableDimension):
         if not claims or not self.wikidata:
             return self.create_score(
                 value=0.5,
-                metadata={'status': 'no_claims' if not claims else 'no_wikidata'}
+                metadata={'status': 'no_claims' if not claims else 'no_wikidata'},
+                status='unknown',
             )
 
         temporal_claims = [c for c in claims if c.temporal_anchor]
         if not temporal_claims:
             return self.create_score(
                 value=0.5,
-                metadata={'status': 'no_temporal_claims', 'num_claims': len(claims)}
+                metadata={'status': 'no_temporal_claims', 'num_claims': len(claims)},
+                status='unknown',
             )
 
         confirmed = 0
@@ -291,9 +303,13 @@ class TemporalAccuracy(ScorableDimension):
 
         verifiable = confirmed + denied
         if verifiable == 0:
+            # All temporal claims came back UNKNOWN: missing evidence,
+            # not a quality 0.5.
             score = 0.5
+            status = 'unknown'
         else:
             score = confirmed / verifiable
+            status = 'scored'
 
         elapsed = (time.perf_counter() - start) * 1000
         return self.create_score(
@@ -303,7 +319,8 @@ class TemporalAccuracy(ScorableDimension):
                 'temporal_claims': len(temporal_claims),
                 'details': details,
                 'verification_time_ms': elapsed,
-            }
+            },
+            status=status,
         )
 
     def _verify_temporal(self, claim: Claim) -> str:
@@ -371,6 +388,9 @@ class ComparativeFactuality(ScorableDimension):
 
     Filters claims with comparative_tag (JJR/JJS), verifies via Wikidata.
     Score = fraction of verified comparative/superlative claims.
+    When no claims / no Wikidata / no comparative claims / nothing
+    verifiable exist, reports status="unknown" (placeholder value,
+    never aggregated).
     Negated claims have their verification result inverted.
     """
 
@@ -383,14 +403,16 @@ class ComparativeFactuality(ScorableDimension):
         if not claims or not self.wikidata:
             return self.create_score(
                 value=0.5,
-                metadata={'status': 'no_claims' if not claims else 'no_wikidata'}
+                metadata={'status': 'no_claims' if not claims else 'no_wikidata'},
+                status='unknown',
             )
 
         comp_claims = [c for c in claims if c.comparative_tag]
         if not comp_claims:
             return self.create_score(
                 value=0.5,
-                metadata={'status': 'no_comparative_claims', 'num_claims': len(claims)}
+                metadata={'status': 'no_comparative_claims', 'num_claims': len(claims)},
+                status='unknown',
             )
 
         confirmed = 0
@@ -425,9 +447,13 @@ class ComparativeFactuality(ScorableDimension):
 
         verifiable = confirmed + denied
         if verifiable == 0:
+            # All comparative claims came back UNKNOWN: missing evidence,
+            # not a quality 0.5.
             score = 0.5
+            status = 'unknown'
         else:
             score = confirmed / verifiable
+            status = 'scored'
 
         elapsed = (time.perf_counter() - start) * 1000
         return self.create_score(
@@ -437,7 +463,8 @@ class ComparativeFactuality(ScorableDimension):
                 'comparative_claims': len(comp_claims),
                 'details': details,
                 'verification_time_ms': elapsed,
-            }
+            },
+            status=status,
         )
 
 

@@ -28,13 +28,15 @@ class TestRelevance:
         assert score.value <= 0.75, f"Expected low relevance, got {score.value}"
         assert 0.0 <= score.value <= 1.0, "Score out of bounds"
 
-    def test_fallback_no_prompt(self):
-        """Test fallback when no prompt is provided."""
+    def test_no_prompt_returns_unknown(self):
+        """Missing or blank prompt → relevance is unmeasurable: status unknown."""
         rel = Relevance()
         response = "Biathlon combines skiing and shooting."
-        score = rel.evaluate(None, response)
-        assert 0.0 <= score.value <= 1.0, "Score out of bounds"
-        assert score.metadata.get('fallback') == True, "Expected fallback mode"
+        for prompt in (None, ""):
+            score = rel.evaluate(prompt, response)
+            assert score.status == 'unknown'
+            assert 'reason' in score.metadata
+            assert score.metadata.get('fallback') is None  # fake-prompt path is gone
 
 
 class TestSemanticCoherence:

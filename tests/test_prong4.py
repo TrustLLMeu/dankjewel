@@ -83,12 +83,13 @@ class TestUncertainty:
         assert 0.0 <= score.value <= 1.0
         assert score.value > 0.5, f"Expected moderate-to-high uncertainty, got {score.value}"
 
-    def test_no_data_returns_neutral(self):
-        """No logits should return neutral score."""
+    def test_no_data_returns_unknown(self):
+        """No logprob data → status unknown, not a fake neutral 0.5."""
         data = IntrinsicData(token_ids=[1, 2, 3])
         dim = Uncertainty()
         score = dim.evaluate(data)
-        assert score.value == 0.5
+        assert score.status == 'unknown'
+        assert score.value == 0.5  # display-only placeholder
 
 
 
@@ -294,15 +295,17 @@ class TestProng4Integration:
                 # Others are normalized to [0, 1]
                 assert 0.0 <= dim.value <= 1.0, f"{dim.name} score out of bounds: {dim.value}"
 
-    def test_prong4_no_data_returns_error(self):
-        """Test that missing IntrinsicData returns neutral placeholder scores (Phase 1 fallback)."""
+    def test_prong4_no_data_returns_unknown(self):
+        """Missing IntrinsicData → all dimensions status unknown (placeholders, no error)."""
         prong = Prong4Intrinsic()
         result = prong.evaluate("Test text", intrinsic_data=None)
 
-        # Phase 1 graceful degradation: no error, neutral placeholders
+        # Graceful degradation: no error, unknown placeholders that
+        # never aggregate into a quality score.
         assert result.error is None
         assert len(result.dimensions) == 4
         for dim in result.dimensions:
+            assert dim.status == 'unknown'
             assert 'No intrinsic data available' in dim.metadata.get('note', '')
 
     def test_prong4_json_serialization(self):

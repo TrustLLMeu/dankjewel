@@ -100,9 +100,13 @@ class Uncertainty(ScorableDimension):
                     agg_value=1.0 - uncertainty,
                 )
             else:
-                return self.create_score(0.5, metadata={'error': 'No logprob data available'}, agg_value=0.5)
+                # No logprob data = missing evidence, not a measured 0.5.
+                return self.create_score(
+                    0.5, metadata={'reason': 'No logprob data available'},
+                    agg_value=0.5, status='unknown',
+                )
         except Exception as e:
-            return self.create_score(0.5, metadata={'error': str(e)}, agg_value=0.5)
+            return self.create_score(0.5, metadata={'error': str(e)}, agg_value=0.5, status='error')
 
 
 class Perplexity(ScorableDimension):
@@ -150,9 +154,14 @@ class Perplexity(ScorableDimension):
                     agg_value=1.0 / (1.0 + ppl),
                 )
             else:
-                return self.create_score(1.0, metadata={'error': 'No logits or log_likelihoods'}, agg_value=0.5)
+                # No logits/log-likelihoods = missing evidence, not a
+                # measured perplexity.
+                return self.create_score(
+                    1.0, metadata={'reason': 'No logits or log_likelihoods'},
+                    agg_value=0.5, status='unknown',
+                )
         except Exception as e:
-            return self.create_score(1.0, metadata={'error': str(e)}, agg_value=0.5)
+            return self.create_score(1.0, metadata={'error': str(e)}, agg_value=0.5, status='error')
 
 
 class TokenEntropy(ScorableDimension):
@@ -225,9 +234,12 @@ class TokenEntropy(ScorableDimension):
                     aggregate=False,
                 )
             else:
-                return self.create_score(0.5, metadata={'error': 'No logits or top_k_logprobs available'}, aggregate=False)
+                return self.create_score(
+                    0.5, metadata={'reason': 'No logits or top_k_logprobs available'},
+                    aggregate=False, status='unknown',
+                )
         except Exception as e:
-            return self.create_score(0.5, metadata={'error': str(e)}, aggregate=False)
+            return self.create_score(0.5, metadata={'error': str(e)}, aggregate=False, status='error')
 
 
 class SemanticEntropy(ScorableDimension):
@@ -269,7 +281,10 @@ class SemanticEntropy(ScorableDimension):
                 method = 'top_k_approximation'
 
             else:
-                return self.create_score(0.5, metadata={'error': 'No logits or top_k_logprobs available'}, aggregate=False)
+                return self.create_score(
+                    0.5, metadata={'reason': 'No logits or top_k_logprobs available'},
+                    aggregate=False, status='unknown',
+                )
 
             # Renormalize top-k probabilities to sum to 1
             top_k_probs_norm = top_k_probs / np.sum(top_k_probs, axis=1, keepdims=True)
@@ -300,7 +315,7 @@ class SemanticEntropy(ScorableDimension):
                 aggregate=False,
             )
         except Exception as e:
-            return self.create_score(0.5, metadata={'error': str(e)}, aggregate=False)
+            return self.create_score(0.5, metadata={'error': str(e)}, aggregate=False, status='error')
 
 
 class Prong4Intrinsic(Evaluator):
@@ -324,7 +339,8 @@ class Prong4Intrinsic(Evaluator):
         Args:
             text: Generated text (for reference)
             intrinsic_data: IntrinsicData from vLLM containing logits/log-likelihoods
-                           If None, returns neutral scores (Phase 1 fallback)
+                           If None, all dimensions are returned with status="unknown"
+                           (display-only placeholder values, excluded from aggregation)
 
         Evaluates:
         - Uncertainty (mean token confidence, inverted)
@@ -337,8 +353,9 @@ class Prong4Intrinsic(Evaluator):
         error = None
 
         if intrinsic_data is None:
-            # Phase 1 fallback: No vLLM data available
-            # Return neutral scores as placeholders
+            # No vLLM data available: every dimension is missing evidence.
+            # Values are display-only placeholders with status="unknown" —
+            # they never enter prong/total averages.
             from src.base import DimensionScore
             dimensions = [
                 DimensionScore(
@@ -347,6 +364,7 @@ class Prong4Intrinsic(Evaluator):
                     raw_value=None,
                     metadata={'note': 'No intrinsic data available (vLLM required)'},
                     agg_value=0.5,
+                    status='unknown',
                 ),
                 DimensionScore(
                     name='Perplexity',
@@ -354,6 +372,7 @@ class Prong4Intrinsic(Evaluator):
                     raw_value=None,
                     metadata={'note': 'No intrinsic data available (vLLM required)'},
                     agg_value=0.5,
+                    status='unknown',
                 ),
                 DimensionScore(
                     name='Token Entropy',
@@ -361,6 +380,7 @@ class Prong4Intrinsic(Evaluator):
                     raw_value=None,
                     metadata={'note': 'No intrinsic data available (vLLM required)'},
                     aggregate=False,
+                    status='unknown',
                 ),
                 DimensionScore(
                     name='Semantic Entropy',
@@ -368,6 +388,7 @@ class Prong4Intrinsic(Evaluator):
                     raw_value=None,
                     metadata={'note': 'No intrinsic data available (vLLM required)'},
                     aggregate=False,
+                    status='unknown',
                 ),
             ]
         else:

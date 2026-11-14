@@ -14,7 +14,8 @@ class ScorableDimension(Dimension):
         return max(0.0, min(1.0, normalized))
 
     def create_score(self, value: float, raw_value=None, metadata=None,
-                      aggregate: bool = True, agg_value: float = None) -> DimensionScore:
+                      aggregate: bool = True, agg_value: float = None,
+                      status: str = "scored") -> DimensionScore:
         """Create a DimensionScore with this dimension's name.
 
         Args:
@@ -28,6 +29,11 @@ class ScorableDimension(Dimension):
                 aggregation instead of `value`, when `value`'s natural
                 scale isn't already [0,1]/higher-is-better (e.g. raw
                 Perplexity, or Uncertainty/Toxicity which are higher=worse).
+            status: "scored" for a genuine measurement (default),
+                "unknown" when the evidence needed to measure was
+                missing (value becomes a display-only placeholder),
+                "error" when the computation raised an exception.
+                Anything but "scored" is excluded from aggregation.
         """
         if metadata is None:
             metadata = {}
@@ -38,5 +44,6 @@ class ScorableDimension(Dimension):
             metadata=metadata,
             aggregate=aggregate,
             agg_value=agg_value,
+            status=status,
         )
 
