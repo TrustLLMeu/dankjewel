@@ -36,11 +36,50 @@ Usage:
         --entities "Bergen,Trondheim,NTNU,SINTEF" \\
         --db-path data/wikidata_seed.db
 
+    # Extend the seed with an entity list AND prune the label-only rows
+    # the location/identity whitelist does not cite. This reproduces the
+    # shipped 122-entity data/wikidata_seed.db from the larger slice 6b
+    # fetch (see "Label-only pruning" below).
+    python scripts/extend_wikidata_db.py \\
+        --entities "Bergen,Trondheim,NTNU,SINTEF,Reykjavík,Iceland,European Union" \\
+        --db-path data/wikidata_seed.db \\
+        --prune-label-only
+
     # Dry-run: just show which entities would be fetched
     python scripts/extend_wikidata_db.py \\
         --claims  data/fever2_oracle_sample.jsonl \\
         --db-path data/wikidata_fever.db \\
         --dry-run
+
+Label-only pruning (--prune-label-only):
+
+  The fetch pipeline (steps 4–5) also resolves labels for every QID
+  cited by a fetched claim, and augment_database() inserts each as a
+  label-only "referenced entity" row. The slice 6b seed expansion pulled
+  227 such label-only values. A label-only row carries no claims of its
+  own, so verify_triple() can never confirm or deny THROUGH it — its
+  only value is letting lookup_entity() resolve a claim's object text.
+  Rows that no claim ever cites are therefore dead weight.
+
+  --prune-label-only deletes the label-only rows added by the current
+  run — rows that predate the run are never touched — unless some claim
+  cites them (claims.value_qid) via a location/identity property:
+  P17 (country), P131 (located in admin unit), P30 (continent),
+  P36 (capital), P1376 (capital of), P361 (part of).
+
+  What was kept in the shipped 122-entity seed (commit af6339a): the
+  86 pre-existing entities, 7 claim-bearing additions (Bergen,
+  Trondheim, NTNU, SINTEF, Reykjavík, Iceland, European Union), and 29
+  label-only rows those additions' location/identity claims cite
+  (Trondheim municipality, Hordaland, Kingdom of Iceland, Nordic
+  countries, ...). Everything else from the 227 label-only values was
+  pruned: no claims and no citing location/identity claim means no
+  verification value.
+
+  Reproducing the 122-entity seed from a larger fetch: start from the
+  pre-expansion 86-entity seed (git show af6339a~1:data/wikidata_seed.db),
+  then run the --entities command above with --prune-label-only (needs
+  network access to Wikipedia/Wikidata).
 """
 
 import argparse
@@ -91,6 +130,14 @@ PROPERTIES = [
     # Succession
     'P155', 'P156',
 ]
+
+# Location/identity properties whose cited entities are worth keeping as
+# label-only rows (see "Label-only pruning" in the module docstring). A
+# label-only entity survives --prune-label-only only when a claim cites it
+# (claims.value_qid) via one of these relations — the ones the seed DB
+# actually verifies. Rows cited only by other properties (or by nothing)
+# carry no verification value.
+LOCATION_IDENTITY_PROPERTIES = ('P17', 'P131', 'P30', 'P36', 'P1376', 'P361')
 
 
 # ── Claim loading ─────────────────────────────────────────────────────────────
@@ -481,10 +528,48 @@ def format_claim_value(snak, label_map):
 
 # ── Database augmentation ─────────────────────────────────────────────────────
 
-def augment_database(db_path: str, entities_data: dict, label_map: dict) -> dict:
+def _prune_unreferenced_label_only(conn, candidate_qids: set) -> dict:
+    """Prune this run's label-only rows that no location/identity claim cites.
+
+    A label-only entity (no claims of its own) is kept only when some
+    claim in the DB references it (claims.value_qid) through a property
+    in LOCATION_IDENTITY_PROPERTIES — e.g. 'Trondheim municipality'
+    survives because Trondheim.P131 cites it. Candidates with their own
+    claims are skipped, and the caller passes only QIDs added by the
+    current run, so pre-existing rows are never deleted.
+
+    Returns {'kept': [...qids], 'pruned': [...qids]}.
+    """
+    placeholders = ",".join("?" for _ in LOCATION_IDENTITY_PROPERTIES)
+    kept, pruned = [], []
+    for qid in sorted(candidate_qids):
+        n_own = conn.execute(
+            "SELECT COUNT(*) FROM claims WHERE qid = ?", (qid,)
+        ).fetchone()[0]
+        if n_own:
+            continue  # claim-bearing: never a pruning candidate
+        cited = conn.execute(
+            f"SELECT COUNT(*) FROM claims WHERE value_qid = ? "
+            f"AND property IN ({placeholders})",
+            (qid, *LOCATION_IDENTITY_PROPERTIES),
+        ).fetchone()[0]
+        if cited:
+            kept.append(qid)
+        else:
+            conn.execute("DELETE FROM entities WHERE qid = ?", (qid,))
+            conn.execute("DELETE FROM aliases WHERE qid = ?", (qid,))
+            pruned.append(qid)
+    return {"kept": kept, "pruned": pruned}
+
+
+def augment_database(db_path: str, entities_data: dict, label_map: dict,
+                     prune_label_only: bool = False) -> dict:
     """INSERT OR REPLACE new entities into an existing DB.
 
     Skips entities that already have claims to avoid redundant work.
+    With prune_label_only=True, label-only rows added by this run are
+    deleted unless a location/identity claim cites them (see the module
+    docstring's "Label-only pruning" section).
     """
     conn = sqlite3.connect(db_path)
 
@@ -496,6 +581,9 @@ def augment_database(db_path: str, entities_data: dict, label_map: dict) -> dict
         row[0] for row in conn.execute(
             "SELECT DISTINCT qid FROM claims"
         ).fetchall()
+    )
+    preexisting_qids = set(
+        row[0] for row in conn.execute("SELECT qid FROM entities").fetchall()
     )
 
     new_entities = 0
@@ -546,6 +634,7 @@ def augment_database(db_path: str, entities_data: dict, label_map: dict) -> dict
 
     # Add referenced entities (labels only)
     main_qids = set(entities_data.keys())
+    label_only_added = set()
     for qid, label in label_map.items():
         if qid not in main_qids:
             conn.execute(
@@ -553,6 +642,14 @@ def augment_database(db_path: str, entities_data: dict, label_map: dict) -> dict
                 "(qid, label, label_lower, description) VALUES (?, ?, ?, ?)",
                 (qid, label, label.lower(), "referenced entity")
             )
+            label_only_added.add(qid)
+
+    # Prune label-only rows added by this run that no location/identity
+    # claim cites. Pre-existing rows are never candidates.
+    prune_stats = None
+    if prune_label_only:
+        added_qids = (main_qids | label_only_added) - preexisting_qids
+        prune_stats = _prune_unreferenced_label_only(conn, added_qids)
 
     conn.commit()
 
@@ -569,6 +666,8 @@ def augment_database(db_path: str, entities_data: dict, label_map: dict) -> dict
         "total_entities":   after_entities,
         "total_claims":     after_claims,
         "db_size_kb":       db_size_kb,
+        "label_only_kept":  len(prune_stats["kept"]) if prune_stats else None,
+        "label_only_pruned": len(prune_stats["pruned"]) if prune_stats else None,
     }
 
 
@@ -588,6 +687,12 @@ def main():
                         help="Existing SQLite DB to augment")
     parser.add_argument("--max-entities", type=int, default=None,
                         help="Cap on new entities to fetch (useful for testing)")
+    parser.add_argument("--prune-label-only", action="store_true",
+                        help="After augmenting, delete the label-only entities "
+                             "added by this run unless a location/identity "
+                             "claim (P17/P131/P30/P36/P1376/P361) cites them. "
+                             "Reproduces the 122-entity seed from a larger "
+                             "fetch — see the module docstring.")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print candidate entity names without fetching")
     args = parser.parse_args()
@@ -659,7 +764,8 @@ def main():
     label_map.update(ref_labels)
 
     print(f"\nAugmenting database: {args.db_path}")
-    stats = augment_database(args.db_path, entities_data, label_map)
+    stats = augment_database(args.db_path, entities_data, label_map,
+                             prune_label_only=args.prune_label_only)
 
     print(f"\n{'='*60}")
     print(f"  Source:                   "
@@ -670,6 +776,11 @@ def main():
     print(f"  Entities added to DB:     {stats['entities_added']}")
     print(f"  Claims added to DB:       {stats['claims_added']}")
     print(f"  Aliases added to DB:      {stats['aliases_added']}")
+    if stats["label_only_pruned"] is not None:
+        print(f"  Label-only rows:          "
+              f"{stats['label_only_kept']} kept / "
+              f"{stats['label_only_pruned']} pruned "
+              f"(location/identity whitelist)")
     print(f"  Total entities in DB:     {stats['total_entities']}")
     print(f"  Total claims in DB:       {stats['total_claims']}")
     print(f"  DB size:                  {stats['db_size_kb']:.1f} KB")

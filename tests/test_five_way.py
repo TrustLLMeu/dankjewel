@@ -9,6 +9,10 @@ Covers:
     verifier model call, binary math unchanged
   - the /evaluate llm_verify API flag with a stubbed verifier
   - the expanded seed DB (new entities, counts, no duplicate qids)
+  - the qualifier gate in OfflineWikidata (slice 6c): mutated claims
+    carrying an embedded role / ordinal-series / temporal qualifier
+    never CONFIRM via a weak match — they abstain (UNKNOWN), or DENY
+    when the seed contradicts the qualifier (regression pins)
 
 No network, no model download: the verifier is always a stub here.
 """
@@ -550,3 +554,305 @@ class TestSeedDBExpansion:
         assert all(line.startswith("Norway ") and line.endswith(".")
                    for line in lines)
         assert db.format_entity_facts("Q999999") is None
+
+
+# ── Qualifier gate (slice 6c regression pins) ──────────────────────────────
+#
+# FEVER 2.0 REFUTES claims often mutate one precise detail of an
+# otherwise-true sentence ("the THIRD James Bond film", "directed by X",
+# "founded before 1990"). The weak/generic match paths would confirm the
+# still-true generic part; _apply_qualifier_gate must intercept and
+# abstain (UNKNOWN) — or DENY on an explicit contradiction. Each UNKNOWN
+# pin has a paired control proving the weak match WOULD confirm without
+# the qualifier, so the pin is non-vacuous.
+
+def _build_gate_fixture_db(db_path, entities, claims):
+    """Create a minimal seed-schema SQLite DB for qualifier-gate tests.
+
+    Mirrors scripts/build_wikidata_db.py's schema so OfflineWikidata
+    can read it. Args:
+      entities: [(qid, label), ...]
+      claims:   [(qid, property, value, value_qid), ...]
+    """
+    conn = sqlite3.connect(db_path)
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS entities (
+            qid TEXT PRIMARY KEY,
+            label TEXT NOT NULL,
+            label_lower TEXT NOT NULL,
+            description TEXT DEFAULT ''
+        );
+        CREATE TABLE IF NOT EXISTS aliases (
+            qid TEXT NOT NULL,
+            alias_lower TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS claims (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            qid TEXT NOT NULL,
+            property TEXT NOT NULL,
+            value TEXT NOT NULL,
+            value_qid TEXT DEFAULT NULL
+        );
+    """)
+    for qid, label in entities:
+        conn.execute(
+            "INSERT INTO entities (qid, label, label_lower, description) "
+            "VALUES (?, ?, ?, 'fixture')",
+            (qid, label, label.lower()),
+        )
+    for qid, prop, value, value_qid in claims:
+        conn.execute(
+            "INSERT INTO claims (qid, property, value, value_qid) "
+            "VALUES (?, ?, ?, ?)",
+            (qid, prop, value, value_qid),
+        )
+    conn.commit()
+    conn.close()
+
+
+class TestQualifierGate:
+    """Pins the gate against the shipped seed DB (no fixtures).
+
+    The pruned 122-entity seed carries no director/film/series data,
+    so these cover the "property absent → abstain" half of the gate:
+    the qualifier is unverifiable, so the whole claim must not CONFIRM
+    through the still-true generic part.
+    """
+
+    @pytest.fixture
+    def wikidata(self):
+        return OfflineWikidata()
+
+    def test_unqualified_location_claim_still_confirms(self, wikidata):
+        """Control: without a qualifier the weak location match confirms."""
+        detail = wikidata.verify_triple("Stockholm", "be", "a city in Sweden")
+        assert detail.result == VerificationResult.CONFIRMED
+
+    def test_role_qualifier_without_director_data_abstains(self, wikidata):
+        """'directed by X' on an entity with no director data → UNKNOWN.
+
+        A mutated claim ("Stockholm ... directed by Ingmar Bergman") must
+        not CONFIRM via the still-true 'in Sweden' location match. The
+        seed has no P57 rows, so the gate abstains rather than deny.
+        """
+        detail = wikidata.verify_triple(
+            "Stockholm", "be", "a city in Sweden directed by Ingmar Bergman")
+        assert detail.result == VerificationResult.UNKNOWN
+        assert detail.subject_qid == "Q1754"  # subject resolved; gate decided
+
+    def test_temporal_qualifier_before_year_abstains(self, wikidata):
+        """'founded before 1990' → UNKNOWN: point dates, no arithmetic."""
+        detail = wikidata.verify_triple(
+            "Oslo", "be", "a city in Norway founded before 1990")
+        assert detail.result == VerificationResult.UNKNOWN
+
+    def test_temporal_qualifier_between_years_abstains(self, wikidata):
+        """'between 1900 and 1990' → UNKNOWN: ranged dates unverifiable."""
+        detail = wikidata.verify_triple(
+            "Oslo", "be", "a city in Norway founded between 1900 and 1990")
+        assert detail.result == VerificationResult.UNKNOWN
+
+    def test_ordinal_series_claim_abstains_on_real_seed(self, wikidata):
+        """Ordinal + series noun → UNKNOWN even when the generic part matches.
+
+        Paired: the same object WITHOUT the ordinal confirms via the
+        P31 'city' weak match, so the ordinal is what flips the verdict.
+        """
+        control = wikidata.verify_triple(
+            "Trondheim", "be", "a city in Norway featured in a film")
+        assert control.result == VerificationResult.CONFIRMED
+
+        mutated = wikidata.verify_triple(
+            "Trondheim", "be", "the third city in Norway featured in a film")
+        assert mutated.result == VerificationResult.UNKNOWN
+
+    def test_true_superlative_with_ordinal_word_still_confirms(self, wikidata):
+        """Gate scoping pin: ordinals only abstain for series positions.
+
+        'the second highest mountain' has an ordinal but no series noun
+        (film/album/...), so the gate must NOT abstain — the true
+        superlative claim confirms via the P2044 superlative path.
+        """
+        detail = wikidata.verify_triple(
+            "K2", "be", "the second highest mountain in the world")
+        assert detail.result == VerificationResult.CONFIRMED
+
+    def test_gate_unknown_propagates_to_dimension_status(self, wikidata):
+        """A gated claim stays status=unknown in the honesty core.
+
+        The qualifier-gated triple counts as UNKNOWN in FactualAccuracy
+        (never confirmed), so the dimension reports missing evidence
+        rather than a scored quality value.
+        """
+        claim = Claim(
+            subject="Stockholm", predicate="be",
+            object="a city in Sweden directed by Ingmar Bergman",
+            source_sentence="Stockholm is a city in Sweden directed by "
+                            "Ingmar Bergman.",
+        )
+        score = FactualAccuracy(wikidata=wikidata).evaluate("", claims=[claim])
+        assert score.status == 'unknown'
+        assert score.raw_value == {'confirmed': 0, 'denied': 0, 'unknown': 1}
+
+
+class TestQualifierGateFixtureDb:
+    """Pins the gate branches the pruned seed cannot express.
+
+    The seed carries no director/film data, so these use a fixture DB
+    with the seed schema: a film entity (P31=film) and — for the
+    contradicted case — a director claim (P57).
+    """
+
+    @pytest.fixture
+    def db(self, tmp_path):
+        path = tmp_path / "gate_fixture.db"
+        _build_gate_fixture_db(
+            path,
+            entities=[("Q900001", "Goldfinger"), ("Q900002", "Pulp Fiction")],
+            claims=[
+                ("Q900001", "P31", "film", None),
+                ("Q900002", "P31", "film", None),
+                ("Q900002", "P57", "Quentin Tarantino", "Q900003"),
+            ],
+        )
+        return OfflineWikidata(db_path=str(path))
+
+    def test_ordinal_series_position_abstains(self, db):
+        """'the third James Bond film' → UNKNOWN: no series-ordinal data.
+
+        Paired control: 'a film' confirms via the P31 type-noun match,
+        proving the ordinal+series-noun qualifier is what abstains.
+        """
+        control = db.verify_triple("Goldfinger", "be", "a film")
+        assert control.result == VerificationResult.CONFIRMED
+
+        mutated = db.verify_triple(
+            "Goldfinger", "be", "the third James Bond film")
+        assert mutated.result == VerificationResult.UNKNOWN
+
+    def test_role_qualifier_absent_director_data_abstains(self, db):
+        """'directed by X' with no P57 data for the entity → UNKNOWN.
+
+        The claim must not CONFIRM via the still-true 'film' type match.
+        """
+        detail = db.verify_triple(
+            "Goldfinger", "be", "a film directed by Guy Hamilton")
+        assert detail.result == VerificationResult.UNKNOWN
+
+    def test_role_qualifier_contradicted_director_denies(self, db):
+        """'directed by X' where P57 data differs → DENIED (by design).
+
+        The gate's documented split: DENY on an explicit contradiction
+        with data we actually have (P57=Tarantino vs Scorsese), abstain
+        (UNKNOWN) without data. Either way it must never CONFIRM.
+        """
+        detail = db.verify_triple(
+            "Pulp Fiction", "be", "a film directed by Martin Scorsese")
+        assert detail.result == VerificationResult.DENIED
+        assert detail.result is not VerificationResult.CONFIRMED
+
+    def test_role_qualifier_matching_director_confirms(self, db):
+        """Positive control: a true 'directed by' claim still confirms."""
+        detail = db.verify_triple(
+            "Pulp Fiction", "be", "a film directed by Quentin Tarantino")
+        assert detail.result == VerificationResult.CONFIRMED
+
+
+# ── Seed-DB label-only pruning (slice 6c) ────────────────────────────────────
+
+def _load_extend_script():
+    """Import scripts/extend_wikidata_db.py as a module (not a package)."""
+    import importlib.util
+    import os
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    spec = importlib.util.spec_from_file_location(
+        "extend_wikidata_db",
+        os.path.join(root, "scripts", "extend_wikidata_db.py"),
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestPruneLabelOnly:
+    """--prune-label-only keeps only location/identity-cited label-only rows.
+
+    The 227 label-only values the slice 6b fetch pulled in were pruned to
+    the 29 rows a P17/P131/P30/P36/P1376/P361 claim cites; this pins the
+    flag's rule so the shipped 122-entity seed stays reproducible.
+    """
+
+    @pytest.fixture
+    def extend(self):
+        return _load_extend_script()
+
+    @pytest.fixture
+    def seed_db(self, tmp_path):
+        path = str(tmp_path / "seed.db")
+        _build_gate_fixture_db(
+            path,
+            entities=[("Q100", "Existing Entity"), ("Q400", "Old Label Only")],
+            claims=[("Q100", "P17", "Norway", "Q20")],
+        )
+        return path
+
+    @staticmethod
+    def _new_entity_data(label_map):
+        """One fetched entity: Q200 with a P17 claim citing Q20."""
+        return {
+            "Q200": {
+                "label": "New Place",
+                "aliases": [],
+                "claims": {
+                    "P17": [{
+                        "rank": "normal",
+                        "mainsnak": {
+                            "snaktype": "value",
+                            "datavalue": {
+                                "type": "wikibase-entityid",
+                                "value": {"id": "Q20"},
+                            },
+                        },
+                    }],
+                },
+            },
+        }
+
+    def test_uncited_label_only_pruned_cited_kept(self, extend, seed_db):
+        """Run-added label-only rows survive only when a whitelisted claim
+        cites them; pre-existing rows (even uncited label-only ones) are
+        never touched."""
+        label_map = {
+            "Q200": "New Place",
+            "Q20": "Norway",       # cited by Q200's P17 → keep
+            "Q300": "Random Ref",  # cited by nothing → prune
+        }
+        stats = extend.augment_database(
+            seed_db, self._new_entity_data(label_map), label_map,
+            prune_label_only=True,
+        )
+
+        conn = sqlite3.connect(seed_db)
+        qids = {r[0] for r in conn.execute("SELECT qid FROM entities")}
+        conn.close()
+        assert qids == {"Q100", "Q400", "Q200", "Q20"}
+        assert stats["label_only_kept"] == 1
+        assert stats["label_only_pruned"] == 1
+
+    def test_flag_off_keeps_all_label_only(self, extend, seed_db):
+        """Default behaviour is unchanged: no pruning, stats stay None."""
+        label_map = {
+            "Q200": "New Place",
+            "Q20": "Norway",
+            "Q300": "Random Ref",
+        }
+        stats = extend.augment_database(
+            seed_db, self._new_entity_data(label_map), label_map,
+        )
+
+        conn = sqlite3.connect(seed_db)
+        qids = {r[0] for r in conn.execute("SELECT qid FROM entities")}
+        conn.close()
+        assert qids == {"Q100", "Q400", "Q200", "Q20", "Q300"}
+        assert stats["label_only_pruned"] is None
+        assert stats["label_only_kept"] is None
