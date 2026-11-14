@@ -1,8 +1,9 @@
 """Main evaluation pipeline."""
 
 import json
-from typing import List
+from typing import List, Optional
 from src import config
+from src.llm_judge_client import LLMJudgeClient
 from src.prongs import Prong1LLMAsJudge, Prong2RuleBased, Prong3Extraction, Prong4Intrinsic
 from src.aggregation.aggregator import ScoreAggregator
 
@@ -10,12 +11,15 @@ from src.aggregation.aggregator import ScoreAggregator
 class EvaluationPipeline:
     """Main pipeline for multi-dimensional text evaluation."""
 
-    def __init__(self, enable_prongs: List[int] = None):
+    def __init__(self, enable_prongs: List[int] = None, judge: Optional[LLMJudgeClient] = None):
         """
         Initialize the evaluation pipeline.
 
         Args:
             enable_prongs: List of prong numbers to enable (1-4). Defaults to all.
+            judge: Tiny-judge client for the optional LLM track (dual
+                output). None (the default) lazily uses the process-wide
+                shared client; tests can inject a stub.
         """
         if enable_prongs is None:
             enable_prongs = [1, 2, 3, 4]
@@ -24,7 +28,7 @@ class EvaluationPipeline:
         self.aggregator = ScoreAggregator()
 
         if 1 in enable_prongs:
-            self.prongs['Prong 1'] = Prong1LLMAsJudge()
+            self.prongs['Prong 1'] = Prong1LLMAsJudge(judge=judge)
         if 2 in enable_prongs:
             self.prongs['Prong 2'] = Prong2RuleBased()
         if 3 in enable_prongs:
@@ -32,7 +36,8 @@ class EvaluationPipeline:
         if 4 in enable_prongs:
             self.prongs['Prong 4'] = Prong4Intrinsic()
 
-    def evaluate(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en") -> dict:
+    def evaluate(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en",
+                 tiny_judge: bool = False) -> dict:
         """
         Evaluate text across all enabled prongs.
 
@@ -44,6 +49,9 @@ class EvaluationPipeline:
                            status="unknown" (display-only placeholders,
                            excluded from aggregation).
             lang: Language code for Prong 2 lexicon selection (default: "en").
+            tiny_judge: Opt in to the tiny-LLM judge track on Prong 1
+                Relevance (dual output in that dimension's metadata).
+                Default False: embeddings baseline only, unchanged latency.
 
         Returns:
             Dictionary containing all prong results and aggregated scores
@@ -56,7 +64,7 @@ class EvaluationPipeline:
                     result = prong.evaluate(text, intrinsic_data=intrinsic_data)
                 elif prong_name == 'Prong 1':
                     # Prong 1 uses prompt for relevance scoring
-                    result = prong.evaluate(text, prompt=prompt)
+                    result = prong.evaluate(text, prompt=prompt, tiny_judge=tiny_judge)
                 elif prong_name == 'Prong 2':
                     result = prong.evaluate(text, lang=lang)
                 else:
@@ -82,7 +90,8 @@ class EvaluationPipeline:
 
         return output
 
-    def evaluate_to_json(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en") -> str:
+    def evaluate_to_json(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en",
+                         tiny_judge: bool = False) -> str:
         """
         Evaluate text and return results as JSON string.
 
@@ -91,10 +100,13 @@ class EvaluationPipeline:
             prompt: Optional prompt/query that generated the text
             intrinsic_data: Optional IntrinsicData from vLLM for Prong 4
             lang: Language code for Prong 2 lexicon selection (default: "en").
+            tiny_judge: Opt in to the tiny-LLM judge track on Prong 1
+                Relevance (dual output). Default False.
 
         Returns:
             JSON string of evaluation results
         """
-        results = self.evaluate(text, prompt=prompt, intrinsic_data=intrinsic_data, lang=lang)
+        results = self.evaluate(text, prompt=prompt, intrinsic_data=intrinsic_data, lang=lang,
+                                tiny_judge=tiny_judge)
         return json.dumps(results, indent=2)
 

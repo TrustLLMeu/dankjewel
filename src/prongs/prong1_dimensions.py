@@ -1,9 +1,10 @@
 """Prong 1 dimensions: Relevance, SemanticCoherence, Reliability, Toxicity."""
 import time
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 import numpy as np
 from src.dimensions.base_dimension import ScorableDimension
 from src.base import DimensionScore
+from src.llm_judge_client import LLMJudgeClient, JudgeUnavailableError
 from src.models.embeddings import Embeddings
 from src.models.toxicity_model import ToxicityModel
 
@@ -17,7 +18,25 @@ class Relevance(ScorableDimension):
         super().__init__(name="Relevance")
         self.emb = embeddings or Embeddings()
 
-    def evaluate(self, prompt: Optional[str], response: str) -> DimensionScore:
+    def evaluate(self, prompt: Optional[str], response: str,
+                 judge: Optional[LLMJudgeClient] = None) -> DimensionScore:
+        """Score response relevance, optionally with a tiny-LLM second opinion.
+
+        The embedding baseline stays the default: `value` (and anything
+        aggregated from it) is always the baseline score. When `judge` is
+        given, the metadata additionally carries the dual output
+        (baseline_value / llm_value, both processing times, judge model,
+        judge_status "scored"|"unknown"|"error", rationale). A failed or
+        slow judge call only downgrades the judge track — the baseline
+        score and the dimension's status are untouched.
+
+        Args:
+            prompt: the original prompt; None/blank → unmeasurable (unknown).
+            response: the text to score.
+            judge: tiny-judge client (or any object with `model_name` and
+                `judge(prompt, response)` — tests inject a stub). None
+                (the default) keeps the existing single-track behavior.
+        """
         start = time.time()
         if prompt is None or not prompt.strip():
             # No prompt → relevance to the prompt cannot be measured.
@@ -25,11 +44,15 @@ class Relevance(ScorableDimension):
             # first-sentence pseudo-prompt, which measures cohesion,
             # not relevance.) Report unknown; the placeholder value is
             # display-only and never aggregated.
-            return self.create_score(
+            score = self.create_score(
                 value=0.5,
                 metadata={'reason': 'no prompt provided'},
                 status='unknown',
             )
+            if judge is not None:
+                score.metadata.update(self._judge_track(judge, None, response,
+                                                       score.value, time.time() - start))
+            return score
         try:
             p_emb = self.emb.embed_texts([prompt])[0]
             # split response into sentences
@@ -47,8 +70,59 @@ class Relevance(ScorableDimension):
             score = cos_to_01(raw)
             metadata = {'model': self.emb.model_name, 'sentences': len(sents)}
         except Exception as e:
-            return self.create_score(value=0.5, metadata={'error': str(e)}, status='error')
-        return self.create_score(value=score, raw_value=raw, metadata={**metadata, 'time': time.time()-start})
+            err = self.create_score(value=0.5, metadata={'error': str(e)}, status='error')
+            if judge is not None:
+                err.metadata.update(self._judge_track(judge, prompt, response,
+                                                      err.value, time.time() - start))
+            return err
+        result = self.create_score(value=score, raw_value=raw,
+                                   metadata={**metadata, 'time': time.time()-start})
+        if judge is not None:
+            result.metadata.update(self._judge_track(judge, prompt, response,
+                                                     result.value, time.time() - start))
+        return result
+
+    def _judge_track(self, judge: LLMJudgeClient, prompt: Optional[str], response: str,
+                     baseline_value: float, baseline_elapsed_s: float) -> Dict[str, Any]:
+        """Run the tiny judge and return its half of the dual output. Never raises.
+
+        judge_status follows the judge call itself: "scored" with an
+        llm_value, "unknown" when the judge could not be reached or has
+        nothing to judge (no prompt), "error" when it replied unusable
+        JSON. The baseline half of the metadata mirrors what the
+        embedding path already produced.
+        """
+        track: Dict[str, Any] = {
+            'baseline_value': baseline_value,
+            'baseline_processing_time_ms': baseline_elapsed_s * 1000.0,
+            'judge_model': judge.model_name,
+            'judge_status': 'unknown',
+            'llm_value': None,
+            'llm_processing_time_ms': None,
+            'rationale': None,
+        }
+        if prompt is None or not prompt.strip():
+            # Consistent with the embedding baseline: without a prompt
+            # there is nothing for the judge to rate relevance against.
+            track['judge_error'] = 'no prompt provided'
+            return track
+        start = time.perf_counter()
+        try:
+            verdict = judge.judge(prompt, response)
+            llm_value, rationale = verdict['score'], verdict['rationale']
+        except JudgeUnavailableError as e:
+            # Timeout / connection / HTTP failure: surfaced as unknown so
+            # a slow judge never blocks the evaluate path.
+            track['judge_error'] = str(e)
+        except Exception as e:  # JudgeParseError or an unexpected client bug
+            track['judge_status'] = 'error'
+            track['judge_error'] = str(e)
+        else:
+            track['judge_status'] = 'scored'
+            track['llm_value'] = llm_value
+            track['rationale'] = rationale
+        track['llm_processing_time_ms'] = (time.perf_counter() - start) * 1000.0
+        return track
 
 
 class SemanticCoherence(ScorableDimension):

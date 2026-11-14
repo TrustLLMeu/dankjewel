@@ -3,6 +3,7 @@
 import time
 from typing import Optional, List
 from src.base import Evaluator, ProngResult
+from src.llm_judge_client import LLMJudgeClient, get_shared_judge_client
 from src.prongs.prong1_dimensions import (
     Relevance,
     SemanticCoherence,
@@ -14,9 +15,23 @@ from src.prongs.prong1_dimensions import (
 class Prong1LLMAsJudge(Evaluator):
     """LLM-as-Judge evaluator using embeddings for relevance/coherence and toxicity classifier."""
 
-    def __init__(self):
+    def __init__(self, judge: Optional[LLMJudgeClient] = None):
+        """
+        Args:
+            judge: tiny-judge client to use for the optional LLM track.
+                None (the default) means "take the process-wide shared
+                client, lazily, only when a request opts in"; tests can
+                inject a stub with the same judge()/model_name surface.
+        """
         super().__init__(prong_name="LLM-as-Judge (Prong 1)")
+        self._judge = judge
         self._init_dimensions()
+
+    def _get_judge(self) -> LLMJudgeClient:
+        """The judge client for the LLM track, created lazily on first use."""
+        if self._judge is None:
+            self._judge = get_shared_judge_client()
+        return self._judge
 
     def _init_dimensions(self) -> None:
         """Initialize all LLM-as-judge dimensions."""
@@ -25,7 +40,8 @@ class Prong1LLMAsJudge(Evaluator):
         self.register_dimension(Reliability())
         self.register_dimension(Toxicity())
 
-    def evaluate(self, text: str, prompt: Optional[str] = None, responses: Optional[List[str]] = None) -> ProngResult:
+    def evaluate(self, text: str, prompt: Optional[str] = None, responses: Optional[List[str]] = None,
+                 tiny_judge: bool = False) -> ProngResult:
         """
         Evaluate text using LLM-as-judge approach.
 
@@ -33,6 +49,9 @@ class Prong1LLMAsJudge(Evaluator):
             text: The response text to evaluate
             prompt: Optional prompt for relevance scoring
             responses: Optional list of responses for reliability scoring
+            tiny_judge: Opt in to the tiny-LLM judge track on Relevance
+                (dual output in that dimension's metadata). Default
+                False: embeddings baseline only, no judge call.
 
         Evaluates:
         - Relevance (semantic similarity to prompt)
@@ -47,7 +66,8 @@ class Prong1LLMAsJudge(Evaluator):
         try:
             # Evaluate Relevance
             rel_dim = self.dimensions['Relevance']
-            rel_score = rel_dim.evaluate(prompt, text)
+            rel_score = rel_dim.evaluate(prompt, text,
+                                         judge=self._get_judge() if tiny_judge else None)
             dimensions.append(rel_score)
 
             # Evaluate Semantic Coherence

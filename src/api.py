@@ -116,6 +116,7 @@ class EvaluateRequest(BaseModel):
     prompt: str = Field("", description="The original prompt (for relevance scoring)")
     text: str = Field(..., description="The text to evaluate")
     language: str = Field("en", description="Language code for Prong 2 lexicons (e.g. en, nl, da)")
+    tiny_judge: bool = Field(False, description="Opt in: also run the local tiny-LLM judge (Qwen2.5-0.5B) on Relevance, adding a dual llm_value/rationale track to that dimension's metadata. Default off: embeddings baseline only, identical behavior and latency.")
 
 class GenerateAndEvaluateRequest(BaseModel):
     prompt: str = Field(..., description="The input prompt for the LLM")
@@ -369,7 +370,8 @@ async def evaluate(req: EvaluateRequest):
     if evaluator is None:
         raise HTTPException(status_code=503, detail="Evaluator not initialized.")
     try:
-        result = evaluator.evaluate(text=req.text, prompt=req.prompt, lang=req.language)
+        result = evaluator.evaluate(text=req.text, prompt=req.prompt, lang=req.language,
+                                    tiny_judge=req.tiny_judge)
         return result
     except Exception as e:
         logger.exception("Evaluation failed")
