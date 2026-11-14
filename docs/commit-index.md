@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `38e3731` — Add scored/unknown/error status so missing evidence is not 0.5
+- **Latest commit:** `PENDING` — instrument panel
 - **Tree:** clean after index land
 - **Open slices:** slice 3 — instrument panel (Dashboard)
 
