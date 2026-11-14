@@ -6,15 +6,17 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `a5dbb8d` — Add optional LLM atomic-claim extraction track for Prong 3 (dual output)
+- **Latest commit:** `af6339a` — Add MiniCheck verifier, five-way Prong 3 relations, and seed expansion
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** pre-existing 390px evaluator overflow (485px); judge latency row for the Phase-4 table; slice 6b (5-way relation labels + MiniCheck/AlignScore verifier, then seed expansion); full FEVER 2.0 fixers set unavailable publicly — the harness uses FEVER 1.0 shared-task dev
+- **Open slices:** pre-existing 390px evaluator overflow (485px); judge/verifier latency rows for the Phase-4 table; seed coverage still 0.3% on FEVER; slice 6b follow-ups (AVeriTeC/LLM-AggreFact second benchmark, Nordic seed, partially_supported reachable mainly via the authored eval)
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-14 | `PENDING` | chore / index | Record slice 6a LLM claim extraction in commit index | chore |
+| 2026-11-14 | `PENDING` | chore / index | Record slice 6b verifier land in commit index | chore |
+| 2026-11-14 | `af6339a` | prong 3 / verifier | Add MiniCheck verifier, five-way Prong 3 relations, and seed expansion | wXze+V55p Prong 3 discriminative signal (five-way + verifier track) |
+| 2026-11-14 | `fe29386` | chore / index | Record slice 6a LLM claim extraction in commit index | chore |
 | 2026-11-14 | `a5dbb8d` | prong 3 / extraction | Add optional LLM atomic-claim extraction track for Prong 3 (dual output) | wXze coverage <10% (extraction recall) |
 | 2026-11-14 | `c71b57d` | chore / index | Record slice 5 UI land in commit index | chore |
 | 2026-11-14 | `1265aba` | dashboard / tiny judge | Add tiny-judge toggle and dual-track display to the evaluator UI | wXze Prong 1 no LLM (UI half) |
@@ -37,9 +39,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record slice 6a LLM claim extraction in commit index (2026-11-14)
+### `PENDING` — Record slice 6b verifier land in commit index (2026-11-14)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the slice 6b land.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `af6339a` — Add MiniCheck verifier, five-way Prong 3 relations, and seed expansion (2026-11-14)
+
+- **Hash:** `af6339a7b235ef81758bd9723507dc7b1631a668`
+- **Why:** Slice 6b, per the claim-extraction scout re-rank. MiniCheck-Flan-T5-Large (770M, CPU, ~0.2 s/claim warm) implemented with the official protocol (input "predict: doc</s>claim", logits [3,209], softmax) via `transformers` — the PyPI `minicheck` name is a different project, so no pip dependency was added. Opt-in `llm_verify` flag (default false) + third UI toggle: final-UNKNOWN claims with a resolvable subject are scored against the subject's formatted seed-KB facts; p>=0.8 confirmed, p<=0.2 denied, else partially_supported. VerificationResult gains PARTIALLY_SUPPORTED + CONFLATED; a deterministic conflation rule (object resolves to a KB entity that is a valid value of the same property for another subject, while the subject's own value differs) fires on final-UNKNOWN only; binary value math unchanged, relation_counts/claim relation added as the upgraded metadata track. Seed DB 86 -> 122 entities (+36: Bergen, Trondheim, Iceland, Reykjavik, NTNU alias, SINTEF, EU, claims-bearing Europe/South America; label-only rows pruned to the location/identity whitelist). `scripts/extend_wikidata_db.py` gains `--entities`; `scripts/eval_verifier.py` + `data/verifier_eval.json` (authored PoC pairs) give the verifier evidence.
+- **Files:** `.gitignore`, `README.md`, `docs/improvement-plan.md`, `data/wikidata_seed.db`, `data/verifier_eval.json`, `src/resources/nli_verifier.py`, `src/resources/wikidata_offline.py`, `src/dimensions/prong3_dimensions.py`, `src/prongs/prong3_extraction.py`, `src/pipeline.py`, `src/api.py`, `src/config.py`, `scripts/extend_wikidata_db.py`, `scripts/eval_verifier.py`, `frontend/index.html`, `frontend/locales/en.json`, `tests/test_nli_verifier.py`, `tests/test_five_way.py`
+- **Closes:** the "Prong 3 carries no discriminative signal" half of V55p/wXze on covered claims (five-way labels + verifier track; binary AUC stays comparable) — NOT the coverage item (FEVER seed coverage remains 0.3%) and not the public-benchmark item (verifier pairs are PoC-authored)
+- **Verify:** implementer pytest 307 passed + 2 skipped (no key) / 309 (with key); Captain reran the suite in the main tree (307+2) and Selenium 10/10: third toggle default off; real evaluation "Oslo is the capital of Norway. Trondheim is the capital of Hordaland." -> conflated chip (purple #ede9fe) + summary "1 of 2 claims covered · confirmed 1 / denied 0 / partial 0 / conflated 1 / unknown 0"; "Oslo is a city with about 700,000 inhabitants." -> verifier off: unknown, verifier on: denied (end-to-end flag wiring); partially_supported chip/tooltip via the app's renderer (amber #fef3c7; rare through the pipeline because decomposition + exact KB matching route most claims to confirmed/denied first); 390px no overflow regression (485=485 vs c71b57d). Verifier eval (25 pairs): five-way accuracy 0.760; binary AUC 0.906 (n=8/12, partials excluded); 12/12 refuted; 550 ms/pair mean. FEVER 30/class after expansion: spacy and dual both still 0/90 coverage, AUC 0.500. README honesty fix: the stale seed row (9.0%/0.494/0.500) predated the qualifier gate; full 1,174-claim rerun on BOTH the expanded 122-entity and pristine 86-entity DBs gives identical 4/1174 (0.3%) covered, AUC 0.497 — README now reads "~122 entities — a small seed, not Wikidata".
+
+### `fe29386` — Record slice 6a LLM claim extraction in commit index (2026-11-14)
+
+- **Hash:** `fe29386223cf47319421533ac34d40d997fd3398`
 - **Why:** Record the slice 6a land and the FEVER dataset deviation (public FEVER 2.0 fixers set unavailable; the harness uses the official FEVER 1.0 shared-task dev set).
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
