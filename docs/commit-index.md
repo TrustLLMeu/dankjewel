@@ -6,15 +6,17 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `9013249` — Add optional tiny-LLM judge track on Prong 1 Relevance (dual output)
+- **Latest commit:** `1265aba` — Add tiny-judge toggle and dual-track display to the evaluator UI
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** slice 5 UI half (tiny-judge toggle + dual-track display in frontend); slice 6 Prong 3 extraction waits on Go (Claimify flag); judge latency row for the Phase-4 table
+- **Open slices:** pre-existing 390px horizontal overflow on the evaluator page (scrollWidth 485, present before this change; slice 3's 390px check covered /commits); judge latency row for the Phase-4 table; slice 6 Prong 3 extraction waits on Go (Claimify flag)
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-14 | `PENDING` | chore / index | Record slice 5 tiny judge land in commit index | chore |
+| 2026-11-14 | `PENDING` | chore / index | Record slice 5 UI land in commit index | chore |
+| 2026-11-14 | `1265aba` | dashboard / tiny judge | Add tiny-judge toggle and dual-track display to the evaluator UI | wXze Prong 1 no LLM (UI half) |
+| 2026-11-14 | `8cbb11d` | chore / index | Record slice 5 tiny judge land in commit index | chore |
 | 2026-11-14 | `86b397d` | chore / ignore | Ignore local crew worktrees and verification screenshots | chore |
 | 2026-11-14 | `9013249` | tiny judge / Prong 1 | Add optional tiny-LLM judge track on Prong 1 Relevance (dual output) | wXze Prong 1 no LLM (API half) |
 | 2026-11-14 | `37fa6e4` | dashboard | Add a browsable commit history page at /commits | YE7H / wXze history in the UI |
@@ -33,9 +35,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record slice 5 tiny judge land in commit index (2026-11-14)
+### `PENDING` — Record slice 5 UI land in commit index (2026-11-14)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the slice 5 UI lands.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `1265aba` — Add tiny-judge toggle and dual-track display to the evaluator UI (2026-11-14)
+
+- **Hash:** `1265aba3bfaac9695c7870e79cf1e59752269e29`
+- **Why:** Slice 5 UI half — the reviewer can now see whether a generative judge ran. Toggle "Tiny LLM judge (Prong 1 Relevance)" in the Paste Text card (default off) sends `tiny_judge` to `POST /evaluate`. Relevance row shows the dual track: baseline stays the main value; scored judge adds model chip (0.5B-Instruct), ms chip, and "judge: x.xxx" tag with rationale+model+ms tooltip; unreachable judge shows grey dashed "judge: unknown" with the connection error in the tooltip; unusable JSON shows muted-red "judge: error". Prong 1 subtitle switches from "embeddings" to "embeddings + tiny-llm (0.5B)" when the judge ran. Captain glue: two-line flex-wrap fix on `.dim-row`/`.dim-tags` so the three chips wrap to a second line instead of clipping in the narrow results column.
+- **Files:** `frontend/index.html`, `frontend/locales/en.json`
+- **Closes:** UI half of review.txt "Prong 1 does not use an LLM" — the full item is closed (API half landed in 9013249)
+- **Verify:** Selenium (headless Chromium) 20/20 checks against three server states (real 0.5B judge, unreachable judge, non-JSON mock judge): toggle unchecked by default; off → no judge tags, subtitle "embeddings"; on → "judge: 1.000" + "0.5B-Instruct" + ms chips, rationale tooltip, subtitle "embeddings + tiny-llm (0.5B)", baseline 0.852 stays the main value; irrelevant answer → "judge: 0.000"; dead judge → grey dashed "judge: unknown" with connection-refused tooltip, baseline intact; non-JSON judge → red "judge: error"; history restore re-renders judge tags; 390px: no overflow regression vs pre-change baseline (both 485 — pre-existing, tracked as open item). pytest 223 passed + 1 skipped (no backend change).
+
+### `8cbb11d` — Record slice 5 tiny judge land in commit index (2026-11-14)
+
+- **Hash:** `8cbb11d03ac72556b72f12eace715261b0ae2703`
 - **Why:** Record the slice 5 lands.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
