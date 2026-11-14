@@ -1,0 +1,212 @@
+{
+  "meta": {
+    "path": "/evaluate",
+    "method": "POST",
+    "transport": "fastapi.testclient.TestClient(src.api.app), in-process (no uvicorn, no TCP; lifespan built EvaluationPipeline)",
+    "request": {
+      "prompt": "What is the capital of France?",
+      "text": "The capital of France is Paris, in the north of the country.",
+      "language": "en"
+    },
+    "n_warmup": 2,
+    "n_timed": 5,
+    "std_definition": "sample std (n-1)",
+    "units": {
+      "wall_clock_ms": "wall clock around client.post",
+      "prong_ms": "prong_results[].processing_time from JSON (seconds, time.time() deltas) x 1000"
+    },
+    "git": "feature/d75-v2 @ feature/d75-v2",
+    "timestamp_utc": "2026-11-14T09:45:34+00:00",
+    "not_measured": [
+      "/generate-and-evaluate (needs a vLLM generation server \u2014 out of slice 1)"
+    ]
+  },
+  "hardware": {
+    "hostname": "malvik",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6132 CPU @ 2.60GHz",
+    "nproc": 56,
+    "mem_total_gb": 754.52,
+    "python_version": "3.12.3",
+    "torch_version": "2.15.0+cu132",
+    "cuda_available": false,
+    "compute": "CPU-only (CUDA init failed; torch built with CUDA, driver too old)"
+  },
+  "warmup_wall_clock_ms": [
+    8738.44,
+    662.585
+  ],
+  "wall_clock_http_ms": {
+    "per_run_ms": [
+      658.344,
+      657.844,
+      656.734,
+      669.96,
+      665.712
+    ],
+    "n": 5,
+    "mean": 661.719,
+    "std": 5.812,
+    "min": 656.734,
+    "max": 669.96
+  },
+  "prongs": {
+    "Prong 1": {
+      "response_name": "LLM-as-Judge (Prong 1)",
+      "per_run_ms": [
+        645.019,
+        644.611,
+        643.399,
+        652.615,
+        651.57
+      ],
+      "n": 5,
+      "mean": 647.443,
+      "std": 4.302,
+      "min": 643.399,
+      "max": 652.615
+    },
+    "Prong 2": {
+      "response_name": "Rule-Based (Prong 2)",
+      "per_run_ms": [
+        0.468,
+        0.463,
+        0.477,
+        0.534,
+        0.461
+      ],
+      "n": 5,
+      "mean": 0.481,
+      "std": 0.03,
+      "min": 0.461,
+      "max": 0.534
+    },
+    "Prong 3": {
+      "response_name": "Extraction-Based (Prong 3)",
+      "per_run_ms": [
+        9.292,
+        9.195,
+        9.248,
+        12.711,
+        9.289
+      ],
+      "n": 5,
+      "mean": 9.947,
+      "std": 1.546,
+      "min": 9.195,
+      "max": 12.711
+    },
+    "Prong 4": {
+      "response_name": "Intrinsic (Prong 4)",
+      "per_run_ms": [
+        0.01,
+        0.01,
+        0.01,
+        0.01,
+        0.01
+      ],
+      "n": 5,
+      "mean": 0.01,
+      "std": 0.0,
+      "min": 0.01,
+      "max": 0.01
+    }
+  },
+  "total_ms": {
+    "sum_of_prongs": {
+      "per_run_ms": [
+        654.789,
+        654.279,
+        653.136,
+        665.87,
+        661.329
+      ],
+      "n": 5,
+      "mean": 657.881,
+      "std": 5.495,
+      "min": 653.136,
+      "max": 665.87
+    },
+    "aggregated_metadata_total_time": {
+      "per_run_ms": [
+        654.789,
+        654.279,
+        653.136,
+        665.87,
+        661.329
+      ],
+      "n": 5,
+      "mean": 657.881,
+      "std": 5.495,
+      "min": 653.136,
+      "max": 665.87
+    },
+    "note": "aggregated_scores.metadata.total_time is the pipeline's own sum of prong processing times; wall clock includes HTTP/ASGI dispatch overhead on top."
+  },
+  "runs": [
+    {
+      "run": 1,
+      "status": 200,
+      "wall_clock_ms": 658.344,
+      "prong_ms": {
+        "Prong 1": 645.019,
+        "Prong 2": 0.468,
+        "Prong 3": 9.292,
+        "Prong 4": 0.01
+      },
+      "total_prong_sum_ms": 654.789,
+      "aggregated_total_time_ms": 654.789
+    },
+    {
+      "run": 2,
+      "status": 200,
+      "wall_clock_ms": 657.844,
+      "prong_ms": {
+        "Prong 1": 644.611,
+        "Prong 2": 0.463,
+        "Prong 3": 9.195,
+        "Prong 4": 0.01
+      },
+      "total_prong_sum_ms": 654.279,
+      "aggregated_total_time_ms": 654.279
+    },
+    {
+      "run": 3,
+      "status": 200,
+      "wall_clock_ms": 656.734,
+      "prong_ms": {
+        "Prong 1": 643.399,
+        "Prong 2": 0.477,
+        "Prong 3": 9.248,
+        "Prong 4": 0.01
+      },
+      "total_prong_sum_ms": 653.136,
+      "aggregated_total_time_ms": 653.136
+    },
+    {
+      "run": 4,
+      "status": 200,
+      "wall_clock_ms": 669.96,
+      "prong_ms": {
+        "Prong 1": 652.615,
+        "Prong 2": 0.534,
+        "Prong 3": 12.711,
+        "Prong 4": 0.01
+      },
+      "total_prong_sum_ms": 665.87,
+      "aggregated_total_time_ms": 665.87
+    },
+    {
+      "run": 5,
+      "status": 200,
+      "wall_clock_ms": 665.712,
+      "prong_ms": {
+        "Prong 1": 651.57,
+        "Prong 2": 0.461,
+        "Prong 3": 9.289,
+        "Prong 4": 0.01
+      },
+      "total_prong_sum_ms": 661.329,
+      "aggregated_total_time_ms": 661.329
+    }
+  ]
+}
