@@ -226,6 +226,13 @@ footer {
   font-family: inherit; cursor: pointer;
 }
 #lang-select option { background: var(--header-bg); color: var(--header-text); }
+.header-link {
+  background: rgba(255,255,255,0.1); color: var(--header-text);
+  border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;
+  font-size: 0.72rem; padding: 0.15rem 0.55rem; text-decoration: none;
+  white-space: nowrap;
+}
+.header-link:hover { background: rgba(255,255,255,0.2); color: #fff; }
 
 /* ── Weight presets ──────────────────────────────────────────────── */
 .preset-grid {
@@ -315,6 +322,7 @@ footer {
   <div class="status-dot" id="status-dot" title="Server status"></div>
   <span class="status-label" id="status-label" data-i18n="connecting">connecting…</span>
   <div class="header-spacer"></div>
+  <a class="header-link" href="/commits">Commits</a>
   <select id="lang-select" onchange="setLocale(this.value)">
     <option value="en">English</option>
     <option value="da">Dansk</option>

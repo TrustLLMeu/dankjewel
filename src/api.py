@@ -24,8 +24,10 @@ Requires a running vLLM server for the local backend:
 
 import json
 import os
+import re
 import time
 import logging
+import subprocess
 from contextlib import asynccontextmanager
 from typing import Optional
 from pathlib import Path
@@ -415,6 +417,148 @@ async def generate_and_evaluate(req: GenerateAndEvaluateRequest):
         "generation": gen_result.to_dict(),
         "evaluation": eval_result,
     }
+
+
+# ── Commit history (Git Historian) ──────────────────────────────────────────
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+COMMIT_INDEX = REPO_ROOT / "docs" / "commit-index.md"
+
+
+def _git(*args: str) -> str:
+    """Run one git command in the repo root and return stdout."""
+    try:
+        proc = subprocess.run(
+            ["git", *args],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        )
+    except FileNotFoundError as e:
+        raise RuntimeError("git executable not found") from e
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError("git timed out") from e
+    except subprocess.CalledProcessError as e:
+        detail = (e.stderr or e.stdout or "").strip()
+        raise RuntimeError(f"git failed: {detail}") from e
+    return proc.stdout
+
+
+def _parse_commit_index():
+    """Annotations from docs/commit-index.md, keyed by short hash.
+
+    The table supplies date/area/review item; the newest-first sections
+    supply why/files/closes/verify. Returns (annotations, open_slices).
+    """
+    ann: dict[str, dict] = {}
+    open_slices = ""
+    if not COMMIT_INDEX.exists():
+        return ann, open_slices
+    text = COMMIT_INDEX.read_text(encoding="utf-8")
+    m = re.search(r"\*\*Open slices:\*\* ?(.+)", text)
+    if m:
+        open_slices = m.group(1).strip()
+    for line in text.splitlines():
+        if not line.lstrip().startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 5:
+            continue
+        short = cells[1].strip("`")
+        if not re.fullmatch(r"[0-9a-f]{7,40}", short):
+            continue
+        a = ann.setdefault(short, {})
+        a.setdefault("date", cells[0])
+        a.setdefault("area", cells[2])
+        a.setdefault("review_item", cells[4])
+    current: Optional[str] = None
+    for line in text.splitlines():
+        if line.startswith("### "):
+            m = re.match(r"^### +`([0-9a-f]{7,40})`", line)
+            current = m.group(1) if m else None
+            continue
+        if line.startswith("## "):
+            current = None
+            continue
+        if current is None:
+            continue
+        m = re.match(r"^- \*\*(Why|Files|Closes|Verify):\*\* ?(.*)$", line)
+        if not m:
+            continue
+        key = m.group(1).lower()
+        val = m.group(2).strip()
+        if key == "files":
+            tokens = re.findall(r"`([^`]+)`", val)
+            val = ", ".join(tokens) if tokens else val
+        ann.setdefault(current, {})[key] = val
+    return ann, open_slices
+
+
+def _build_commits_payload() -> dict:
+    """git log from the merge-base with master through HEAD, annotated."""
+    branch = _git("branch", "--show-current").strip()
+    head = _git("rev-parse", "HEAD").strip()
+    base = _git("merge-base", "master", "HEAD").strip()
+    status = _git("status", "--porcelain")
+    tree = "dirty" if any(
+        line and not line.startswith("??") for line in status.splitlines()
+    ) else "clean"
+    meta = _git(
+        "log", f"{base}..HEAD", "--format=%x1e%H%x1f%ad%x1f%s%x1f%b", "--date=short"
+    )
+    names = _git("log", f"{base}..HEAD", "--name-only", "--format=%x1e%H")
+    ann, open_slices = _parse_commit_index()
+    files_by_hash: dict[str, list] = {}
+    for chunk in names.split("\x1e"):
+        lines = [l for l in chunk.splitlines() if l.strip()]
+        if lines:
+            files_by_hash[lines[0].strip()] = lines[1:]
+    commits = []
+    for chunk in meta.split("\x1e"):
+        if "\x1f" not in chunk:
+            continue
+        full, date, subject, body = chunk.split("\x1f", 3)
+        full = full.strip()
+        a = ann.get(full[:7], {})
+        commits.append({
+            "short": full[:7],
+            "hash": full,
+            "date": a.get("date") or date,
+            "subject": subject,
+            "body": body.strip(),
+            "area": a.get("area") or "unindexed",
+            "review_item": a.get("review_item", ""),
+            "why": a.get("why", ""),
+            "files": files_by_hash.get(full, []),
+            "closes": a.get("closes", ""),
+            "verify": a.get("verify", ""),
+        })
+    where = {
+        "latest": f"{commits[0]['short']} — {commits[0]['subject']}" if commits else "",
+        "open_slices": open_slices,
+        "tree": tree,
+    }
+    return {"branch": branch, "head": head, "where": where, "commits": commits}
+
+
+@app.get("/commits", include_in_schema=False)
+async def serve_commits_page():
+    """Serve the browsable commit history page."""
+    page = FRONTEND_DIR / "commits.html"
+    if page.exists():
+        return FileResponse(page)
+    return {"message": "Commits page not found. Place commits.html in frontend/"}
+
+
+@app.get("/api/commits")
+async def api_commits():
+    """Annotated git log for the current branch (merge-base with master → HEAD)."""
+    try:
+        return _build_commits_payload()
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=f"git unavailable: {e}")
 
 
 # ── Static assets ───────────────────────────────────────────────────────────
