@@ -6,15 +6,17 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `181141c` — Record the mechanical lexicon validation audit
+- **Latest commit:** `01a6d4b` — Add an opt-in LLM admission classifier and document its limits
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** claim-admission reported-claim pass and the optional LLM admission classifier; seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion and lexicon validation; the eight non-English lexicons remain unvalidated translations
+- **Open slices:** claim-admission reported-claim pass (unquoted embedded reported speech); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion and lexicon validation; the eight non-English lexicons remain unvalidated translations
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-16 | `PENDING` | chore / index | Record use-mention pass and lexicon audit in commit index | chore |
+| 2026-11-16 | `PENDING` | chore / index | Record the LLM admission classifier in commit index | chore |
+| 2026-11-16 | `01a6d4b` | prong 3 / admission | Add an opt-in LLM admission classifier and document its limits | wXze claim precision (measured negative result) |
+| 2026-11-16 | `706c276` | chore / index | Record use-mention pass and lexicon audit in commit index | chore |
 | 2026-11-16 | `181141c` | docs / lexicon | Record the mechanical lexicon validation audit | wXze multilingual validation (Nordic lexicons) |
 | 2026-11-16 | `adbe44f` | prong 3 / admission | Extract quoted and labelled claims as mentioned claims | wXze claim precision (reported-claim follow-up) |
 | 2026-11-16 | `ad10039` | chore / index | Record docs, crew rules and interactive latency in commit index | chore |
@@ -77,9 +79,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record use-mention pass and lexicon audit in commit index (2026-11-16)
+### `PENDING` — Record the LLM admission classifier in commit index (2026-11-16)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the opt-in LLM admission classifier (`01a6d4b`) and its measured limits; backfill the previous index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `01a6d4b` — Add an opt-in LLM admission classifier and document its limits (2026-11-16)
+
+- **Hash:** `01a6d4b886b070814d9d3cdbacf67ea25f37d9ca`
+- **Why:** An opt-in 1.5B `[ADMIT]` classifier (`LLMJudgeClient.admit`) over the rule-admitted Prong 3 claims: `EvaluateRequest`/`pipeline`/Prong 3 gain `llm_admit` (default off); each admitted claim's sentence is classified yes/no by the local claims model (temperature 0, max_tokens 4), and non-claims are dropped. It never invents claims, and when the model is unreachable or the reply unparseable (`_parse_yes_no` returns None) the claim is kept, because the deterministic gates already ran. `metadata.claim_admission` records `llm_admit_dropped`/`llm_admit_unknown`. `docs/CLAIM_ADMISSION.md` documents the measured result: on the teacher fixture it drops 4 of 9 — two intended (the "smoking is that bad" fragment and the "Critical thinking..." advice) and two false negatives ("Humans have five eyes", "This new supplement is 100% natural"); a revised prompt that admits general-class claims still drops "five eyes" and starts admitting the advice, so it trades recall for precision. The deterministic gates remain the default and the classifier is documented as **not recommended**. Three new tests (monkeypatched, no live model): drop/count, unknown-keeps, and flag-off makes no model calls (ExplodingClient).
+- **Files:** `src/llm_judge_client.py`, `src/prongs/prong3_extraction.py`, `src/pipeline.py`, `src/api.py`, `tests/test_claim_admission.py` (3 new tests), `docs/CLAIM_ADMISSION.md`
+- **Closes:** the optional LLM admission item (landed as a measured negative result; the deterministic gates stay the default)
+- **Verify:** full pytest 412 passed + 2 skipped (3 new tests); fixture measurement recorded in `docs/CLAIM_ADMISSION.md` (4 of 9 dropped: two intended, two false negatives).
+
+### `706c276` — Record use-mention pass and lexicon audit in commit index (2026-11-16)
+
+- **Hash:** `706c2762aaf6c79141bf048396c287692b75df99`
 - **Why:** Record the use-mention pass (`adbe44f`) and the mechanical lexicon-validation audit (`181141c`); backfill the previous index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
