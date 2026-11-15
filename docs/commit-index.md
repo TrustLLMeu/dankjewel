@@ -6,15 +6,17 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `a4f36c3` — Add a subject-grouped claim evidence strip to the results panel
+- **Latest commit:** `62a7f9e` — Add a dimensions x evidence-source signal matrix to the results panel
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); unified evidence view (stages A–C done, stages D–F open); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
+- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); unified evidence view (stages A–D done, stages E–F open); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-15 | `PENDING` | chore / index | Record Stage C claim strip in commit index | chore |
+| 2026-11-15 | `PENDING` | chore / index | Record Stage D signal matrix in commit index | chore |
+| 2026-11-15 | `62a7f9e` | dashboard / evidence | Add a dimensions x evidence-source signal matrix to the results panel | V55p transparency (signal provenance) |
+| 2026-11-15 | `ab1df04` | chore / index | Record Stage C claim strip in commit index | chore |
 | 2026-11-15 | `a4f36c3` | dashboard / evidence | Add a subject-grouped claim evidence strip to the results panel | V55p transparency (claim level) |
 | 2026-11-15 | `6f8d308` | chore / index | Record NTNU concurrency clarification in commit index | chore |
 | 2026-11-15 | `3fc9111` | chore / crew | Clarify NTNU concurrency versus the Grok weekly limit | chore |
@@ -57,9 +59,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record Stage C claim strip in commit index (2026-11-15)
+### `PENDING` — Record Stage D signal matrix in commit index (2026-11-15)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the Stage D signal-matrix land; backfill the Stage C index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `62a7f9e` — Add a dimensions x evidence-source signal matrix to the results panel (2026-11-15)
+
+- **Hash:** `62a7f9eb036bbe2eaba6510cd46af86032392ed9`
+- **Why:** Stage D of the unified evidence view. Inside the Evidence section, a compact table lists every dimension that recorded evidence and one column per source actually used (emb/jud/cls/rul/spa/llm/kb/mc/lp, full names in header tooltips). Cell = the source's own two-decimal score, ? unknown, ! error, a middle dot for counted-without-a-single-score, blank when the source did not inform; cell tooltips carry dimension, source and item count. Columns appear only when a source actually informed a dimension (the verifier column appears only when MiniCheck scored something). Hidden for legacy payloads without `evidence_sources`; horizontal scroll inside the card guards narrow layouts.
+- **Files:** `frontend/index.html`, `frontend/locales/en.json`
+- **Closes:** V55p transparency (which signals back each dimension); Stage D of the unified-view plan; the table doubles as the export surface for a human-correlation study
+- **Verify:** Selenium (headless Chromium): hidden before evaluation and on a legacy stub; 16 dimension rows; off-state headers emb/cls/rul/spa/kb/lp; jud/llm appear with the flags on and mc only when the verifier scored; Relevance emb 0.54 (2dp), Toxicity cls 0.00, Uncertainty lp "?", Factual Accuracy kb 1.00; legend present; true 390 via CDP -> page 375 == 375 with the matrix fitting without internal scroll; screenshots `.shots/stage_d_desktop.png`, `.shots/stage_d_390.png`. pytest 361 passed + 2 skipped (frontend-only).
+
+### `ab1df04` — Record Stage C claim strip in commit index (2026-11-15)
+
+- **Hash:** `ab1df049d3944cddc1088ddeadb5c80f820ffc8d`
 - **Why:** Record the Stage C claim-strip land; backfill the NTNU-concurrency index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
