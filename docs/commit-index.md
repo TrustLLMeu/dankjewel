@@ -6,15 +6,17 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `1607a9d` — Expose per-dimension evidence sources and a coverage summary
+- **Latest commit:** `0fd5a5e` — Show score anatomy and evidence coverage in the results panel
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); unified evidence view (Stage A done, stages B–F open); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
+- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); unified evidence view (stages A–B done, stages C–F open); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-15 | `PENDING` | chore / index | Record Stage A evidence contract in commit index | chore |
+| 2026-11-15 | `PENDING` | chore / index | Record Stage B evidence view in commit index | chore |
+| 2026-11-15 | `0fd5a5e` | dashboard / evidence | Show score anatomy and evidence coverage in the results panel | V55p transparency (aggregate composition) |
+| 2026-11-15 | `fd99a90` | chore / index | Record Stage A evidence contract in commit index | chore |
 | 2026-11-15 | `1607a9d` | Stage A / evidence | Expose per-dimension evidence sources and a coverage summary | V55p transparency / unified evidence view |
 | 2026-11-15 | `e950bff` | chore / crew | Idle the Captain while crew panes work | chore |
 | 2026-11-15 | `4032bf0` | chore / index | Record Phase-4 latency and SciFact benchmark in commit index | chore |
@@ -51,9 +53,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record Stage A evidence contract in commit index (2026-11-15)
+### `PENDING` — Record Stage B evidence view in commit index (2026-11-15)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the Stage B evidence-view land; backfill the Stage A index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `0fd5a5e` — Show score anatomy and evidence coverage in the results panel (2026-11-15)
+
+- **Hash:** `0fd5a5e901601dfd89e67731788b21774015010e`
+- **Why:** Stage B of the unified evidence view. A new Evidence section under the radar shows the aggregate's composition: each scored prong's contribution share w*s / sum(w*s) as stacked-bar segments, with the right fraction of each segment hatched to show the share resting on unknown/partial evidence (per prong: scored aggregate dimensions / total for Prongs 1/2/4; verified claims / total for Prong 3; intrinsic with no logprobs contributes nothing and the gap shows in the ribbon). A coverage ribbon carries the Stage A coverage block (claims verified, judge scored/not run, rules scored/not run, prongs scored). Legacy evaluations without coverage render unhatched with an explicit "coverage unavailable" note; the section stays hidden before the first evaluation. Numbers live in tooltips + aria-label; unknown is never rendered as a value.
+- **Files:** `frontend/index.html`, `frontend/locales/en.json`
+- **Closes:** V55p transparency (aggregate composition and missing-evidence share); Stage B of the unified-view plan
+- **Verify:** Selenium (headless Chromium): card hidden before evaluation; segments render with shares summing to 100%; P3 unhatched when all claims verified, P1 hatched for an unknown dimension; ribbon [claims N/N verified, judge not run, rules scored, prongs 3/4 scored]; judge_scored=true branch renders "judge scored" (non-muted); legacy stub (coverage deleted) -> note visible, no hatching, empty ribbon, no crash; unknown never rendered as a value (intrinsic with no logprobs absent from the bar); true 390 via CDP emulation -> 0 overflow. The live 0.5B judge was returning truncated malformed JSON during this verification (HTTP 200, finish_reason=length), so judge_scored reported false end-to-end; the judge-scored UI branch was verified via a coverage stub. pytest 361 passed + 2 skipped (frontend-only change).
+
+### `fd99a90` — Record Stage A evidence contract in commit index (2026-11-15)
+
+- **Hash:** `fd99a90a500260091e8c7774b0e98a2d1be7f498`
 - **Why:** Record the Stage A evidence-contract land and the Captain-idle charter rule; backfill the Phase-4 index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
