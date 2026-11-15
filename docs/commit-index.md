@@ -6,15 +6,18 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `8ad0da9` — Benchmark the MiniCheck verifier on SciFact (second public benchmark)
+- **Latest commit:** `1607a9d` — Expose per-dimension evidence sources and a coverage summary
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
+- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); unified evidence view (Stage A done, stages B–F open); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-15 | `PENDING` | chore / index | Record Phase-4 latency and SciFact benchmark in commit index | chore |
+| 2026-11-15 | `PENDING` | chore / index | Record Stage A evidence contract in commit index | chore |
+| 2026-11-15 | `1607a9d` | Stage A / evidence | Expose per-dimension evidence sources and a coverage summary | V55p transparency / unified evidence view |
+| 2026-11-15 | `e950bff` | chore / crew | Idle the Captain while crew panes work | chore |
+| 2026-11-15 | `4032bf0` | chore / index | Record Phase-4 latency and SciFact benchmark in commit index | chore |
 | 2026-11-15 | `8ad0da9` | eval / verifier benchmark | Benchmark the MiniCheck verifier on SciFact (second public benchmark) | wXze single-benchmark content / V55p discriminative signal (component) |
 | 2026-11-15 | `11fdf3e` | eval / latency | Measure per-track /evaluate latency and document hardware (Phase 4) | wXze latency/hardware unmeasured |
 | 2026-11-14 | `4bd4637` | chore / index | Record 390px header fix in commit index | chore |
@@ -48,9 +51,33 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record Phase-4 latency and SciFact benchmark in commit index (2026-11-15)
+### `PENDING` — Record Stage A evidence contract in commit index (2026-11-15)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the Stage A evidence-contract land and the Captain-idle charter rule; backfill the Phase-4 index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `1607a9d` — Expose per-dimension evidence sources and a coverage summary (2026-11-15)
+
+- **Hash:** `1607a9d0f4ffbbbdaaa4233fb2851e70b363c160`
+- **Why:** Stage A of the unified evidence view (groundwork for V55p transparency). Every DimensionScore gains `metadata.evidence_sources`: {source -> {value, status, n}} over the fixed keys embedding/llm_judge/classifier/rules/spacy/llm_claims/kb_exact/minicheck/logprob, listing only sources that informed that dimension (off tracks and unreached paths are omitted; an empty dict means no source produced evidence). The evaluation response gains a top-level `coverage` block (claims_total/verified/partial/unverified, judge_scored, rules_scored, prongs_scored/prongs_total). Additive only: the flags-off response is pinned byte-for-byte by a snapshot test (timing fields excepted).
+- **Files:** `src/evidence.py`, `src/dimensions/base_dimension.py`, `src/dimensions/prong2_dimensions.py`, `src/dimensions/prong3_dimensions.py`, `src/prongs/prong1_dimensions.py`, `src/prongs/prong4_intrinsic.py`, `src/pipeline.py`, `tests/test_evidence_contract.py`, `tests/evidence_flags_off_snapshot.json`
+- **Closes:** Stage A of the unified-view plan (groundwork for V55p transparency)
+- **Verify:** pytest 361 passed + 2 skipped (pre-existing live-model skips) in the worktree and in the main tree; live TestClient spot check: coverage {claims_total 2, verified 1, unverified 1, judge_scored true, rules_scored true, prongs_scored 3/4}; Relevance {embedding 0.886 scored n=2, llm_judge 1.0 scored n=1}; Toxicity classifier; Factual Accuracy {spacy, llm_claims, kb_exact 1.0 n=1}; Intrinsic logprob unknown (no logprobs). Edge states: evidence_sources may be {}; value/n are JSON null when undefined; coverage always present; prongs_total counts enabled prongs.
+
+### `e950bff` — Idle the Captain while crew panes work (2026-11-15)
+
+- **Hash:** `e950bffbef0c63f1f87862caa12ee18b8ef4fb3d`
+- **Why:** Parallel Captain model work during a worker turn causes shared-key rate limits (observed 2026-11-14/15). The charter now requires: dispatch, register a status watcher, end the turn, and run no other model work until the pane reports.
+- **Files:** `.grok/HERDR.md`
+- **Closes:** chore / crew process
+- **Verify:** docs only
+
+### `4032bf0` — Record Phase-4 latency and SciFact benchmark in commit index (2026-11-15)
+
+- **Hash:** `4032bf0c962de5b474b94a7b4796ae640e7dd632`
 - **Why:** Record the two Phase-4/benchmark lands below and backfill the previous index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
