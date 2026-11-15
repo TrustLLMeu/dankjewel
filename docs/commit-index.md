@@ -6,15 +6,17 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `dc423d1` — Add a robustness matrix and sequential throughput measurements
+- **Latest commit:** `8e3d7a7` — Add the LLM-AggreFact harness and record external-work status
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** claim-admission reported-claim pass (unquoted embedded reported speech); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion and lexicon validation; the eight non-English lexicons remain unvalidated translations
+- **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); LLM-AggreFact auto-gated — harness ready, one account click needed; seed coverage still 0.3% on FEVER; AVeriTeC (future work); Nordic seed expansion and native lexicon validation; human-annotation and user studies
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-16 | `PENDING` | chore / index | Record robustness matrix and ablation index in commit index | chore |
+| 2026-11-16 | `PENDING` | chore / index | Record external-work status in commit index | chore |
+| 2026-11-16 | `8e3d7a7` | eval / external | Add the LLM-AggreFact harness and record external-work status | wXze single-benchmark content |
+| 2026-11-16 | `a138e3a` | chore / index | Record robustness matrix and ablation index in commit index | chore |
 | 2026-11-16 | `dc423d1` | eval / robustness | Add a robustness matrix and sequential throughput measurements | YE7H real-time/throughput (robustness matrix) |
 | 2026-11-16 | `3818e5d` | eval / ablation | Add the admission ablation table and document each gate's contribution | wXze claim precision (admission ablation) |
 | 2026-11-16 | `1dca5ec` | chore / index | Record the LLM admission classifier in commit index | chore |
@@ -82,9 +84,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record robustness matrix and ablation index in commit index (2026-11-16)
+### `PENDING` — Record external-work status in commit index (2026-11-16)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the external-work note and the AggreFact harness; backfill the robustness/ablation index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `8e3d7a7` — Add the LLM-AggreFact harness and record external-work status (2026-11-16)
+
+- **Hash:** `8e3d7a7e57bc7a607f6456247c96c0117a5b3e81`
+- **Why:** LLM-AggreFact is auto-gated, not gone: the machine's HF token is valid (authenticated as `larsbun`) but the account has not accepted the dataset terms, so downloads return 403. `scripts/eval_aggrefact.py` is ready to run the benchmark once that one click is done (download the dev/test parquet, score MiniCheck per sub-dataset and pooled, write `evaluation_results/aggrefact.{json,md}`; pyarrow is an optional eval dependency). `docs/EXTERNAL_EVALS.md` records the status of AggreFact, AVeriTeC, the seed-scale limit and the human/user studies, with the unblock action and the suggested study design; `.gitignore` excludes the raw download.
+- **Files:** `scripts/eval_aggrefact.py`, `docs/EXTERNAL_EVALS.md`, `.gitignore`
+- **Closes:** the external-work item (documented status); AggreFact itself stays blocked on the account action
+- **Verify:** `py_compile` passes; the 403 `GatedRepoError` was reproduced with the stored token; no product code changed.
+
+### `a138e3a` — Record robustness matrix and ablation index in commit index (2026-11-16)
+
+- **Hash:** `a138e3adb2d96a2c814adc992b9e46e4b696170b`
 - **Why:** Record the robustness/throughput matrix (`dc423d1`) and the admission ablation table (`3818e5d`, whose index entry was missed by the previous land); backfill the previous index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
