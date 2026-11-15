@@ -115,5 +115,8 @@
   "evidence_label_no_logprobs": "no logprobs",
   "claim_strip_title": "Claim evidence",
   "claim_strip_untitled": "—",
-  "claim_meter_title": "{{v}} verified · {{p}} partial · {{u}} unverified"
+  "claim_meter_title": "{{v}} verified · {{p}} partial · {{u}} unverified",
+  "evidence_matrix_title": "Signal matrix",
+  "evidence_matrix_dimension": "Dimension",
+  "evidence_matrix_legend": "value in cell · ? unknown · ! error · · counted, no single score · blank = source did not inform"
 }

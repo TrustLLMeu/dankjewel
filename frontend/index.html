@@ -356,6 +356,29 @@ footer {
 .claim-chip .claim-src { opacity: 0.65; font-weight: 400; margin-left: 0.25rem; }
 .claim-row-highlight { background: #fef9c3 !important; }
 
+/* ── Stage D: signal matrix (dimensions × evidence sources) ───────── */
+.signal-matrix { margin-top: 0.55rem; }
+.matrix-wrap { overflow-x: auto; margin-top: 0.25rem; }
+#matrix-table {
+  border-collapse: collapse; width: 100%;
+  font-family: var(--mono); font-size: 0.6rem;
+}
+#matrix-table th, #matrix-table td {
+  padding: 0.1rem 0.22rem; text-align: right; white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+#matrix-table th:first-child, #matrix-table td:first-child {
+  text-align: left; position: sticky; left: 0; background: var(--card);
+  color: var(--text2); max-width: 132px; overflow: hidden; text-overflow: ellipsis;
+}
+#matrix-table thead th {
+  color: var(--text3); font-weight: 600; border-bottom: 1px solid var(--border);
+}
+#matrix-table td.matrix-null, #matrix-table td.matrix-unknown { color: var(--text3); }
+#matrix-table td.matrix-error { color: var(--red); }
+#matrix-table tr:last-child td { border-bottom: none; }
+.matrix-legend { font-size: 0.6rem; color: var(--text3); margin-top: 0.2rem; }
+
 /* ── Unknown/Error state styling ──────────────────────────────────── */
 .unknown-bar {
   background: #9aa0a6 !important; border-style: dashed !important;
@@ -664,6 +687,14 @@ footer {
         </div>
         <div class="anatomy-bar" id="anatomy-bar" role="img"></div>
         <div class="coverage-ribbon" id="coverage-ribbon"></div>
+
+        <div class="signal-matrix" id="signal-matrix" hidden>
+          <div class="evidence-subtitle" data-i18n="evidence_matrix_title">Signal matrix</div>
+          <div class="matrix-wrap">
+            <table id="matrix-table"></table>
+          </div>
+          <div class="matrix-legend" data-i18n="evidence_matrix_legend">value in cell · ? unknown · ! error · · counted, no single score · blank = source did not inform</div>
+        </div>
 
         <div class="claim-strip" id="claim-strip" hidden>
           <div class="claim-strip-head">
@@ -1939,9 +1970,68 @@ function renderEvidence(evalData) {
     note.hidden = false;
   }
 
+  renderSignalMatrix(evalData);
   renderClaimStrip(evalData);
 
   card.hidden = false;
+}
+
+// ── Stage D: signal matrix ─────────────────────────────────────────
+// Dimensions × evidence sources, straight from the Stage A contract.
+// Cell = the source's own score, or ? unknown / ! error / · counted
+// without a single score; blank means the source did not inform the
+// dimension. Horizontal scroll keeps it usable in the narrow column.
+const MATRIX_SOURCE_ORDER = ['embedding', 'llm_judge', 'classifier', 'rules', 'spacy',
+                             'llm_claims', 'kb_exact', 'minicheck', 'logprob'];
+const MATRIX_SOURCE_ABBR = {
+  embedding: 'emb', llm_judge: 'jud', classifier: 'cls', rules: 'rul', spacy: 'spa',
+  llm_claims: 'llm', kb_exact: 'kb', minicheck: 'mc', logprob: 'lp'
+};
+const MATRIX_SOURCE_LABEL = {
+  embedding: 'embedding', llm_judge: 'tiny-LLM judge', classifier: 'classifier',
+  rules: 'rule lexicon', spacy: 'spaCy triples', llm_claims: 'LLM atomic claims',
+  kb_exact: 'KB exact match', minicheck: 'MiniCheck verifier', logprob: 'token logprobs'
+};
+
+function renderSignalMatrix(evalData) {
+  const wrap = document.getElementById('signal-matrix');
+  const table = document.getElementById('matrix-table');
+  if (!wrap || !table) return;
+
+  const rows = [];
+  (evalData.prong_results || []).forEach(p => {
+    (p.dimensions || []).forEach(dim => {
+      const src = dim.metadata && dim.metadata.evidence_sources;
+      if (src && Object.keys(src).length) rows.push({ prong: p.prong_name, dim: dim.name, src });
+    });
+  });
+  const present = MATRIX_SOURCE_ORDER.filter(k => rows.some(r => r.src[k]));
+  if (!rows.length || !present.length) { wrap.hidden = true; return; }
+
+  const head = '<thead><tr><th scope="col">' + esc(t('evidence_matrix_dimension')) + '</th>'
+    + present.map(k => '<th scope="col" title="' + esc(MATRIX_SOURCE_LABEL[k]) + '">'
+        + esc(MATRIX_SOURCE_ABBR[k]) + '</th>').join('')
+    + '</tr></thead>';
+
+  const body = rows.map(r => {
+    let cells = '';
+    present.forEach(k => {
+      const e = r.src[k];
+      if (!e) { cells += '<td></td>'; return; }
+      let text, cls;
+      if (e.value != null) { text = Number(e.value).toFixed(2); cls = ''; }
+      else if (e.status === 'unknown') { text = '?'; cls = 'matrix-unknown'; }
+      else if (e.status === 'error') { text = '!'; cls = 'matrix-error'; }
+      else { text = '·'; cls = 'matrix-null'; }
+      const n = (e.n != null) ? ' (' + e.n + ' items)' : '';
+      cells += '<td class="' + cls + '" title="'
+        + esc(r.dim + ' · ' + MATRIX_SOURCE_LABEL[k] + ': ' + text + n) + '">' + text + '</td>';
+    });
+    return '<tr><td title="' + esc(r.prong + ' · ' + r.dim) + '">' + esc(r.dim) + '</td>' + cells + '</tr>';
+  }).join('');
+
+  table.innerHTML = head + '<tbody>' + body + '</tbody>';
+  wrap.hidden = false;
 }
 
 // ── Stage C: claim evidence strip ───────────────────────────────────
