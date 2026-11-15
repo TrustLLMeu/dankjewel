@@ -1,6 +1,6 @@
-# Contributing to Online Eval Base
+# Contributing to Dankjewel
 
-**Last updated:** 2026-07-11
+**Last updated:** 2026-11-15
 
 Thank you for contributing! This guide explains how to set up your environment,
 create branches, submit pull requests, and use GitHub Issues to coordinate work.
@@ -12,8 +12,8 @@ create branches, submit pull requests, and use GitHub Issues to coordinate work.
 ### 1. Clone the repository
 
 ```bash
-git clone git@github.com:<org>/online-eval-base.git
-cd online-eval-base
+git clone git@github.com:TrustLLMeu/dankjewel.git
+cd dankjewel
 ```
 
 ### 2. Set up your environment
@@ -27,8 +27,14 @@ python3 -m spacy download en_core_web_sm
 python3 scripts/build_wikidata_db.py
 ```
 
-**Requirements:** Python 3.12. A running vLLM server is needed to test
-Prongs 1 and 4 — see [QUICKSTART.md](QUICKSTART.md) for instructions.
+**Requirements:** Python 3.12. The default configuration needs no model server:
+Prongs 1–3 run locally (MiniLM embeddings, toxic-bert, spaCy, a 122-entity seed
+KB). Two optional local model servers add the LLM tracks with their flags off by
+default — a 0.5B judge (`DANKJEWEL_JUDGE_*`, default port 18092), a 1.5B claim
+extractor (`DANKJEWEL_CLAIMS_*`, default 18093), and the in-process MiniCheck
+verifier (`llm_verify`). Prong 4's intrinsic dimensions and the
+`/generate-and-evaluate` path need a generator that returns logprobs. See
+[QUICKSTART.md](QUICKSTART.md).
 
 ### 3. Run the tests
 
@@ -76,6 +82,13 @@ Key conventions used in this project:
 - **Scores normalized to 0.0–1.0** via `ScorableDimension.normalize_score()`.
 - **Timing tracked** via `processing_time_ms` in results.
 - **`DimensionScore.metadata`** should include `lang` when language-specific.
+- **Evidence provenance**: dimensions that use more than one signal must record
+  `metadata.evidence_sources` (`{source: {value, status, n}}`) per the Stage A
+  contract in `src/evidence.py`; the dashboard's evidence panels render from it.
+- **Honesty states**: missing evidence is `status="unknown"` and failed
+  computation is `status="error"`; neither may be scored as a numeric value.
+  Heavy opt-in tracks (judge, LLM claims, verifier) default to off and must
+  degrade to `unknown` when their server is unreachable.
 
 ### 2. Write or update tests
 
@@ -216,9 +229,10 @@ See [TODO.md](TODO.md) for planned work. Good starting points:
 |------|------------|-------|
 | Add lexicon entries for a new language | Low | `src/resources/lexicons/<lang>.yaml` |
 | Add test cases for existing dimensions | Low | `tests/test_prong*.py` |
-| LLM-based claim extraction (Prong 3) | High | `src/extraction/`, `src/prongs/prong3_extraction.py` |
+| Add a fifth dimension (worked example) | Low–Medium | follow the recipe in `docs/EXTENSIBILITY.md`; one file in `src/dimensions/`, one in `tests/` |
+| Extend claim extraction (harder cases, more languages) | Medium | `src/extraction/llm_claim_extractor.py` |
 | LLM-based readability (Prong 2) | Medium | `src/dimensions/prong2_dimensions.py` |
-| Extend benchmarking with dual output | Medium | `scripts/run_benchmark.py` |
+| Extend the verifier benchmark | Medium | `scripts/eval_verifier.py`, `scripts/eval_scifact.py` |
 
 ---
 
@@ -228,17 +242,19 @@ See [TODO.md](TODO.md) for planned work. Good starting points:
 src/
 ├── base.py                  # DimensionScore, Dimension, Evaluator contracts
 ├── config.py                # Language codes, Flesch coefficients, constants
+├── evidence.py              # evidence_sources + coverage contract (Stage A)
 ├── pipeline.py              # EvaluationPipeline — orchestrates all prongs
+├── llm_judge_client.py      # shared OpenAI-compatible client ([JUDGE]/[CLAIMS])
 ├── vllm_client.py           # Async vLLM HTTP client
 ├── vllm_adapter.py          # GenerationResult → Prong 4 IntrinsicData
 ├── prongs/                  # One file per prong
 ├── dimensions/              # Dimension implementations
-├── extraction/              # Claim extraction (spaCy, future LLM)
+├── extraction/              # Claim extraction (spaCy triples + optional 1.5B atoms)
 ├── models/                  # Embeddings, toxicity model
-├── resources/               # Lexicons, offline Wikidata
+├── resources/               # Lexicons, offline Wikidata, MiniCheck verifier
 │   └── lexicons/            # Per-language YAML lexicons
 tests/                       # pytest test files
-scripts/                     # Benchmarking and data-building scripts
+scripts/                     # Benchmarking, latency and data-building scripts
 ```
 
 ---

@@ -19,9 +19,9 @@ different dimension family of generated text:
 
 | Prong | Name | Method | Status |
 |-------|------|--------|--------|
-| **1** | LLM-as-Judge | Sentence embeddings (MiniLM) + toxicity classifier (toxic-bert); default backend `embeddings` — no generative LLM judge | ✅ Complete |
+| **1** | LLM-as-Judge | Sentence embeddings (MiniLM) + toxicity classifier (toxic-bert); default backend `embeddings`, with an optional 0.5B local LLM judge as a dual-output track (`tiny_judge`) | ✅ Complete |
 | **2** | Rule-Based | Lexicon/heuristic scoring (validated for English; 8 further Germanic lexicons are unvalidated translations) | ✅ Complete |
-| **3** | Extraction-Based | spaCy triple extraction + offline Wikidata fact-checking | ✅ Complete |
+| **3** | Extraction-Based | spaCy triple extraction + offline Wikidata fact-checking (122-entity seed KB, labeled as a seed) + optional 1.5B atomic-claim track and MiniCheck verifier (`llm_extract`, `llm_verify`) | ✅ Complete |
 | **4** | Intrinsic | Model log-probabilities from vLLM (perplexity, uncertainty, entropy) | ⚠️ Requires logprobs — without them all Prong 4 dimensions are `unknown` |
 
 A FastAPI server (`src/api.py`) with a single-page HTML5 frontend
@@ -200,6 +200,7 @@ backend in `metadata.prong1_backend`.
 | **Emotional Intensity** | VADER sentiment + punctuation features | `aggregate=False` |
 | **Formality** | Formal/informal lexicon markers | |
 | **Hedging** | Modal verbs & uncertainty cues | `aggregate=False` |
+| **Lexical Diversity** | Type-token ratio over word tokens (worked example in `docs/EXTENSIBILITY.md`) | `aggregate=False` |
 
 Language support: English is the validated prototype. Lexicons exist for
 eight further Germanic languages (da, de, fo, is, nb, nn, nl, sv) as
@@ -251,6 +252,18 @@ dimensions is omitted from the total, and if nothing was scored at all,
 
 The total score is a weighted average of prong scores (default: 0.25 each),
 renormalized if any prong is missing or errors out.
+
+#### Choosing weights
+
+The four presets (Equal, Factual QA, Safety, Fluency) are **exploration aids**:
+they reweight the same four prong scores, and the UI labels them "explore".
+Equal is the default because it makes no assumption about downstream risk.
+The presets have not been validated against user judgments; treat a preset
+score as a scenario and check it against your own data. The custom-weights
+control lets you test a weighting without editing code. Guidance for a real
+deployment: derive weights from the failure costs of your application (for
+example, a factuality-critical assistant should raise Prong 3), record the
+choice, and re-check it when the prong implementations change.
 
 ---
 
