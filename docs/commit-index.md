@@ -6,15 +6,17 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `3fc9111` — Clarify NTNU concurrency versus the Grok weekly limit
+- **Latest commit:** `a4f36c3` — Add a subject-grouped claim evidence strip to the results panel
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); unified evidence view (stages A–B done, stages C–F open); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
+- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); unified evidence view (stages A–C done, stages D–F open); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-15 | `PENDING` | chore / index | Record NTNU concurrency clarification in commit index | chore |
+| 2026-11-15 | `PENDING` | chore / index | Record Stage C claim strip in commit index | chore |
+| 2026-11-15 | `a4f36c3` | dashboard / evidence | Add a subject-grouped claim evidence strip to the results panel | V55p transparency (claim level) |
+| 2026-11-15 | `6f8d308` | chore / index | Record NTNU concurrency clarification in commit index | chore |
 | 2026-11-15 | `3fc9111` | chore / crew | Clarify NTNU concurrency versus the Grok weekly limit | chore |
 | 2026-11-15 | `64cc3f7` | chore / index | Record Stage B evidence view in commit index | chore |
 | 2026-11-15 | `0fd5a5e` | dashboard / evidence | Show score anatomy and evidence coverage in the results panel | V55p transparency (aggregate composition) |
@@ -55,9 +57,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record NTNU concurrency clarification in commit index (2026-11-15)
+### `PENDING` — Record Stage C claim strip in commit index (2026-11-15)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the Stage C claim-strip land; backfill the NTNU-concurrency index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `a4f36c3` — Add a subject-grouped claim evidence strip to the results panel (2026-11-15)
+
+- **Hash:** `a4f36c31ad433987f8044f4472bb9e3760e45dd5`
+- **Why:** Stage C of the unified evidence view. Inside the Evidence section, a compact claim strip groups Prong 3's claim_details by subject; each claim is a chip coloured by the five-way relation, with a provenance letter (S/L/B) and a tooltip carrying the full triple, relation, verifier score and rationale. Clicking a chip opens the claims table and highlights the matching row. A verified/partial/unverified meter sits beside the title. The strip hides when there are no claim_details (legacy and empty states) and stays hidden before the first evaluation.
+- **Files:** `frontend/index.html`, `frontend/locales/en.json`
+- **Closes:** V55p transparency at claim level; Stage C of the unified-view plan
+- **Verify:** Selenium (headless Chromium): strip hidden before eval (hasHiddenAttr true, no chips); two chips for "Oslo ... Norway / Trondheim ... Hordaland" with S provenance, confirmed green rgb(209,250,229) and conflated purple rgb(237,233,254); meter 2 segments, title "1 verified · 0 partial · 1 unverified"; chip click opens the claims table and highlights the Trondheim row; all-flags-on chips show B provenance; verifier-scored claim tooltip "Oslo ... fjords · denied · p=0.01 · MiniCheck no-support" (live MiniCheck path needs a KB-unknown claim, so verified via a claim_details stub); deleting claim_details re-renders with the strip hidden; true 390 via CDP -> 0 overflow and the strip visible. pytest 361 passed + 2 skipped (frontend-only change).
+
+### `6f8d308` — Record NTNU concurrency clarification in commit index (2026-11-15)
+
+- **Hash:** `6f8d3080ed615d20f9b7dbade23dddfc5698145b`
 - **Why:** Record the NTNU-concurrency charter clarification; backfill the Stage B index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
