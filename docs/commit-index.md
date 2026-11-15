@@ -6,15 +6,18 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `3b629f5` — Refresh contributing guide, aggregation guidance and extensibility recipe
+- **Latest commit:** `4028602` — Gate encyclopedic definitions and text-deictic subjects in claim admission
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion and lexicon validation; the eight non-English lexicons remain unvalidated translations
+- **Open slices:** claim-admission reported-claim pass and the optional LLM admission classifier; admission ablation table and method doc (`docs/CLAIM_ADMISSION.md`); /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion and lexicon validation; the eight non-English lexicons remain unvalidated translations
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-15 | `PENDING` | chore / index | Record worked example and docs refresh in commit index | chore |
+| 2026-11-15 | `PENDING` | chore / index | Record admission gates and crew appointments in commit index | chore |
+| 2026-11-15 | `4028602` | prong 3 / admission | Gate encyclopedic definitions and text-deictic subjects in claim admission | wXze claim precision; V55p transparency |
+| 2026-11-15 | `8a82662` | chore / crew | Appoint docs, paper and paper-review panes with short tab labels | chore |
+| 2026-11-15 | `f49c1db` | prong 3 / admission | Add deterministic claim admission gates and fix the entity lookup guard | wXze claim precision |
 | 2026-11-15 | `3b629f5` | docs / honesty | Refresh contributing guide, aggregation guidance and extensibility recipe | V55p aggregation guidance; wXze extensibility |
 | 2026-11-15 | `55164ce` | prong 2 / worked example | Add Lexical Diversity as a documented worked example | wXze extensibility (worked example) |
 | 2026-11-15 | `f015dc7` | chore / index | Record Stage F timeline in commit index | chore |
@@ -67,9 +70,41 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record worked example and docs refresh in commit index (2026-11-15)
+### `PENDING` — Record admission gates and crew appointments in commit index (2026-11-15)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the admission slices (0+1 and 6d) and the crew appointments; backfill the previous index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `4028602` — Gate encyclopedic definitions and text-deictic subjects in claim admission (2026-11-15)
+
+- **Hash:** `4028602be7c3c8bef82b616595c2d4945dd267a0`
+- **Why:** Slice 6d, the Reviewer's follow-up to the admission slice. Two deterministic gates: `X is a/an <abstract noun>` definitions ("A false claim is a statement") and demonstrative subjects over the document ("These claims use real numbers", "This article ...") are discarded with reasons `definition`/`demonstrative`. ASSUMPTIONS.md gains the admission-gate summary, the quoted/reported-claim limitation (spaCy drops propositions in reporting clauses; the LLM track handles some), the corrected 122-entity seed count, and the updated revisit note.
+- **Files:** `src/extraction/claim_admission.py`, `tests/test_claim_admission.py`, `ASSUMPTIONS.md`
+- **Closes:** the Reviewer's should-fix findings (definition and demonstrative leaks) and the quoted-claim documentation gap
+- **Verify:** full suite 405 passed + 2 skipped; the fixture drops from 11 to 8 admitted claims with `{meta 15, definition 1, pronoun 6, demonstrative 2, question 7}` discarded; all five expected lies remain. Two accepted leaks documented: the "smoking is that bad" fragment and the advice sentence ("Critical thinking is your best defense").
+
+### `8a82662` — Appoint docs, paper and paper-review panes with short tab labels (2026-11-15)
+
+- **Hash:** `8a82662bb3d713e5134b41faecab4f2b00f6ee92`
+- **Why:** The user appointed three workers and asked for compact tab labels. New role files `.grok/agents/{docs-keeper,paper-writer,paper-reviewer}.md`; the charter's roles table and pane map gain the three panes and their boundaries (docs own `*.md`; paper owns `paper/`; paper reviewer is read-only and holds the NTNU slot). Tabs renamed to `Cap/Scout/Proto/Impl/Dash/Eval/Rev/Nord/Git/sh/Docs/Paper/PRev`.
+- **Files:** `.grok/HERDR.md`, `.grok/agents/docs-keeper.md`, `.grok/agents/paper-writer.md`, `.grok/agents/paper-reviewer.md`
+- **Closes:** chore / crew
+- **Verify:** `herdr tab list --workspace w0` shows all 13 tabs with the short labels; the three agents start idle with their assigned models (no tokens spent before the first brief).
+
+### `f49c1db` — Add deterministic claim admission gates and fix the entity lookup guard (2026-11-15)
+
+- **Hash:** `f49c1db1cb9b81f6113650385caf68f04f42adde`
+- **Why:** The exported teaching-prose run produced 76 "claims", ~39 fragments, 0 verifiable, and 11 false denials because `lookup_entity` prefix-matched "I"/"it" to Italy. Slice 0 fixes the lookup (3-char minimum, word-boundary match, pronoun/stopword/punctuation rejection) and skips the verifier for non-referential subjects. Slice 1 adds `src/extraction/claim_admission.py`: markdown hygiene, sentence admissibility (heading/question/imperative/meta), triple gates (pronoun/malformed), near-duplicates, discard reasons in `metadata.claim_admission`, applied to both the spaCy and LLM tracks. The Reviewer accepted the slice and recommended the 6d follow-up.
+- **Files:** `src/extraction/claim_admission.py` (new), `src/extraction/claim_extractor.py`, `src/extraction/llm_claim_extractor.py`, `src/prongs/prong3_extraction.py`, `src/dimensions/prong3_dimensions.py`, `src/resources/wikidata_offline.py`, `tests/test_claim_admission.py` (new), `tests/test_evidence_contract.py`, `tests/fixtures/teacher_false_claims.json` (new)
+- **Closes:** the harmful-verdict bug and the non-claim false-positive class on the inspected export; part of wXze claim precision
+- **Verify:** 398 passed + 2 skipped at landing; fixture 76 → 11 admitted (then 8 after 6d), all five expected lies, 0 confident verdicts on pronoun/fragment claims; lookup table verified by the Reviewer (`I`/`it`/`*`/short words → None, `Oslo` → Q585, `the Earth` → Q2).
+
+### `8f8b3d4` — Record worked example and docs refresh in commit index (2026-11-15)
+
+- **Hash:** `8f8b3d4ab0afa90306b4c06386df5f727a49c9dd`
 - **Why:** Record the worked-example and docs-refresh lands; backfill the Stage F index hash and the missing `892265a` row.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
