@@ -379,6 +379,29 @@ footer {
 #matrix-table tr:last-child td { border-bottom: none; }
 .matrix-legend { font-size: 0.6rem; color: var(--text3); margin-top: 0.2rem; }
 
+/* ── Stage E: track agreement dumbbells ───────────────────────────── */
+.track-overlay { margin-top: 0.55rem; }
+.track-row { display: flex; align-items: center; gap: 0.45rem; margin-top: 0.3rem; }
+.track-label {
+  font-size: 0.62rem; color: var(--text2); width: 96px; flex: 0 0 96px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.track-plot { position: relative; flex: 1 1 auto; height: 14px; min-width: 90px; }
+.track-line {
+  position: absolute; top: 6px; height: 2px; border-radius: 1px;
+  background: var(--border);
+}
+.track-dot {
+  position: absolute; top: 2px; width: 10px; height: 10px; border-radius: 50%;
+  transform: translateX(-50%); border: 1px solid var(--card);
+}
+.track-dot-baseline { background: #64748b; }
+.track-dot-llm { background: var(--accent); }
+.track-values {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--text3);
+  width: 86px; flex: 0 0 86px; text-align: right; white-space: nowrap;
+}
+
 /* ── Unknown/Error state styling ──────────────────────────────────── */
 .unknown-bar {
   background: #9aa0a6 !important; border-style: dashed !important;
@@ -687,6 +710,12 @@ footer {
         </div>
         <div class="anatomy-bar" id="anatomy-bar" role="img"></div>
         <div class="coverage-ribbon" id="coverage-ribbon"></div>
+
+        <div class="track-overlay" id="track-overlay" hidden>
+          <div class="evidence-subtitle" data-i18n="track_overlay_title">Track agreement</div>
+          <div id="track-rows"></div>
+          <div class="matrix-legend" data-i18n="track_overlay_legend">grey baseline dot · blue LLM-track dot — the line is the gap between them</div>
+        </div>
 
         <div class="signal-matrix" id="signal-matrix" hidden>
           <div class="evidence-subtitle" data-i18n="evidence_matrix_title">Signal matrix</div>
@@ -1970,10 +1999,94 @@ function renderEvidence(evalData) {
     note.hidden = false;
   }
 
+  renderTrackOverlay(evalData);
   renderSignalMatrix(evalData);
   renderClaimStrip(evalData);
 
   card.hidden = false;
+}
+
+// ── Stage E: track agreement (baseline vs LLM track) ───────────────
+// Dumbbells for the dual-output dimensions: Relevance (embedding
+// baseline vs tiny-LLM judge) and Factual Accuracy (KB-exact score vs
+// MiniCheck support rate over the claims the verifier scored). A single
+// dot means only one track had a value; the connector is their gap.
+function renderTrackOverlay(evalData) {
+  const wrap = document.getElementById('track-overlay');
+  const rowsEl = document.getElementById('track-rows');
+  if (!wrap || !rowsEl) return;
+  const prongs = evalData.prong_results || [];
+
+  const pairs = [];
+  const p1 = prongs.find(p => p.prong_name.includes('Prong 1'));
+  const rel = p1 && (p1.dimensions || []).find(d => d.name === 'Relevance');
+  if (rel && rel.metadata && rel.metadata.llm_value != null) {
+    pairs.push({
+      label: t('track_relevance'),
+      baseline: rel.metadata.baseline_value != null ? rel.metadata.baseline_value : rel.value,
+      llm: rel.metadata.llm_value,
+      note: rel.metadata.judge_model || ''
+    });
+  }
+
+  const p3 = prongs.find(p => p.prong_name.includes('Extraction'));
+  const fa = p3 && (p3.dimensions || []).find(d => d.name === 'Factual Accuracy');
+  const details = (fa && fa.metadata && fa.metadata.claim_details) || [];
+  const scoredClaims = details.filter(c => c.verifier_score != null);
+  if (fa && scoredClaims.length) {
+    const supported = scoredClaims.filter(c => Number(c.verifier_score) >= 0.5).length;
+    pairs.push({
+      label: t('track_factual'),
+      baseline: fa.value,
+      llm: supported / scoredClaims.length,
+      note: supported + '/' + scoredClaims.length
+    });
+  }
+
+  if (!pairs.length) { wrap.hidden = true; return; }
+  rowsEl.innerHTML = '';
+
+  pairs.forEach(pair => {
+    const row = document.createElement('div');
+    row.className = 'track-row';
+
+    const label = document.createElement('span');
+    label.className = 'track-label';
+    label.textContent = pair.label;
+    label.title = pair.label;
+
+    const plot = document.createElement('span');
+    plot.className = 'track-plot';
+    const b = clamp01(Number(pair.baseline));
+    const l = clamp01(Number(pair.llm));
+    const lo = Math.min(b, l);
+    const hi = Math.max(b, l);
+    const line = document.createElement('span');
+    line.className = 'track-line';
+    line.style.left = (lo * 100) + '%';
+    line.style.width = ((hi - lo) * 100) + '%';
+
+    const dotB = document.createElement('span');
+    dotB.className = 'track-dot track-dot-baseline';
+    dotB.style.left = (b * 100) + '%';
+    dotB.title = t('track_baseline') + ': ' + b.toFixed(2);
+
+    const dotL = document.createElement('span');
+    dotL.className = 'track-dot track-dot-llm';
+    dotL.style.left = (l * 100) + '%';
+    dotL.title = t('track_llm') + ': ' + l.toFixed(2) + (pair.note ? ' (' + pair.note + ')' : '');
+
+    plot.appendChild(line); plot.appendChild(dotB); plot.appendChild(dotL);
+
+    const vals = document.createElement('span');
+    vals.className = 'track-values';
+    vals.textContent = b.toFixed(2) + ' → ' + l.toFixed(2);
+    vals.title = t('track_delta').replace('{{d}}', (l - b >= 0 ? '+' : '') + (l - b).toFixed(2));
+
+    row.appendChild(label); row.appendChild(plot); row.appendChild(vals);
+    rowsEl.appendChild(row);
+  });
+  wrap.hidden = false;
 }
 
 // ── Stage D: signal matrix ─────────────────────────────────────────

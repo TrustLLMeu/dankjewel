@@ -118,5 +118,12 @@
   "claim_meter_title": "{{v}} verified · {{p}} partial · {{u}} unverified",
   "evidence_matrix_title": "Signal matrix",
   "evidence_matrix_dimension": "Dimension",
-  "evidence_matrix_legend": "value in cell · ? unknown · ! error · · counted, no single score · blank = source did not inform"
+  "evidence_matrix_legend": "value in cell · ? unknown · ! error · · counted, no single score · blank = source did not inform",
+  "track_overlay_title": "Track agreement",
+  "track_overlay_legend": "grey baseline dot · blue LLM-track dot — the line is the gap between them",
+  "track_relevance": "Relevance",
+  "track_factual": "Factual Accuracy",
+  "track_baseline": "baseline",
+  "track_llm": "LLM track",
+  "track_delta": "Δ {{d}}"
 }
