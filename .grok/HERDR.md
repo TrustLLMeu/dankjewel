@@ -37,8 +37,8 @@ constraint.
 | Reviewer | `reviewer.md` | `moonshotai/Kimi-K2.6` | none (read-only) | no |
 | Nordic Linguist | `nordic-linguist.md` | `NorwAI/NorwAI-Magistral-24B-reasoning` | none (read-only) | lexicons only if asked |
 | Git Historian | `git-historian.md` | `Qwen/Qwen3.8-27B-FP8` | none | commits + `docs/commit-index.md` |
-| Docs Keeper | `docs-keeper.md` | `Qwen/Qwen3.8-27B` (Malvik) | worktree | docs only (`*.md`) |
-| Paper Writer | `paper-writer.md` | `Qwen/Qwen3.8-27B` (Malvik) | worktree | `paper/` only |
+| Docs Keeper | `docs-keeper.md` | `Qwen/Qwen3.8-27B-FP8` (NTNU) | worktree | docs only (`*.md`) |
+| Paper Writer | `paper-writer.md` | `Qwen/Qwen3.8-27B-FP8` (NTNU) | worktree | `paper/` only |
 | Paper Reviewer | `paper-reviewer.md` | `moonshotai/Kimi-K2.6` (NTNU) | none (read-only) | no |
 
 Panes and tabs (workspace `w0`, short tab labels in brackets):
@@ -59,18 +59,18 @@ New-role boundaries:
   gaps are written as "not measured". It never edits code or data.
 - **Paper Reviewer** is read-only and adversarial: it checks every
   number against an artifact, tests the paper's answers against
-  `review.txt`, and returns a verdict with ranked findings. It holds
-  the single NTNU slot while it runs; Docs and Paper writers run on
-  Malvik and serialise with the other Malvik Qwen panes.
+  `review.txt`, and returns a verdict with ranked findings. It runs on
+  the NTNU Kimi model; the Docs and Paper writers run on the NTNU Qwen
+  API and fall back to Malvik Qwen only on rate-limit errors.
 
-Qwen host is **not** a free choice. See [NTNU rate window](#ntnu-rate-window).
+Qwen host: **NTNU `Qwen/Qwen3.8-27B-FP8` by default**. See
+[NTNU rate window](#ntnu-rate-window).
 
-Fallback if a host is down (still obey the one-job NTNU cap):
+Fallback if a host is down (up to 10 parallel NTNU jobs allowed):
 
-- NTNU GLM-5.3-NVFP4 down → Malvik `Qwen/Qwen3.8-27B` (`http://127.0.0.1:18091/v1`). Do not take a second NTNU model during the rate window.
-- Qwen roles during the rate window: NTNU `Qwen/Qwen3.8-27B-FP8`; if that is down → Malvik `Qwen/Qwen3.8-27B`.
-- Qwen roles outside the rate window: Malvik `Qwen/Qwen3.8-27B`; if that is down → NTNU `Qwen/Qwen3.8-27B-FP8`.
-- Kimi-K2.6 down → `zai-org/GLM-5.3-Flash` (counts as the one NTNU job in the rate window).
+- NTNU GLM-5.3-NVFP4 down → Malvik `Qwen/Qwen3.8-27B` (`http://127.0.0.1:18091/v1`).
+- Qwen roles: NTNU `Qwen/Qwen3.8-27B-FP8`; on a rate-limit error → Malvik `Qwen/Qwen3.8-27B`. Switch back to NTNU when the limit clears.
+- Kimi-K2.6 down → `zai-org/GLM-5.3-Flash`.
 - GLM-5.3-Flash down (Scout) → `moonshotai/Kimi-K2.6-instant`.
 - Magistral down → `NbAiLab/borealis-27b`.
 
@@ -90,9 +90,9 @@ may use it later as a dispatcher if the crew grows; skip it for v2.
 - **`mistralai/Mistral-Medium-3.5-128B`** — multimodal; can look at
   dashboard screenshots. Matches the existing `design-expert` choice.
 - **`Qwen/Qwen3.8-27B-FP8` (NTNU)** and **`Qwen/Qwen3.8-27B` (Malvik,
-  `:18091`)** — Eval Scientist and Git Historian. NTNU Qwen during
-  the weekday rate window; Malvik Qwen outside it. See
-  [NTNU rate window](#ntnu-rate-window).
+  `:18091`)** — Eval Scientist, Git Historian, Docs and Paper writers.
+  NTNU Qwen is the default; Malvik Qwen is the fallback after an actual
+  rate-limit error. See [NTNU rate window](#ntnu-rate-window).
 - **`moonshotai/Kimi-K2.6`** — long-context reasoning for adversarial
   review against `review.txt`.
 - **`NorwAI/NorwAI-Magistral-24B-reasoning`** — NTNU’s own Norwegian
@@ -110,49 +110,48 @@ wants the captain on an NTNU model too, say so.
 
 ---
 
-## NTNU rate window
+## NTNU rate window (updated 2026-11-15)
 
-Timezone: **Europe/Oslo**. Captain checks `TZ=Europe/Oslo date` before
-every NTNU spawn. This rule is part of the crew workflow; the future
-`.grok/workflows/d75-slice.rhai` must encode the same gate.
+Timezone: **Europe/Oslo**.
 
-**Mon–Fri 08:00–18:00** — NTNU API is rate-limited.
+**The NTNU gateway now allows up to 10 parallel jobs** (user update,
+2026-11-15). The old one-job cap and the Mon–Fri 08–18 / weekend split
+are obsolete.
 
-- At most **one** NTNU job in flight. No parallel Scout + Implementer
-  + Reviewer on NTNU. Captain queues panes and runs them one after
-  another.
-- `*-instant` twins, GLM-OCR, and clef-flash all count as that one job.
-- Captain (grok-4.6) and Malvik-local servers do **not** count.
-- Qwen panes (Eval Scientist, Git Historian): spawn
-  **`Qwen/Qwen3.8-27B-FP8` on NTNU**. That spawn *is* the one job.
-  If NTNU Qwen is down, use Malvik Qwen rather than a different NTNU
-  model.
+- Default Qwen host is the **NTNU API**: `Qwen/Qwen3.8-27B-FP8`. Use it for
+  Eval Scientist, Git Historian, and the Docs and Paper writers.
+- Use the Malvik-local Qwen (`Qwen/Qwen3.8-27B`,
+  `http://127.0.0.1:18091/v1`) **only after an actual rate-limit /
+  `max_parallel_requests` error**. When the limit clears, switch the pane
+  back to the NTNU API (exit the CLI in the pane and `herdr agent start`
+  with `-m Qwen/Qwen3.8-27B-FP8`).
+- Keep at most 10 NTNU jobs in flight. If the gateway reports throttling,
+  queue the remaining jobs; do not stack retries.
+- Captain (grok-4.6) and Malvik-local servers do not count toward the cap.
+- HPC courtesy for heavy offline batches (evenings/weekends) still applies;
+  the product 0.5B judge stays on Malvik always.
 
-Observed 2026-11-14 (Saturday 09:12 CET): the gateway still returned
-`max_parallel_requests: 1` (`throttling_error`). Until we see Remaining
-> 0 on a weekend, **treat one NTNU job at a time as always-on**, even
-outside Mon–Fri 08–18.
-
-**Evenings (18:00–08:00), nights, weekends** — the *documented* one-job
-cap is off; still serialise NTNU if the live error is
-`max_parallel_requests`.
-
-- Parallel NTNU fan-out is allowed when tasks do not share files
-  (working rule 1).
-- Qwen panes: spawn **`Qwen/Qwen3.8-27B` on Malvik**
-  (`http://127.0.0.1:18091/v1`). If Malvik Qwen is down, NTNU
-  `Qwen/Qwen3.8-27B-FP8` is the fallback.
-
-HPC courtesy for *heavy batch* (evenings/weekends) still applies to
-large offline jobs. Crew coding is interactive API use; the product
-0.5B judge stays on Malvik always.
-
-| Clock (Europe/Oslo) | NTNU API | Eval / Git Qwen |
-|---------------------|----------|-----------------|
-| Mon–Fri 08:00–18:00 | one job | NTNU `Qwen/Qwen3.8-27B-FP8` |
-| otherwise | parallel OK | Malvik `Qwen/Qwen3.8-27B` |
+| Clock | NTNU API | Qwen panes |
+|-------|----------|------------|
+| any | up to 10 jobs | NTNU `Qwen/Qwen3.8-27B-FP8`; Malvik only on rate_limit |
 
 ---
+
+
+## Paper workflow
+
+The paper is produced in cycles, not one pass:
+
+1. **Writer** drafts or revises the Overleaf source (`new_demosubmission.tex`)
+   from artifacts only.
+2. **Reviewer** checks every number against `evaluation_results/` and the
+   commit index, tests the paper against `review.txt`, and returns a verdict
+   (accept / accept-with-follow-ups / reject) with ranked findings.
+3. If the verdict is not accept, the **Writer** fixes the blockers and
+   should-fixes only, then the **Reviewer** re-reviews. Repeat.
+4. The Captain stops the cycle when the Reviewer's verdict is accept (remaining
+   items are notes) and has independently re-checked the numbers.
+5. Then the **Git** pane commits and pushes to Overleaf.
 
 ## Working rules
 
@@ -230,7 +229,7 @@ Captain
   ├─ Scout (NTNU GLM-Flash) → steal-adapt-skip briefs
   ├─ Protocol Steward (NTNU gpt-oss) → acceptance criteria
   ├─ Implementer (NTNU GLM) → code + tests
-  ├─ Eval Scientist (NTNU Qwen 08–18 / Malvik Qwen otherwise)
+  ├─ Eval Scientist (NTNU Qwen)
   ├─ Dashboard (NTNU Mistral) if UI is in the slice
   ├─ Nordic Linguist (NTNU Magistral) if copy or lexicons change
   ├─ Reviewer (NTNU Kimi) → merge/no-merge
@@ -255,9 +254,8 @@ in-session subagents, so the user can watch each pane live. Panes:
    --lines N`. `--source recent-unwrapped` fails while an agent is
    working.
 3. `herdr tab focus <tab_id>` restores the Captain tab afterwards.
-4. The one-NTNU-job-at-a-time rule counts all panes; serialise there
-   exactly as the rate-window table says. This is a **concurrency**
-   limit: one NTNU request in flight, no weekly cap of our own. The
+4. NTNU allows **up to 10 parallel jobs**; keep at most 10 in flight and
+   queue the rest if the gateway throttles. The
    "Weekly limit left: N%" figure in a pane's status bar is the Grok
    CLI's own subscription limit, not NTNU's; treat it as a per-pane
    retry constraint, not a reason to stop the plan. **The Captain idles

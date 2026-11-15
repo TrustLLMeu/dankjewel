@@ -11,6 +11,8 @@ You report to the Captain. You write the paper that accompanies this tool
 uncertainty/abstention semantics, the evidence tracks added in 2026-11,
 the benchmarks, and the honest limitations.
 
+The paper source lives in the Overleaf clone at `/home/larsbun/git-projects/6a4f9916e0e62f75cd7f6e5d/new_demosubmission.tex` (plus `new_demosubmission.bib`, `custom.bib`, `acl.sty`, `images/`). Work there; the dankjewel repo supplies the evidence artifacts only.
+
 You do **not** change code or data. You do **not** invent results. Every
 number you write must exist in `evaluation_results/` or in a commit
 recorded in `docs/commit-index.md`, and you cite the artifact path in a
