@@ -6,15 +6,19 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `4028602` — Gate encyclopedic definitions and text-deictic subjects in claim admission
+- **Latest commit:** `cca04a2` — Record the /generate-and-evaluate latency measurement
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** claim-admission reported-claim pass and the optional LLM admission classifier; admission ablation table and method doc (`docs/CLAIM_ADMISSION.md`); /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion and lexicon validation; the eight non-English lexicons remain unvalidated translations
+- **Open slices:** claim-admission reported-claim pass and the optional LLM admission classifier; seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion and lexicon validation; the eight non-English lexicons remain unvalidated translations
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-15 | `PENDING` | chore / index | Record admission gates and crew appointments in commit index | chore |
+| 2026-11-16 | `PENDING` | chore / index | Record docs, crew rules and interactive latency in commit index | chore |
+| 2026-11-16 | `cca04a2` | eval / latency | Record the /generate-and-evaluate latency measurement | wXze/YE7H interactive-latency gap |
+| 2026-11-16 | `99794ef` | chore / crew | Raise NTNU parallelism to 10 and record the paper workflow | chore |
+| 2026-11-15 | `979a038` | docs / claim admission | Document claim admission and align its exemption docstring | wXze claim precision; V55p transparency |
+| 2026-11-15 | `bbb7d99` | chore / index | Record admission gates and crew appointments in commit index | chore |
 | 2026-11-15 | `4028602` | prong 3 / admission | Gate encyclopedic definitions and text-deictic subjects in claim admission | wXze claim precision; V55p transparency |
 | 2026-11-15 | `8a82662` | chore / crew | Appoint docs, paper and paper-review panes with short tab labels | chore |
 | 2026-11-15 | `f49c1db` | prong 3 / admission | Add deterministic claim admission gates and fix the entity lookup guard | wXze claim precision |
@@ -70,9 +74,41 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record admission gates and crew appointments in commit index (2026-11-15)
+### `PENDING` — Record docs, crew rules and interactive latency in commit index (2026-11-16)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the claim-admission method doc (`979a038`), the crew rules (NTNU up to 10 parallel jobs, default NTNU Qwen host with the Malvik rate-limit fallback, and the paper workflow), and the `/generate-and-evaluate` latency artifact; backfill the previous index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `cca04a2` — Record the /generate-and-evaluate latency measurement (2026-11-16)
+
+- **Hash:** `cca04a2d60d019e8b69ce86c3486187c8dfabb6f`
+- **Why:** The paper's Table 4 needs a committed artifact for the interactive path (`11fdf3e`/`9c1e9a1` measured `/evaluate` only). Measured 2026-11-15 on the CPU host (Xeon Gold 6132, 56 CPUs, 755 GB, CPU-only; Python 3.12; PyTorch 2.15) with a local llama.cpp `Qwen/Qwen2.5-1.5B-Instruct` (Q4_K_M) remote backend, 32 tokens, greedy, and chat-completion logprobs so all four Prong 4 Intrinsic dimensions scored. 1 cold + 5 warm calls; the wall time covers generation plus the full evaluation and aggregation.
+- **Files:** `evaluation_results/interactive_path_latency.md` (new)
+- **Closes:** wXze/YE7H interactive-latency gap (the `/generate-and-evaluate` path)
+- **Verify:** cold 1,049 ms; warm median 974 ms, p95 980 ms; aggregate 0.776; Prong 4 all four dimensions scored. Long or hosted generations not covered.
+
+### `99794ef` — Raise NTNU parallelism to 10 and record the paper workflow (2026-11-16)
+
+- **Hash:** `99794ef7b0c189cfb2340e0162c4df923a6ce05e`
+- **Why:** The NTNU gateway now allows up to 10 parallel jobs (user update 2026-11-15), so the one-job cap and the Mon–Fri 08–18 / weekend split are obsolete. The default Qwen host is the NTNU API `Qwen/Qwen3.8-27B-FP8`; the Malvik-local `Qwen/Qwen3.8-27B` is now the rate-limit fallback (switch back to NTNU when the limit clears). The charter gains a "Paper workflow" section (writer drafts from artifacts → reviewer verdict → writer fixes blockers and should-fixes → re-review until accept → Git commits and pushes to Overleaf) and the paper-writer/paper-reviewer role files now point at the Overleaf clone (`/home/larsbun/git-projects/6a4f9916e0e62f75cd7f6e5d/new_demosubmission.tex`).
+- **Files:** `.grok/HERDR.md`, `.grok/agents/paper-writer.md`, `.grok/agents/paper-reviewer.md`
+- **Closes:** chore / crew
+- **Verify:** docs only
+
+### `979a038` — Document claim admission and align its exemption docstring (2026-11-15)
+
+- **Hash:** `979a03811306e9c58913fdae9d329301bb149da2`
+- **Why:** New `docs/CLAIM_ADMISSION.md` — the method doc for Prong 3's deterministic admission gates: why admission exists (the 76-claim / ~39-fragment / 0-verifiable teaching-prose export), the pipeline, the full gate-reference table with a rejected and a passing control per reason, the `f49c1db` lookup guard, the metadata contract, the limits (quoted claims, accepted leaks, unknown-vs-error), and the add-a-gate recipe. `admit_triple`'s docstring is aligned to the gates: the reason list gains `definition`/`demonstrative`, and the LLM exemption is corrected so only `source='llm'` is exempt from the pronoun/lexical-head checks — a `both` claim is not, because its subject also appears in the spaCy track, so a pronoun there is still junk.
+- **Files:** `docs/CLAIM_ADMISSION.md` (new), `src/extraction/claim_admission.py`
+- **Closes:** the claim-admission method-doc open item (doc half of wXze claim precision / V55p transparency)
+- **Verify:** `pytest tests/test_claim_admission.py -q` → 41 passed (per the doc's verification note, at `bbb7d99`; 1 unrelated CUDA warning); live fixture run: 8 admitted, discarded `{meta 15, definition 1, pronoun 6, demonstrative 2, question 7}`, all five expected lies present, all relations `unknown` (verifiable 0).
+
+### `bbb7d99` — Record admission gates and crew appointments in commit index (2026-11-15)
+
+- **Hash:** `bbb7d9974df223783f85b64178948710b0f49363`
 - **Why:** Record the admission slices (0+1 and 6d) and the crew appointments; backfill the previous index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
