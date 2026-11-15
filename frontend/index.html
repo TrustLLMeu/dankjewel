@@ -296,6 +296,39 @@ footer {
   font-size: 0.7rem; color: var(--text3); margin-top: 0.5rem;
 }
 
+/* ── Evidence view: score anatomy bar + coverage ribbon (Stage B) ─── */
+.evidence-card { border-top: 1px solid var(--border); padding: 0.8rem 0.9rem 0.9rem; }
+.evidence-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.45rem;
+}
+.evidence-title {
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--text3);
+}
+.evidence-note { font-size: 0.68rem; font-style: italic; color: var(--text3); }
+.anatomy-bar {
+  display: flex; height: 26px; border-radius: 5px; overflow: hidden;
+  border: 1px solid var(--border); background: var(--border);
+}
+.anatomy-seg {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  min-width: 2px; overflow: hidden;
+  font-size: 0.64rem; font-weight: 600; color: #fff;
+}
+.anatomy-seg .seg-label { position: relative; z-index: 1; white-space: nowrap; }
+.anatomy-seg .hatch {
+  position: absolute; top: 0; bottom: 0; right: 0;
+  background: repeating-linear-gradient(45deg, rgba(255,255,255,0.55) 0 3px, transparent 3px 7px);
+}
+.coverage-ribbon { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+.evidence-chip {
+  font-size: 0.66rem; padding: 0.1rem 0.4rem; border-radius: 3px;
+  border: 1px solid var(--border); color: var(--text2);
+  background: transparent; white-space: nowrap;
+}
+.evidence-chip.muted { color: var(--text3); border-style: dashed; }
+
 /* ── Unknown/Error state styling ──────────────────────────────────── */
 .unknown-bar {
   background: #9aa0a6 !important; border-style: dashed !important;
@@ -594,6 +627,16 @@ footer {
       <div class="radar-container" id="radar-container" style="display:none;">
         <svg class="radar-svg" id="radar-svg" viewBox="0 0 240 240"></svg>
         <div class="radar-label" data-i18n="radar_plot">Radar Plot</div>
+      </div>
+
+      <!-- Evidence view (Stage B): score anatomy + evidence coverage -->
+      <div class="evidence-card" id="evidence-card" hidden>
+        <div class="evidence-head">
+          <span class="evidence-title" data-i18n="evidence_title">Evidence</span>
+          <span class="evidence-note" id="evidence-note" hidden data-i18n="evidence_legacy">Evidence coverage unavailable for this evaluation.</span>
+        </div>
+        <div class="anatomy-bar" id="anatomy-bar" role="img"></div>
+        <div class="coverage-ribbon" id="coverage-ribbon"></div>
       </div>
 
       <div class="eval-spinner" id="eval-spinner" data-i18n="evaluating">⏳ Evaluating…</div>
@@ -1726,6 +1769,142 @@ function renderScores(evalData) {
       }
     }
   });
+
+  renderEvidence(evalData);
+}
+
+// ── Evidence view (Stage B): score anatomy bar + coverage ribbon ────
+// Consumes the Stage A contract: evalData.coverage plus per-dimension
+// metadata.evidence_sources. The hatched part of each segment is the
+// share of that prong's contribution resting on unknown/partial
+// evidence; legacy evaluations without `coverage` render unhatched with
+// an explicit note.
+const PRONG_COLORS = {
+  'LLM-as-Judge (Prong 1)': '#3b82f6',
+  'Rule-Based (Prong 2)': '#f59e0b',
+  'Extraction-Based (Prong 3)': '#10b981',
+  'Intrinsic (Prong 4)': '#8b5cf6'
+};
+
+function prongEvidenceFraction(prong, coverage) {
+  if (prong.prong_name.includes('Extraction')) {
+    if (!coverage || !coverage.claims_total) return 0;
+    return coverage.claims_verified / coverage.claims_total;
+  }
+  const dims = (prong.dimensions || []).filter(d => d.aggregate !== false);
+  if (!dims.length) return 0;
+  return dims.filter(d => d.status === 'scored').length / dims.length;
+}
+
+function prongEvidenceLabel(prong, coverage) {
+  if (prong.prong_name.includes('Extraction')) {
+    if (!coverage) return t('evidence_label_coverage_unavailable');
+    return t('evidence_label_claims')
+      .replace('{{n}}', coverage.claims_verified)
+      .replace('{{m}}', coverage.claims_total);
+  }
+  const dims = (prong.dimensions || []).filter(d => d.aggregate !== false);
+  const scored = dims.filter(d => d.status === 'scored').length;
+  let label = t('evidence_label_dimensions').replace('{{n}}', scored).replace('{{m}}', dims.length);
+  if (prong.prong_name.includes('Intrinsic') && scored === 0) label += ' (' + t('evidence_label_no_logprobs') + ')';
+  return label;
+}
+
+function renderEvidence(evalData) {
+  const card = document.getElementById('evidence-card');
+  const bar = document.getElementById('anatomy-bar');
+  const ribbon = document.getElementById('coverage-ribbon');
+  const note = document.getElementById('evidence-note');
+  const prongs = evalData.prong_results || [];
+  if (!card || !bar || !ribbon || !note) return;
+  if (!prongs.length) { card.hidden = true; return; }
+
+  const coverage = evalData.coverage || null;
+  bar.innerHTML = '';
+  ribbon.innerHTML = '';
+
+  // Per-prong score, same rule as clientSideAggregate()
+  const scored = {};
+  prongs.forEach(p => {
+    const dims = (p.dimensions || []).filter(d => d.aggregate && d.status === 'scored');
+    if (dims.length) {
+      scored[p.prong_name] = dims.reduce(
+        (sum, d) => sum + (d.agg_value != null ? d.agg_value : d.value), 0) / dims.length;
+    }
+  });
+
+  // Contribution share per prong: w_i*s_i / sum(w_j*s_j)
+  const weights = currentWeights || {};
+  const contrib = {};
+  let total = 0;
+  for (const [name, w] of Object.entries(weights)) {
+    if (w > 0 && scored[name] !== undefined) {
+      contrib[name] = w * scored[name];
+      total += contrib[name];
+    }
+  }
+  const names = Object.keys(contrib);
+  const shares = {};
+  if (total > 0) {
+    names.forEach(n => { shares[n] = contrib[n] / total; });
+  } else {
+    names.forEach(n => { shares[n] = 1 / names.length; });
+  }
+
+  const aria = [];
+  names.forEach(name => {
+    const prong = prongs.find(p => p.prong_name === name);
+    if (!prong) return;
+    const share = shares[name];
+    const frac = coverage ? clamp01(prongEvidenceFraction(prong, coverage)) : 1;
+    const label = prongEvidenceLabel(prong, coverage);
+    const m = name.match(/Prong (\d)/);
+    const shortName = m ? 'P' + m[1] : name;
+
+    const seg = document.createElement('div');
+    seg.className = 'anatomy-seg';
+    seg.style.flex = '0 0 ' + (share * 100).toFixed(2) + '%';
+    seg.style.background = PRONG_COLORS[name] || 'var(--text3)';
+    seg.title = name + ' · ' + (share * 100).toFixed(0) + '% ' + t('evidence_share_suffix') + ' · ' + label;
+
+    const segLabel = document.createElement('span');
+    segLabel.className = 'seg-label';
+    segLabel.textContent = shortName + ' ' + scored[name].toFixed(2);
+    seg.appendChild(segLabel);
+
+    if (frac < 0.999) {
+      const hatch = document.createElement('div');
+      hatch.className = 'hatch';
+      hatch.style.width = ((1 - frac) * 100).toFixed(1) + '%';
+      seg.appendChild(hatch);
+    }
+    bar.appendChild(seg);
+    aria.push(shortName + ' ' + scored[name].toFixed(2) + ' (' + label + ')');
+  });
+  bar.setAttribute('aria-label', aria.join('; '));
+
+  // Coverage ribbon
+  const mkChip = (text, muted) => {
+    const chip = document.createElement('span');
+    chip.className = 'evidence-chip' + (muted ? ' muted' : '');
+    chip.textContent = text;
+    return chip;
+  };
+  if (coverage) {
+    note.hidden = true;
+    const claimsMuted = !coverage.claims_total;
+    ribbon.appendChild(mkChip(
+      claimsMuted ? t('evidence_claims_none')
+                  : t('evidence_claims').replace('{{n}}', coverage.claims_verified).replace('{{m}}', coverage.claims_total),
+      claimsMuted));
+    ribbon.appendChild(mkChip(t(coverage.judge_scored ? 'evidence_judge_scored' : 'evidence_judge_not_run'), !coverage.judge_scored));
+    ribbon.appendChild(mkChip(t(coverage.rules_scored ? 'evidence_rules_scored' : 'evidence_rules_not_run'), !coverage.rules_scored));
+    ribbon.appendChild(mkChip(t('evidence_prongs').replace('{{n}}', coverage.prongs_scored).replace('{{m}}', coverage.prongs_total)));
+  } else {
+    note.hidden = false;
+  }
+
+  card.hidden = false;
 }
 
 function claimSourceCounts(claimDetails) {

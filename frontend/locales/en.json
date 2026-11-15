@@ -98,5 +98,19 @@
   "LLM-as-Judge (Prong 1)": "LLM-as-Judge (Prong 1)",
   "Rule-Based (Prong 2)": "Rule-Based (Prong 2)",
   "Extraction-Based (Prong 3)": "Extraction-Based (Prong 3)",
-  "Intrinsic (Prong 4)": "Intrinsic (Prong 4)"
+  "Intrinsic (Prong 4)": "Intrinsic (Prong 4)",
+  "evidence_title": "Evidence",
+  "evidence_legacy": "Evidence coverage unavailable for this evaluation.",
+  "evidence_claims": "claims {{n}}/{{m}} verified",
+  "evidence_claims_none": "no claims extracted",
+  "evidence_judge_scored": "judge scored",
+  "evidence_judge_not_run": "judge not run",
+  "evidence_rules_scored": "rules scored",
+  "evidence_rules_not_run": "rules not run",
+  "evidence_prongs": "prongs {{n}}/{{m}} scored",
+  "evidence_share_suffix": "of the aggregate",
+  "evidence_label_claims": "{{n}}/{{m}} claims verified",
+  "evidence_label_dimensions": "{{n}}/{{m}} dimensions scored",
+  "evidence_label_coverage_unavailable": "coverage unavailable",
+  "evidence_label_no_logprobs": "no logprobs"
 }
