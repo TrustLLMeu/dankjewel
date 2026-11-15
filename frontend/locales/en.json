@@ -125,5 +125,9 @@
   "track_factual": "Factual Accuracy",
   "track_baseline": "baseline",
   "track_llm": "LLM track",
-  "track_delta": "Δ {{d}}"
+  "track_delta": "Δ {{d}}",
+  "timeline_title": "Iterations",
+  "timeline_compare": "Compare",
+  "timeline_compare_done": "Done",
+  "timeline_delta": "{{a}} → {{b}} · Δ {{d}}"
 }

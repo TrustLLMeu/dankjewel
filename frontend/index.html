@@ -202,6 +202,30 @@ details[open] summary::before { transform: rotate(90deg); }
 
 /* ── History ──────────────────────────────────────────────────────── */
 .history-list { max-height: 300px; overflow-y: auto; }
+
+/* ── Stage F: iteration timeline + delta view ─────────────────────── */
+.history-timeline {
+  padding: 0.5rem 0.7rem 0.4rem; border-bottom: 1px solid var(--border);
+}
+.timeline-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+}
+.timeline-compare {
+  font-size: 0.62rem; padding: 0.1rem 0.4rem; border-radius: 3px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text2); cursor: pointer;
+}
+.timeline-compare.active { border-color: var(--accent); color: var(--accent); }
+#timeline-svg { display: block; width: 100%; height: 42px; margin-top: 0.25rem; }
+.timeline-dot { cursor: pointer; }
+.timeline-dot.selected { stroke: var(--accent); stroke-width: 2; }
+.timeline-delta {
+  font-family: var(--mono); font-size: 0.62rem; color: var(--text2);
+  margin-top: 0.25rem; line-height: 1.5;
+}
+.timeline-delta .delta-pos { color: var(--green); }
+.timeline-delta .delta-neg { color: var(--red); }
+.timeline-delta .delta-zero { color: var(--text3); }
 .history-item {
   padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--border);
   cursor: pointer; transition: background 0.15s; font-size: 0.78rem;
@@ -634,6 +658,14 @@ footer {
         <span data-i18n="history">History</span>
         <button class="btn-clear" onclick="clearHistory()" data-i18n="clear">Clear</button>
       </div>
+      <div class="history-timeline" id="history-timeline" hidden>
+        <div class="timeline-head">
+          <span class="evidence-subtitle" data-i18n="timeline_title">Iterations</span>
+          <button class="timeline-compare" id="timeline-compare" type="button" data-i18n="timeline_compare">Compare</button>
+        </div>
+        <svg id="timeline-svg" viewBox="0 0 260 42" preserveAspectRatio="none"></svg>
+        <div class="timeline-delta" id="timeline-delta" hidden></div>
+      </div>
       <div class="history-list" id="history-list">
         <div style="padding:0.7rem;color:var(--text3);font-size:0.78rem;font-style:italic;" data-i18n="no_evaluations_yet">No evaluations yet</div>
       </div>
@@ -798,6 +830,8 @@ document.addEventListener('DOMContentLoaded', () => {
   checkHealth();
   setInterval(checkHealth, 10000);
   loadHistory();
+  const compareBtn = document.getElementById('timeline-compare');
+  if (compareBtn) compareBtn.addEventListener('click', toggleTimelineCompare);
 
   // Slider value displays
   const sliders = [
@@ -1137,11 +1171,116 @@ function saveToHistory(prompt, evalData) {
 
 function loadHistory() { renderHistory(); }
 
+// ── Stage F: iteration timeline + two-entry delta view ─────────────
+let timelineCompareMode = false;
+let timelineSelected = [];   // entry timestamps (stable identity across re-parses)
+
+function toggleTimelineCompare() {
+  timelineCompareMode = !timelineCompareMode;
+  timelineSelected = [];
+  const btn = document.getElementById('timeline-compare');
+  if (btn) {
+    btn.classList.toggle('active', timelineCompareMode);
+    btn.textContent = t(timelineCompareMode ? 'timeline_compare_done' : 'timeline_compare');
+  }
+  renderTimeline();
+}
+
+function fmtDelta3(d) {
+  return (d > 0.0005 ? '+' : '') + d.toFixed(3);
+}
+function deltaClass(d) {
+  return d > 0.0005 ? 'delta-pos' : d < -0.0005 ? 'delta-neg' : 'delta-zero';
+}
+function shortProng(name) {
+  const m = name.match(/Prong (\d)/);
+  return m ? 'P' + m[1] : name;
+}
+
+function renderTimeline() {
+  const wrap = document.getElementById('history-timeline');
+  const svg = document.getElementById('timeline-svg');
+  const delta = document.getElementById('timeline-delta');
+  if (!wrap || !svg || !delta) return;
+
+  const pts = getHistory().slice().reverse().filter(e => e.totalScore != null);
+  if (pts.length < 2) { wrap.hidden = true; return; }
+  wrap.hidden = false;
+
+  const W = 260, H = 42, pad = 4;
+  const n = pts.length;
+  const px = i => n === 1 ? W / 2 : pad + (i / (n - 1)) * (W - 2 * pad);
+  const py = s => pad + (1 - Math.max(0, Math.min(1, s))) * (H - 2 * pad);
+
+  let html = '<polyline fill="none" stroke="#3b82f6" stroke-width="1.5" points="'
+    + pts.map((p, i) => px(i).toFixed(1) + ',' + py(p.totalScore).toFixed(1)).join(' ') + '"></polyline>';
+  pts.forEach((p, i) => {
+    const selected = timelineSelected.includes(p.timestamp) ? ' selected' : '';
+    html += '<circle class="timeline-dot' + selected + '" cx="' + px(i).toFixed(1)
+      + '" cy="' + py(p.totalScore).toFixed(1) + '" r="3" fill="#3b82f6"><title>'
+      + esc(new Date(p.timestamp).toLocaleString() + ' · ' + p.totalScore.toFixed(3)) + '</title></circle>';
+  });
+  svg.innerHTML = html;
+
+  // One handler on the plot: pick the nearest point by x. This makes the
+  // 6px dots usable with a mouse and keeps clicks on the line working.
+  svg.onclick = (event) => {
+    const rect = svg.getBoundingClientRect();
+    if (!rect.width) return;
+    const relX = (event.clientX - rect.left) / rect.width * W;
+    let best = 0;
+    let bestD = Infinity;
+    pts.forEach((p, i) => {
+      const d = Math.abs(px(i) - relX);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    const entry = pts[best];
+    if (!timelineCompareMode) { restoreHistory(entry); return; }
+    if (timelineSelected.includes(entry.timestamp)) {
+      timelineSelected = timelineSelected.filter(ts => ts !== entry.timestamp);
+    } else {
+      timelineSelected = [...timelineSelected, entry.timestamp].slice(-2);
+    }
+    renderTimeline();
+  };
+
+  if (timelineSelected.length === 2) {
+    const byTs = new Map(getHistory().map(e => [e.timestamp, e]));
+    const a = byTs.get(timelineSelected[0]);
+    const b = byTs.get(timelineSelected[1]);
+    const evA = (a.fullResult && a.fullResult.evaluation) || a.evaluation;
+    const evB = (b.fullResult && b.fullResult.evaluation) || b.evaluation;
+    if (!evA || !evB) { delta.hidden = true; return; }
+    const aggA = clientSideAggregate(evA, currentWeights);
+    const aggB = clientSideAggregate(evB, currentWeights);
+    const sa = a.totalScore, sb = b.totalScore;
+    const totalDelta = sb - sa;
+    let line = '<div>' + t('timeline_delta')
+      .replace('{{a}}', sa.toFixed(3))
+      .replace('{{b}}', sb.toFixed(3))
+      .replace('{{d}}', '<span class="' + deltaClass(totalDelta) + '">' + fmtDelta3(totalDelta) + '</span>')
+      + '</div>';
+    const prongNames = [...new Set([...Object.keys(aggA.prong_scores), ...Object.keys(aggB.prong_scores)])];
+    line += '<div>' + prongNames.map(name => {
+      const va = aggA.prong_scores[name];
+      const vb = aggB.prong_scores[name];
+      if (va == null || vb == null) return '';
+      const d = vb - va;
+      return shortProng(name) + ' <span class="' + deltaClass(d) + '">' + fmtDelta3(d) + '</span>';
+    }).filter(Boolean).join(' · ') + '</div>';
+    delta.innerHTML = line;
+    delta.hidden = false;
+  } else {
+    delta.hidden = true;
+  }
+}
+
 function renderHistory() {
   const list = document.getElementById('history-list');
   const history = getHistory();
   if (history.length === 0) {
     list.innerHTML = '<div style="padding:0.7rem;color:var(--text3);font-size:0.78rem;font-style:italic;">' + esc(t('no_evaluations_yet')) + '</div>';
+    renderTimeline();
     return;
   }
   list.innerHTML = '';
@@ -1161,6 +1300,7 @@ function renderHistory() {
     `;
     list.appendChild(item);
   });
+  renderTimeline();
 }
 
 function restoreHistory(entry) {
