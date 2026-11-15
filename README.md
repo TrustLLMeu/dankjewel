@@ -330,9 +330,10 @@ Dutch input scores with the Dutch lexicon; a judge server on a dead port yields
 `judge_status=unknown` with the embedding baseline kept; a claims server on a
 dead port keeps the spaCy track and records one `llm_errors` entry. Verifier load
 failure, malformed model JSON and per-call timeouts are covered by the test
-suite (named in the report). Throughput is sequential: 91 evaluations per minute
-by default (mean 658 ms) and 78 per minute with all optional tracks on (mean
-771 ms); concurrent throughput needs multiple workers and is not measured.
+suite (named in the report). Throughput is sequential: 93 evaluations per minute
+by default (mean 645 ms, p95 660 ms) and 76 per minute with all optional tracks
+on (mean 787 ms, p95 1,263 ms); concurrent throughput needs multiple workers and
+is not measured.
 
 ---
 
