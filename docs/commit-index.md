@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `0fd5a5e` — Show score anatomy and evidence coverage in the results panel
+- **Latest commit:** `3fc9111` — Clarify NTNU concurrency versus the Grok weekly limit
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
 - **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); unified evidence view (stages A–B done, stages C–F open); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
 
@@ -14,7 +14,9 @@ Newest first. `git log` remains the source of truth for hashes.
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-15 | `PENDING` | chore / index | Record Stage B evidence view in commit index | chore |
+| 2026-11-15 | `PENDING` | chore / index | Record NTNU concurrency clarification in commit index | chore |
+| 2026-11-15 | `3fc9111` | chore / crew | Clarify NTNU concurrency versus the Grok weekly limit | chore |
+| 2026-11-15 | `64cc3f7` | chore / index | Record Stage B evidence view in commit index | chore |
 | 2026-11-15 | `0fd5a5e` | dashboard / evidence | Show score anatomy and evidence coverage in the results panel | V55p transparency (aggregate composition) |
 | 2026-11-15 | `fd99a90` | chore / index | Record Stage A evidence contract in commit index | chore |
 | 2026-11-15 | `1607a9d` | Stage A / evidence | Expose per-dimension evidence sources and a coverage summary | V55p transparency / unified evidence view |
@@ -53,9 +55,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record Stage B evidence view in commit index (2026-11-15)
+### `PENDING` — Record NTNU concurrency clarification in commit index (2026-11-15)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the NTNU-concurrency charter clarification; backfill the Stage B index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `3fc9111` — Clarify NTNU concurrency versus the Grok weekly limit (2026-11-15)
+
+- **Hash:** `3fc9111609eb026a0d0511cd9452fe01ed0ea304`
+- **Why:** The two limits were being conflated; NTNU serialises requests (one NTNU request in flight, a concurrency limit), it does not impose a weekly percentage. The "Weekly limit left: N%" in a pane's status bar is the Grok CLI's own subscription limit, to be treated as a per-pane retry constraint, not a reason to stop the plan. The Captain-idle rule stays.
+- **Files:** `.grok/HERDR.md`
+- **Closes:** chore / crew process
+- **Verify:** docs only
+
+### `64cc3f7` — Record Stage B evidence view in commit index (2026-11-15)
+
+- **Hash:** `64cc3f7743988ffa4aaae32b3f870b4c85342b2d`
 - **Why:** Record the Stage B evidence-view land; backfill the Stage A index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
