@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `01a6d4b` — Add an opt-in LLM admission classifier and document its limits
+- **Latest commit:** `dc423d1` — Add a robustness matrix and sequential throughput measurements
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
 - **Open slices:** claim-admission reported-claim pass (unquoted embedded reported speech); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion and lexicon validation; the eight non-English lexicons remain unvalidated translations
 
@@ -14,7 +14,10 @@ Newest first. `git log` remains the source of truth for hashes.
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-16 | `PENDING` | chore / index | Record the LLM admission classifier in commit index | chore |
+| 2026-11-16 | `PENDING` | chore / index | Record robustness matrix and ablation index in commit index | chore |
+| 2026-11-16 | `dc423d1` | eval / robustness | Add a robustness matrix and sequential throughput measurements | YE7H real-time/throughput (robustness matrix) |
+| 2026-11-16 | `3818e5d` | eval / ablation | Add the admission ablation table and document each gate's contribution | wXze claim precision (admission ablation) |
+| 2026-11-16 | `1dca5ec` | chore / index | Record the LLM admission classifier in commit index | chore |
 | 2026-11-16 | `01a6d4b` | prong 3 / admission | Add an opt-in LLM admission classifier and document its limits | wXze claim precision (measured negative result) |
 | 2026-11-16 | `706c276` | chore / index | Record use-mention pass and lexicon audit in commit index | chore |
 | 2026-11-16 | `181141c` | docs / lexicon | Record the mechanical lexicon validation audit | wXze multilingual validation (Nordic lexicons) |
@@ -79,9 +82,34 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record the LLM admission classifier in commit index (2026-11-16)
+### `PENDING` — Record robustness matrix and ablation index in commit index (2026-11-16)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the robustness/throughput matrix (`dc423d1`) and the admission ablation table (`3818e5d`, whose index entry was missed by the previous land); backfill the previous index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `dc423d1` — Add a robustness matrix and sequential throughput measurements (2026-11-16)
+
+- **Hash:** `dc423d14e33ae8882a1371f1edd68679f260886c`
+- **Why:** `scripts/eval_robustness.py` runs the live failure cases the interface must survive (in-process via the FastAPI test client; dead ports for the down-server cases — no external server needed) and records the observed state, then measures sequential throughput on the CPU host. Matrix: empty input evaluates without a crash (10 of 19 dimensions scored, the rest `unknown`); a ~21k-character input evaluates and deduplicates to one claim; Dutch input scores with the Dutch lexicon (Relevance 0.864); a judge server on a dead port yields `judge_status=unknown` with the embedding baseline kept; a claims server on a dead port keeps the spaCy track and records one `llm_errors` entry. Verifier load failure, malformed model JSON, and per-call timeouts are cited to the tests rather than re-run live. Throughput (sequential, in-process) on the measurement host (56 CPUs, CPU-only): the artifacts record one representative run (default ~93 evals/min / mean 645 ms; all tracks on ~76 / mean 787 ms); concurrent throughput needs multiple workers and is not measured. The README gains the "Robustness and throughput" subsection.
+- **Files:** `scripts/eval_robustness.py` (new), `evaluation_results/robustness.json` (new), `evaluation_results/robustness.md` (new), `README.md`
+- **Closes:** the robustness/throughput item
+- **Verify:** script runs self-contained (exit 0; in-process app, no external server); the robustness matrix and throughput are recorded in the artifacts.
+
+### `3818e5d` — Add the admission ablation table and document each gate's contribution (2026-11-16)
+
+- **Hash:** `3818e5d9815d0f7389b45153330f526b6ce1725c`
+- **Why:** `scripts/eval_admission_ablation.py` adds one admission layer at a time on the teacher-prose fixture and reports how many candidates survive and how many of the five intended false-claim examples are kept at each stage: A raw 76 (46 known non-claims) → B +markdown 28/15 → C +sentence 17/8 → D +triple 8/2 → E +dedupe 8/2 → F +use-mention 9/2, with all five expected lies kept at every stage. `docs/CLAIM_ADMISSION.md` gains the table and the reading: markdown cleaning removes most formatting fragments (76→28, junk 46→15); the sentence gates remove headings, questions and meta-discourse (28→17, junk 15→8); the triple gates are the largest precision win (17→8, junk 8→2); the use-mention pass adds the quoted claim with its provenance (8→9). The two remaining non-claims are the documented leaks (the "smoking is that bad" fragment and the advice sentence).
+- **Files:** `scripts/eval_admission_ablation.py` (new), `docs/CLAIM_ADMISSION.md`, `evaluation_results/admission_ablation.json` (new), `evaluation_results/admission_ablation.md` (new)
+- **Closes:** the admission ablation item
+- **Verify:** script runs self-contained; artifacts regenerate byte-identically; no backend change (pytest unchanged at 412 passed + 2 skipped).
+- **Note:** this commit's index entry was missed by the previous land and is recorded here.
+
+### `1dca5ec` — Record the LLM admission classifier in commit index (2026-11-16)
+
+- **Hash:** `1dca5ec7f82384283c0750550ab3d77dcb3aeecb`
 - **Why:** Record the opt-in LLM admission classifier (`01a6d4b`) and its measured limits; backfill the previous index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
