@@ -231,11 +231,15 @@ in-session subagents, so the user can watch each pane live. Panes:
    working.
 3. `herdr tab focus <tab_id>` restores the Captain tab afterwards.
 4. The one-NTNU-job-at-a-time rule counts all panes; serialise there
-   exactly as the rate-window table says. **The Captain idles while a
-   worker is in flight**: dispatch, register a status watcher, end the
-   turn, and run no other model work until the pane reports. Parallel
-   Captain work during a worker turn causes shared-key rate limits
-   (observed 2026-11-14/15).
+   exactly as the rate-window table says. This is a **concurrency**
+   limit: one NTNU request in flight, no weekly cap of our own. The
+   "Weekly limit left: N%" figure in a pane's status bar is the Grok
+   CLI's own subscription limit, not NTNU's; treat it as a per-pane
+   retry constraint, not a reason to stop the plan. **The Captain idles
+   while a worker is in flight**: dispatch, register a status watcher,
+   end the turn, and run no other model work until the pane reports.
+   Parallel Captain work during a worker turn causes shared-key rate
+   limits (observed 2026-11-14/15).
 5. Panes own their worktrees when a slice needs isolation; the pane
    creates and reports it, the Captain merges as before.
 
