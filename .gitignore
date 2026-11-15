@@ -43,6 +43,7 @@ evaluation_results/verifier_eval.md
 # Vendored upstream checkouts and benchmark extracts; obtain separately when needed
 fever/
 data/scifact_raw/
+data/aggrefact_raw/
 
 # Local configuration and credentials
 .env
