@@ -300,13 +300,16 @@ def admit_triple(claim) -> Tuple[bool, str]:
 
     Returns (admitted, reason); reason is 'admitted' or one of the
     discard reasons (markdown / heading / question / imperative / meta /
-    pronoun / malformed). 'duplicate' is assigned by filter_claims.
+    pronoun / malformed / definition / demonstrative). 'duplicate' is
+    assigned by filter_claims.
 
     Sentence-level reasons come from claim.source_sentence; the
-    triple-level gates inspect the extracted strings. LLM-track claims
-    (source 'llm'/'both') are exempt from the pronoun and lexical-head
-    checks — the LLM track decontextualizes and resolves pronouns — but
-    not from malformed.
+    triple-level gates inspect the extracted strings. Claims produced by
+    the LLM track (source 'llm') are exempt from the pronoun and
+    lexical-head checks — that track decontextualizes and resolves
+    pronouns — but not from malformed. A 'both' claim is not exempt: its
+    subject string also appears in the spaCy track, so a pronoun there is
+    still junk.
     """
     # ── Sentence-level reasons (from the source sentence) ─────────────
     reason = sentence_reject_reason(claim.source_sentence or '')
