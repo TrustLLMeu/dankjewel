@@ -24,8 +24,11 @@ import re
 import time
 from typing import Dict, List, Optional, Tuple
 
+from src.extraction.claim_admission import (
+    filter_claims, sentence_reject_reason,
+)
 from src.extraction.claim_extractor import (
-    Claim, ClaimExtractor, ExtractionResult
+    Claim, ClaimExtractor, ExtractionResult, admission_metadata,
 )
 from src.llm_judge_client import JudgeError, LLMJudgeClient, get_shared_judge_client
 
@@ -124,48 +127,70 @@ class LLMClaimExtractor:
     def extract(self, text: str) -> ExtractionResult:
         """Extract claims from text on both tracks and merge.
 
+        Applies the same deterministic admission gates as the spaCy
+        track (Slice 1): the raw-text spaCy track cleans markdown and
+        filters its triples, every LLM atomic sentence is checked with
+        the sentence-level gate before triple parsing, and the merged
+        list goes through filter_claims. metadata carries the shared
+        admission keys plus the LLM track's own counters.
+
         Args:
             text: the text to extract claims from.
 
         Returns:
-            ExtractionResult with merged claims (source "spacy" /
-            "llm" / "both") and metadata {'llm_paragraphs': n,
-            'llm_claims': n, 'llm_errors': [...]}.
+            ExtractionResult with merged, admitted claims (source
+            "spacy" / "llm" / "both") and metadata {'admitted_claims':
+            n, 'discarded_candidates': {reason: count}, 'llm_paragraphs':
+            n, 'llm_claims': n, 'llm_errors': [...]}.
         """
         start = time.perf_counter()
         spacy_claims: List[Claim] = []
         num_sentences = 0
+        discarded: Dict[str, int] = {}
 
         if self._include_spacy:
             spacy_result = self._get_spacy().extract(text)
             spacy_claims = spacy_result.claims
             num_sentences = spacy_result.num_sentences
+            for reason, count in (spacy_result.metadata
+                                  .get('discarded_candidates', {})).items():
+                discarded[reason] = discarded.get(reason, 0) + count
         else:
             num_sentences = self._get_spacy().count_sentences(text)
 
         paragraphs = _split_paragraphs(text)
         errors: List[str] = []
-        llm_claims = self._llm_claims(paragraphs, errors)
+        llm_claims = self._llm_claims(paragraphs, errors, discarded)
 
         merged = _merge_claims(spacy_claims, llm_claims)
+        admitted, merge_discarded = filter_claims(merged)
+        for reason, count in merge_discarded.items():
+            discarded[reason] = discarded.get(reason, 0) + count
+
         elapsed_ms = (time.perf_counter() - start) * 1000.0
-        llm_count = sum(1 for c in merged if c.source in ("llm", "both"))
+        llm_count = sum(1 for c in admitted if c.source in ("llm", "both"))
+        metadata = admission_metadata(len(admitted), discarded)
+        metadata.update({
+            'llm_paragraphs': len(paragraphs),
+            'llm_claims': llm_count,
+            'llm_errors': errors,
+        })
         return ExtractionResult(
-            claims=merged,
+            claims=admitted,
             extraction_time_ms=elapsed_ms,
             num_sentences=num_sentences,
-            metadata={
-                'llm_paragraphs': len(paragraphs),
-                'llm_claims': llm_count,
-                'llm_errors': errors,
-            },
+            metadata=metadata,
         )
 
-    def _llm_claims(self, paragraphs: List[str], errors: List[str]) -> List[Claim]:
+    def _llm_claims(self, paragraphs: List[str], errors: List[str],
+                    discarded: Dict[str, int]) -> List[Claim]:
         """Run the [CLAIMS] task per paragraph and triple-parse the atoms.
 
         A failed paragraph (unreachable / timeout / unparseable reply)
         contributes zero claims and appends one short error string.
+        Each atomic sentence passes the deterministic sentence-level
+        admission gate before triple parsing; rejected atoms are
+        counted into `discarded` by reason.
         """
         claims: List[Claim] = []
         client = self._get_client()
@@ -177,6 +202,10 @@ class LLMClaimExtractor:
                 errors.append(str(e)[:_MAX_ERROR_LEN])
                 continue
             for atom in atomic:
+                reason = sentence_reject_reason(atom)
+                if reason:
+                    discarded[reason] = discarded.get(reason, 0) + 1
+                    continue
                 for claim in spacy.extract_from_sentence_text(atom):
                     claim.source = "llm"
                     claim.atomic_text = atom

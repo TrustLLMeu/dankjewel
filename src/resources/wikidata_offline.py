@@ -15,6 +15,8 @@ from enum import Enum
 from dataclasses import dataclass
 from typing import Optional, List, Dict
 
+from src.extraction.claim_admission import is_junk_name
+
 
 class VerificationResult(Enum):
     """Result of verifying a triple against Wikidata.
@@ -342,9 +344,18 @@ class OfflineWikidata:
         """Look up a Wikidata QID by entity name (case-insensitive).
 
         Searches label_lower first, then aliases, then partial matches.
+        Slice 0 hardening: junk names (punctuation-only strings, bare
+        pronouns/determiners, bare stopwords) never resolve — the old
+        prefix matching turned "I" into Iceland and "it" into Italy,
+        producing harmful verdicts against the wrong entity's facts.
+        Prefix matches now require a 3+ character query and a word
+        boundary (the stored label/alias equals the query or starts
+        with the query followed by a space).
         """
         self._ensure_loaded()
         name_lower = name.strip().lower()
+        if is_junk_name(name_lower):
+            return None
 
         # Strip common prefixes
         for prefix in ('the ', 'a ', 'an '):
@@ -383,21 +394,26 @@ class OfflineWikidata:
             if row:
                 return row['qid']
 
-        # Try partial match (starts with)
-        row = self._conn.execute(
-            "SELECT qid FROM entities WHERE label_lower LIKE ? LIMIT 1",
-            (name_lower + '%',)
-        ).fetchone()
-        if row:
-            return row['qid']
-
-        # Try partial alias match
-        row = self._conn.execute(
-            "SELECT qid FROM aliases WHERE alias_lower LIKE ? LIMIT 1",
-            (name_lower + '%',)
-        ).fetchone()
-        if row:
-            return row['qid']
+        # Try partial match (starts with). Slice 0 hardening: the query
+        # must be at least 3 characters and must match on a word
+        # boundary — the stored label/alias equals the query or starts
+        # with the query followed by a space ("Oslo C" may match "Oslo
+        # City", but "it" may no longer match "Italy").
+        for candidate in dict.fromkeys((name_lower, name_stripped)):
+            if len(candidate) < 3 or is_junk_name(candidate):
+                continue
+            row = self._conn.execute(
+                "SELECT qid FROM entities WHERE label_lower LIKE ? LIMIT 1",
+                (candidate + ' %',)
+            ).fetchone()
+            if row:
+                return row['qid']
+            row = self._conn.execute(
+                "SELECT qid FROM aliases WHERE alias_lower LIKE ? LIMIT 1",
+                (candidate + ' %',)
+            ).fetchone()
+            if row:
+                return row['qid']
 
         # ── Multi-word name fallback ────────────────────────────────────
         # Handle names with middle names / extra words, e.g.

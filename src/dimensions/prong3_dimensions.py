@@ -29,6 +29,7 @@ from typing import List, Optional
 from src.dimensions.base_dimension import ScorableDimension
 from src.base import DimensionScore
 from src.evidence import source
+from src.extraction.claim_admission import is_referential_subject
 from src.extraction.claim_extractor import Claim
 from src.resources.nli_verifier import NliVerifier, VerifierUnavailableError
 from src.resources.wikidata_offline import (
@@ -115,7 +116,8 @@ class FactualAccuracy(ScorableDimension):
         return self._verifier
 
     def evaluate(self, text: str, claims: List[Claim] = None,
-                 llm_verify: bool = False) -> DimensionScore:
+                 llm_verify: bool = False,
+                 admission: dict = None) -> DimensionScore:
         """Evaluate factual accuracy over pre-extracted claims.
 
         Args:
@@ -125,13 +127,23 @@ class FactualAccuracy(ScorableDimension):
                 five-way track for claims the KB exact match left
                 UNKNOWN. Default False: rule-based five-way labels
                 only, no model load, binary math byte-identical.
+            admission: the extractor's claim-admission summary
+                ({'admitted_claims': n, 'discarded_candidates':
+                {reason: count}}). Forwarded into this dimension's
+                metadata (never into the score) so the response shows
+                how many candidates were gated away.
         """
         start = time.perf_counter()
         if not claims or not self.wikidata:
+            metadata = {
+                'status': 'no_claims' if not claims else 'no_wikidata',
+                'num_claims': 0,
+            }
+            if admission is not None:
+                metadata['claim_admission'] = admission
             return self.create_score(
                 value=0.5,
-                metadata={'status': 'no_claims' if not claims else 'no_wikidata',
-                          'num_claims': 0},
+                metadata=metadata,
                 status='unknown',
             )
 
@@ -217,6 +229,10 @@ class FactualAccuracy(ScorableDimension):
         }
         if llm_verify:
             metadata['verifier_errors'] = verifier_errors
+        if admission is not None:
+            # Forwarded admission summary — diagnostics only, never
+            # part of the score.
+            metadata['claim_admission'] = admission
 
         # ── Evidence contract (Stage A) ────────────────────────────────
         # Extraction tracks are listed when they contributed claims;
@@ -261,6 +277,13 @@ class FactualAccuracy(ScorableDimension):
             None, error: str or None). The score is None and the
             relation UNKNOWN on verifier failure — never fabricated.
         """
+        # Referential gate (Slice 0): a pronoun/punctuation/stopword
+        # subject is never an entity — even if a lookup once resolved
+        # it through prefix matching, the verifier must not score the
+        # claim against the wrong entity's facts.
+        if not is_referential_subject(claim.subject):
+            return VerificationResult.UNKNOWN, None, None
+
         subj_qid = self.wikidata.lookup_entity(claim.subject)
         doc = self.wikidata.format_entity_facts(subj_qid) if subj_qid else None
         if not doc:

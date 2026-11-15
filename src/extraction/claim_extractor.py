@@ -13,6 +13,10 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 import spacy
 
+from src.extraction.claim_admission import (
+    clean_markdown, filter_claims, is_commentary_label, split_label,
+)
+
 
 @dataclass
 class Claim:
@@ -48,8 +52,9 @@ class ExtractionResult:
     """Result of claim extraction with timing metadata.
 
     `metadata` carries dual-track info from the LLM extractor
-    (llm_paragraphs / llm_claims / llm_errors); rule-based extraction
-    leaves it empty.
+    (llm_paragraphs / llm_claims / llm_errors) and the claim-admission
+    gates (admitted_claims / discarded_candidates); rule-based
+    extraction fills in the admission keys only.
     """
     claims: List[Claim]
     extraction_time_ms: float
@@ -63,6 +68,15 @@ class ExtractionResult:
             'num_sentences': self.num_sentences,
             'metadata': self.metadata,
         }
+
+
+def admission_metadata(admitted: int, discarded: dict) -> dict:
+    """The admission half of ExtractionResult.metadata (shared by both
+    extraction tracks so Prong 3 sees one uniform shape)."""
+    return {
+        'admitted_claims': admitted,
+        'discarded_candidates': dict(discarded),
+    }
 
 
 # Modal verbs and uncertainty cues for modality detection
@@ -99,22 +113,52 @@ class ClaimExtractor:
     def extract(self, text: str) -> ExtractionResult:
         """Extract claims from text.
 
+        Applies the deterministic admission gates (Slice 1): the text is
+        markdown-cleaned before parsing, and the candidate triples are
+        filtered by claim_admission.filter_claims (pronoun/fragment/
+        heading/meta candidates are discarded, near-duplicates dropped).
+        ExtractionResult.metadata carries the admission histogram.
+
         Returns:
             ExtractionResult with list of Claim objects and timing info.
         """
         start = time.perf_counter()
-        doc = self._nlp(text)
-        claims = []
+        cleaned = clean_markdown(text)
+        candidates = []
+        num_sentences = 0
+        discarded: dict = {}
 
-        for sent in doc.sents:
-            sent_claims = self._extract_from_sentence(sent)
-            claims.extend(sent_claims)
+        # Split bullet lines: after cleaning, each markdown line is its
+        # own parse unit — bullets/headings/labels never merge into the
+        # neighbouring sentence's dependency tree (that merging is what
+        # produced heading-text subjects and quoted-claim fragments in
+        # the exported run). A "Label:" prefix is split off; commentary
+        # labels ("Why it's false:") gate the whole line as meta.
+        for raw_line in cleaned.split('\n'):
+            line = raw_line.strip()
+            if not line:
+                continue
+            label, content = split_label(line)
+            if label is not None and is_commentary_label(label):
+                discarded['meta'] = discarded.get('meta', 0) + 1
+                continue
+            parse_text = content if label is not None else line
+            doc = self._nlp(parse_text)
+            sents = list(doc.sents)
+            num_sentences += len(sents)
+            for sent in sents:
+                candidates.extend(self._extract_from_sentence(sent))
+
+        claims, gate_discarded = filter_claims(candidates)
+        for reason, count in gate_discarded.items():
+            discarded[reason] = discarded.get(reason, 0) + count
 
         elapsed_ms = (time.perf_counter() - start) * 1000.0
         return ExtractionResult(
             claims=claims,
             extraction_time_ms=elapsed_ms,
-            num_sentences=len(list(doc.sents)),
+            num_sentences=num_sentences,
+            metadata=admission_metadata(len(claims), discarded),
         )
 
     def extract_from_sentence_text(self, text: str) -> List[Claim]:

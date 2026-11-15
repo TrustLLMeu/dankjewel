@@ -112,13 +112,18 @@ class Prong3Extraction(Evaluator):
                 extraction_result = self._extractor.extract(text)
             claims = extraction_result.claims
             extraction_time_ms = extraction_result.extraction_time_ms
+            admission = {
+                'admitted_claims': extraction_result.metadata.get('admitted_claims', len(claims)),
+                'discarded_candidates': extraction_result.metadata.get('discarded_candidates', {}),
+            }
 
             # Evaluate each dimension with pre-extracted claims
             verification_start = time.perf_counter()
             for dim_name, dimension in self.dimensions.items():
                 if dim_name == "Factual Accuracy":
                     score = dimension.evaluate(text, claims=claims,
-                                               llm_verify=llm_verify)
+                                               llm_verify=llm_verify,
+                                               admission=admission)
                 else:
                     score = dimension.evaluate(text, claims=claims)
                 dimensions.append(score)

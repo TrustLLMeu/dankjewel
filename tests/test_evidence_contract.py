@@ -457,12 +457,14 @@ class TestAdditiveGuarantee:
 
     @staticmethod
     def _strip_volatile(obj, drop_evidence=False):
-        """Drop timing keys (and optionally evidence_sources), round floats."""
+        """Drop timing keys (and optionally the additive metadata keys
+        evidence_sources / claim_admission), round floats."""
+        additive = {'evidence_sources', 'claim_admission'}
         if isinstance(obj, dict):
             return {k: TestAdditiveGuarantee._strip_volatile(v, drop_evidence)
                     for k, v in obj.items()
                     if 'time' not in k
-                    and not (drop_evidence and k == 'evidence_sources')}
+                    and not (drop_evidence and k in additive)}
         if isinstance(obj, list):
             return [TestAdditiveGuarantee._strip_volatile(v, drop_evidence)
                     for v in obj]
@@ -472,9 +474,12 @@ class TestAdditiveGuarantee:
 
     def test_flags_off_preexisting_fields_unchanged(self):
         """With all flags off, every pre-existing key keeps its pre-Stage-A
-        value; Stage A only ADDS the coverage key and per-dimension
-        metadata.evidence_sources. The snapshot was captured from the
-        pre-change pipeline on this exact input.
+        value; later slices only ADD keys — Stage A added the top-level
+        coverage key and per-dimension metadata.evidence_sources, the
+        claim-admission slice added Factual Accuracy's
+        metadata.claim_admission (the admitted claim set itself is
+        unchanged on this input). The snapshot was captured from the
+        pre-Stage-A pipeline on this exact input.
         """
         with open(self.SNAPSHOT_PATH) as f:
             expected = self._strip_volatile(json.load(f))
