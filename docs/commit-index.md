@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `cca04a2` — Record the /generate-and-evaluate latency measurement
+- **Latest commit:** `181141c` — Record the mechanical lexicon validation audit
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
 - **Open slices:** claim-admission reported-claim pass and the optional LLM admission classifier; seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion and lexicon validation; the eight non-English lexicons remain unvalidated translations
 
@@ -14,7 +14,10 @@ Newest first. `git log` remains the source of truth for hashes.
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-16 | `PENDING` | chore / index | Record docs, crew rules and interactive latency in commit index | chore |
+| 2026-11-16 | `PENDING` | chore / index | Record use-mention pass and lexicon audit in commit index | chore |
+| 2026-11-16 | `181141c` | docs / lexicon | Record the mechanical lexicon validation audit | wXze multilingual validation (Nordic lexicons) |
+| 2026-11-16 | `adbe44f` | prong 3 / admission | Extract quoted and labelled claims as mentioned claims | wXze claim precision (reported-claim follow-up) |
+| 2026-11-16 | `ad10039` | chore / index | Record docs, crew rules and interactive latency in commit index | chore |
 | 2026-11-16 | `cca04a2` | eval / latency | Record the /generate-and-evaluate latency measurement | wXze/YE7H interactive-latency gap |
 | 2026-11-16 | `99794ef` | chore / crew | Raise NTNU parallelism to 10 and record the paper workflow | chore |
 | 2026-11-15 | `979a038` | docs / claim admission | Document claim admission and align its exemption docstring | wXze claim precision; V55p transparency |
@@ -74,9 +77,33 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record docs, crew rules and interactive latency in commit index (2026-11-16)
+### `PENDING` — Record use-mention pass and lexicon audit in commit index (2026-11-16)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the use-mention pass (`adbe44f`) and the mechanical lexicon-validation audit (`181141c`); backfill the previous index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `181141c` — Record the mechanical lexicon validation audit (2026-11-16)
+
+- **Hash:** `181141c397e8c7b0aa89a94e62747945e5386bc8`
+- **Why:** The Nordic pass, mechanical half. Audited the nine lexicons in `src/resources/lexicons/` (da, de, en, fo, is, nl, nb, nn, sv) for key parity against `en.yaml`, list lengths, exact duplicates, and verbatim English cues left in non-English files. Translation quality is explicitly out of scope (needs a native speaker per language); the Nordic Linguist pane was briefed but returned no usable output (Grok weekly limit exhausted), so this records the verifiable mechanical part plus the native-review checklist. All nine files share the same six cue keys, with no empty/short lists and no duplicate cues; the only cues shared verbatim with English are `lol` and `hey` (legitimate informal loanwords, not leftovers). The doc carries the per-language status table (en validated in-house; the other eight unvalidated translations, with the Nynorsk readability proxy for fo/is and the Dutch Flesch backend for nl), the native-speaker checklist, and the recommended nine-language wording (English validated; the eight non-English are unvalidated translations, scores indicative).
+- **Files:** `docs/LEXICON_VALIDATION.md` (new)
+- **Closes:** the documented half of the Nordic pass; native validation stays open
+- **Verify:** audit script output (9 files, 6 keys each, no empty/short lists, no duplicates, only `lol`/`hey` shared with English); no code change.
+
+### `adbe44f` — Extract quoted and labelled claims as mentioned claims (2026-11-16)
+
+- **Hash:** `adbe44fdc45ca3877ae24f646baa1fdf03c219d2`
+- **Why:** The use-mention pass for Prong 3. `extract_reported_claims` finds quoted spans (straight or curly quotes) and `Claim:`/`Statement:`/`Example:`/`False claim:`-labelled sentences, returning (quoted_sentence, outer_line) pairs, order-preserving and deduped; quoted spans under three words or without terminal punctuation are ignored. `ClaimExtractor` runs its triple logic on each quoted sentence and marks the claim `source="quote"` (with `source_sentence` = the outer line and `atomic_text` = the quoted sentence). `admit_triple` then gates the quoted sentence itself rather than the commentary line, and `filter_claims` prefers the quoted provenance on dedupe. ASSUMPTIONS A5 now describes the pass and the remaining gap (unquoted embedded reported speech still depends on the optional LLM track; revisit for a reported-speech parser and other-language quote patterns).
+- **Files:** `src/extraction/claim_admission.py`, `src/extraction/claim_extractor.py`, `tests/test_claim_admission.py` (4 new tests), `ASSUMPTIONS.md`
+- **Closes:** the reported-claim follow-up (the quoted/`Claim:`-labelled part of wXze claim precision)
+- **Verify:** full pytest 409 passed + 2 skipped (4 new tests; `tests/test_claim_admission.py` 45 passed); teacher fixture 9 admitted claims, 7 with quote provenance, all five intended lies retained.
+
+### `ad10039` — Record docs, crew rules and interactive latency in commit index (2026-11-16)
+
+- **Hash:** `ad10039e85caaf1cc5b0b58e2dde49b5a051dbae`
 - **Why:** Record the claim-admission method doc (`979a038`), the crew rules (NTNU up to 10 parallel jobs, default NTNU Qwen host with the Malvik rate-limit fallback, and the paper workflow), and the `/generate-and-evaluate` latency artifact; backfill the previous index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
