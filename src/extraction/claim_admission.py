@@ -27,6 +27,10 @@ Discard reasons (the histogram keys):
     malformed  empty/punctuation-only parts, contraction-fragment
                predicates, empty objects (except existentials),
                subject == object, discourse-marker objects
+    definition encyclopedic definition: "X is a/an <abstract noun>"
+               ("A false claim is a statement")
+    demonstrative text-deictic subject: "these claims", "this article",
+               "that statement" — refers to the document, not the world
     duplicate  near-duplicate of an already-admitted triple (same
                lemmas ignoring case/punctuation)
 """
@@ -63,6 +67,26 @@ STOPWORDS = frozenset({
 DISCOURSE_MARKER_OBJECTS = frozenset({
     'here', 'there', 'now', 'then', 'always', 'never', 'again', 'instead',
 })
+
+# Encyclopedic-definition gate (slice 6d): "X is a/an <abstract noun>"
+# asserts a category, not a checkable fact about a specific entity
+# ("A false claim is a statement", "A country is a political entity").
+ABSTRACT_NOUN_HEADS = frozenset({
+    'statement', 'claim', 'idea', 'concept', 'reason', 'entity', 'defense',
+    'example', 'question', 'topic', 'thing', 'term', 'definition',
+    'phenomenon', 'process', 'matter', 'issue', 'notion', 'belief', 'opinion',
+})
+
+# Text-deictic subject gate (slice 6d): demonstratives over the text
+# itself ("These claims use real numbers", "This article discusses ...")
+# refer to the document, not to entities in the world.
+GENERIC_TEXT_HEADS = frozenset({
+    'claim', 'claims', 'statement', 'statements', 'example', 'examples',
+    'article', 'section', 'text', 'passage', 'paragraph', 'list', 'essay',
+    'sentence', 'sentences', 'document', 'chapter', 'table',
+})
+_DEMONSTRATIVE_RE = re.compile(r'^(these|those|this|that)\s+', re.I)
+_DEFINITION_ARTICLE_RE = re.compile(r'^(a|an)\s+', re.I)
 
 # Meta-discourse lexicon (slice brief): sentences that organise or teach
 # rather than assert. Matched at sentence start, case-insensitive.
@@ -307,6 +331,18 @@ def admit_triple(claim) -> Tuple[bool, str]:
         return False, 'malformed'
     if obj.lower() in DISCOURSE_MARKER_OBJECTS:
         return False, 'malformed'
+
+    # ── Encyclopedic definitions: "X is a/an <abstract noun>" ─────────
+    if pred.lower() == 'be' and _DEFINITION_ARTICLE_RE.match(obj):
+        tokens = _tokens(obj)
+        if tokens and tokens[-1] in ABSTRACT_NOUN_HEADS:
+            return False, 'definition'
+
+    # ── Text-deictic subjects: "these claims", "this article" ─────────
+    if _DEMONSTRATIVE_RE.match(subj):
+        tokens = _tokens(subj)
+        if tokens and tokens[-1] in GENERIC_TEXT_HEADS:
+            return False, 'demonstrative'
 
     # ── Pronoun / lexical-head gates (LLM track exempt) ───────────────
     if claim.source != 'llm':

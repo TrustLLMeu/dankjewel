@@ -390,10 +390,56 @@ class TestTeacherFixture:
         discards = result.metadata['discarded_candidates']
         assert discards, "nothing was gated"
         allowed_reasons = {'markdown', 'heading', 'question', 'imperative',
-                           'meta', 'pronoun', 'malformed', 'duplicate'}
+                           'meta', 'pronoun', 'malformed', 'duplicate',
+                           'definition', 'demonstrative'}
         assert set(discards) <= allowed_reasons
         assert 'meta' in discards and 'pronoun' in discards
         # No admitted claim is a pronoun/fragment skeleton.
         for claim in admitted:
             assert claim.subject.lower() not in PRONOUN_DETERMINERS
             assert claim.predicate not in ("'m", "’", "'", ':*', '#')
+
+
+# ── Slice 6d: definition and demonstrative gates ────────────────────────────
+
+@pytest.mark.parametrize("subject,obj", [
+    ("A false claim", "a statement"),
+    ("A country", "a political entity"),
+])
+def test_definition_gate_rejects_encyclopedic_definitions(subject, obj):
+    """Category definitions are not checkable facts about an entity."""
+    claim = Claim(subject=subject, predicate='be', object=obj,
+                  source='spacy', source_sentence=f"{subject} is {obj}.")
+    admitted, reason = admit_triple(claim)
+    assert not admitted
+    assert reason == 'definition'
+
+
+def test_definition_gate_keeps_specific_facts():
+    """A copula with a concrete complement still passes."""
+    claim = Claim(subject='Oslo', predicate='be', object='a city',
+                  source='spacy', source_sentence='Oslo is a city.')
+    admitted, reason = admit_triple(claim)
+    assert admitted
+    assert reason == 'admitted'
+
+
+@pytest.mark.parametrize("subject", ["These claims", "This article",
+                                     "That statement"])
+def test_demonstrative_gate_rejects_text_deixis(subject):
+    """Demonstratives over the document itself are not world claims."""
+    claim = Claim(subject=subject, predicate='use', object='real numbers',
+                  source='spacy', source_sentence=f"{subject} use real numbers.")
+    admitted, reason = admit_triple(claim)
+    assert not admitted
+    assert reason == 'demonstrative'
+
+
+def test_demonstrative_gate_keeps_world_reference():
+    """A demonstrative over concrete entities of the world still passes."""
+    claim = Claim(subject='Those two cities', predicate='be',
+                  object='in Norway', source='spacy',
+                  source_sentence='Those two cities are in Norway.')
+    admitted, reason = admit_triple(claim)
+    assert admitted
+    assert reason == 'admitted'

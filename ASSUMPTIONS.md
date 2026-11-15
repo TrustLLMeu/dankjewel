@@ -74,9 +74,9 @@ normalization (e.g., `1 / (1 + log(ppl))`) may be needed for display.
 
 ### A4. Wikidata Seed Coverage
 
-**Assumption:** A ~75-entity seed database is sufficient for Phase 1 testing.
-Claims about entities not in the seed return `unknown` rather than `confirmed`
-or `denied`.
+**Assumption:** A 122-entity seed database (a labelled seed, not Wikidata) is
+sufficient for Phase 1 testing. Claims about entities not in the seed return
+`unknown` rather than `confirmed` or `denied`.
 
 **Impact:** Factual Accuracy scores are conservative — many true claims may
 score 0.5 (unknown) rather than 1.0 (confirmed) simply because the entity
@@ -96,8 +96,23 @@ triples from English text. Known limitations:
 
 **Impact:** Extraction recall is low for complex text. Precision is moderate.
 
-**To revisit when:** Integrating vLLM-based claim extraction (Phase 2), which
-can handle arbitrary sentence structures via prompted decomposition.
+**Admission gates (2026-11):** non-claims are now filtered before scoring —
+markdown residue, headings, questions, imperatives, meta-discourse, pronouns
+without a resolved referent, encyclopedic definitions (`X is a/an <abstract
+noun>`), text-deictic subjects (`these claims`, `this article`) and
+near-duplicates. The gates and their discard reasons are documented in
+`src/extraction/claim_admission.py`; the fixture from an exported
+teaching-prose run is `tests/fixtures/teacher_false_claims.json`.
+
+**Quoted/reported claims:** the spaCy track drops propositions embedded in
+reporting clauses ("The teacher said the Earth is flat" yields no triple for
+"The Earth is flat"), because the reporting verb confuses the dependency
+parse. The optional LLM extraction track handles some of these; treat quoted
+claims as supported only when that track is on.
+
+**To revisit when:** Integrating the LLM claim-extraction track for all prose
+(it exists as an opt-in) and adding a dedicated reported-claim pass for
+quote patterns.
 
 ### A6. Inverted Copula Heuristic
 
