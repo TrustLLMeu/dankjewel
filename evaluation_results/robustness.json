@@ -1,0 +1,64 @@
+{
+  "host": {
+    "cpu": "x86_64",
+    "cpus": 56,
+    "python": "3.12.3",
+    "cuda": false
+  },
+  "robustness": [
+    {
+      "case": "empty input",
+      "http": 200,
+      "observed": "evaluated without crash",
+      "scored_dims": "10/19",
+      "ms": 5705.1
+    },
+    {
+      "case": "very long input (~21k chars)",
+      "http": 200,
+      "observed": "evaluated",
+      "claims": 1,
+      "ms": 7951.0
+    },
+    {
+      "case": "non-English input (Dutch)",
+      "http": 200,
+      "observed": "evaluated",
+      "relevance": 0.864,
+      "ms": 863.1
+    },
+    {
+      "case": "judge server down",
+      "http": "-",
+      "observed": "judge_status=unknown",
+      "baseline_kept": true
+    },
+    {
+      "case": "claims server down",
+      "http": "-",
+      "observed": "claims=1 errors=1",
+      "spacy_track_kept": true
+    }
+  ],
+  "throughput": [
+    {
+      "configuration": "default (all optional tracks off)",
+      "n": 10,
+      "mean_ms": 645.4,
+      "p95_ms": 659.9,
+      "evals_per_min": 93.0
+    },
+    {
+      "configuration": "all tracks on (judge + claims + verifier)",
+      "n": 5,
+      "mean_ms": 787.4,
+      "p95_ms": 1262.5,
+      "evals_per_min": 76.2
+    }
+  ],
+  "covered_by_tests": [
+    "verifier model load failure -> VerifierUnavailableError, status error (tests/test_nli_verifier.py)",
+    "malformed model JSON -> ClaimsParseError / judge parse path, status error (tests/test_llm_claim_extractor.py, tests/test_tiny_judge.py)",
+    "per-call timeouts -> unknown/error without blocking (same tests, MockTransport)"
+  ]
+}

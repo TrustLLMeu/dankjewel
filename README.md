@@ -302,6 +302,21 @@ fires, so its cost is reported separately in the “verifier engaged” row.
 available on this host. The JSON/Markdown artifacts are
 `evaluation_results/latency_baseline.{json,md}`.
 
+#### Robustness and throughput
+
+`scripts/eval_robustness.py` exercises the failure cases and records what the
+interface does; the table is regenerated into
+`evaluation_results/robustness.{json,md}`. On the measurement host (2026-11-16):
+empty input evaluates without a crash (10 of 19 dimensions scored, the rest
+`unknown`); a ~21k-character input evaluates and deduplicates to one claim;
+Dutch input scores with the Dutch lexicon; a judge server on a dead port yields
+`judge_status=unknown` with the embedding baseline kept; a claims server on a
+dead port keeps the spaCy track and records one `llm_errors` entry. Verifier load
+failure, malformed model JSON and per-call timeouts are covered by the test
+suite (named in the report). Throughput is sequential: 91 evaluations per minute
+by default (mean 658 ms) and 78 per minute with all optional tracks on (mean
+771 ms); concurrent throughput needs multiple workers and is not measured.
+
 ---
 
 ### Benchmarking (FEVER 2.0)
