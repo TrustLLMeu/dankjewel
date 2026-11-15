@@ -1,31 +1,51 @@
-"""Latency harness for the CURRENT /evaluate path (slice 1 baseline).
+"""Latency harness — CURRENT /evaluate, every shipped track (Phase 4).
 
 Hits POST /evaluate in-process via fastapi.testclient.TestClient(src.api.app).
 TestClient as a context manager runs the app lifespan, which builds
-EvaluationPipeline(enable_prongs=[1, 2, 3, 4]) — no uvicorn, no network
-server, no vLLM.
+EvaluationPipeline(enable_prongs=[1, 2, 3, 4]) — no uvicorn, no TCP, no vLLM.
 
-Per timed run we record:
-  - wall-clock ms of the HTTP call (time.perf_counter around client.post)
-  - each prong's processing_time from the JSON response
-    (prong_results[].processing_time is SECONDS — time.time() deltas in
-    src/prongs/*.py — and is converted to ms here)
+What this measures (slice: "measure the CURRENT system"):
+  1. Per-track /evaluate wall-clock, COLD + WARM.
+       - cold  = the first call in a FRESH process (includes every model load
+         that track triggers; this is what a cold user's first request pays)
+       - warm  = the 5 steady-state calls after the cold one
+     Tracks (all on the same tiny English prompt unless noted):
+       baseline     all flags off
+       tiny_judge   tiny_judge=True            (0.5B judge on Prong 1 Relevance)
+       llm_extract  llm_extract=True           (1.5B claims on Prong 3)
+       llm_verify   llm_verify=True            (MiniCheck NLI on Prong 3, KB-unknown claims)
+       all          all three on
+       verifier_engaged  llm_verify=True on a text whose claims are KB-unknown,
+                         so the MiniCheck verifier actually fires end-to-end
+                         (the plain Paris text is fully KB-confirmed, so the
+                         verifier does NOT run there).
+     Each track runs in its OWN subprocess so the cold load is genuine (models
+     are not pre-warmed by a prior track in the same process).
+  2. Direct model-call timings (1 cold + 20 warm):
+       judge     127.0.0.1:18092  Qwen/Qwen2.5-0.5B-Instruct  (chat completion)
+       claims    127.0.0.1:18093  Qwen/Qwen2.5-1.5B-Instruct  (one paragraph)
+       verifier  MiniCheck-Flan-T5-Large (one claim vs one KB fact doc; the
+                 cold call includes the one-time model load)
+  3. Hardware fingerprint.
 
 Outputs:
   evaluation_results/latency_baseline.json  (machine-readable)
   evaluation_results/latency_baseline.md    (human table)
 
 Any quantity that was not measured is written as "unmeasured".
-/generate-and-evaluate is deliberately NOT measured here (needs vLLM).
+/generate-and-evaluate is deliberately NOT measured (needs a vLLM generation
+server with logprobs — out of scope).
+
+The judge/claims HTTP keys are read from the environment (DANKJEWEL_JUDGE_API_KEY),
+never hardcoded. Run with that env var set.
 
 Run from the repo root:
-    .venv/bin/python scripts/measure_latency.py
+    DANKJEWEL_JUDGE_API_KEY=... .venv/bin/python scripts/measure_latency.py
 """
 
 import json
 import os
 import platform
-import re
 import socket
 import statistics
 import sys
@@ -39,12 +59,31 @@ sys.path.insert(0, str(REPO_ROOT))
 
 PROMPT = "What is the capital of France?"
 TEXT = "The capital of France is Paris, in the north of the country."
+# A text whose extracted claims are KB-UNKNOWN (population/size), so the
+# MiniCheck verifier actually scores against the subject's KB facts.
+VERIFIER_ENGAGED_TEXT = "Paris has a population of two million people."
 LANGUAGE = "en"
-N_WARM = 2
-N_TIMED = 5
+N_WARM = 5          # warm /evaluate calls per track
+N_MODEL_WARM = 20   # warm direct model calls per model
 UNMEASURED = "unmeasured"
 
 PRONG_KEYS = ["Prong 1", "Prong 2", "Prong 3", "Prong 4"]
+
+TRACKS = {
+    "baseline":       dict(tiny_judge=False, llm_extract=False, llm_verify=False),
+    "tiny_judge":     dict(tiny_judge=True,  llm_extract=False, llm_verify=False),
+    "llm_extract":    dict(tiny_judge=False, llm_extract=True,  llm_verify=False),
+    "llm_verify":     dict(tiny_judge=False, llm_extract=False, llm_verify=True),
+    "all":            dict(tiny_judge=True,  llm_extract=True,  llm_verify=True),
+}
+TRACK_ORDER = ["baseline", "tiny_judge", "llm_extract", "llm_verify", "all"]
+TRACK_LABELS = {
+    "baseline": "baseline (all flags off)",
+    "tiny_judge": "tiny_judge only (0.5B judge)",
+    "llm_extract": "llm_extract only (1.5B claims)",
+    "llm_verify": "llm_verify only (MiniCheck NLI)",
+    "all": "all three on",
+}
 
 
 def cpu_model() -> str:
@@ -58,13 +97,12 @@ def cpu_model() -> str:
     return platform.processor() or UNMEASURED
 
 
-def mem_total_gb() -> str:
+def mem_total_gb():
     try:
         with open("/proc/meminfo") as f:
             for line in f:
                 if line.startswith("MemTotal:"):
-                    kb = int(line.split()[1])
-                    return round(kb / 1024 / 1024, 2)
+                    return round(int(line.split()[1]) / 1024 / 1024, 2)
     except (OSError, ValueError, IndexError):
         pass
     return UNMEASURED
@@ -98,19 +136,29 @@ def hardware_fingerprint() -> dict:
     return hw
 
 
-def summarize(values):
-    """n/mean/std/min/max over measured values; 'unmeasured' if none."""
+def percentile(values, q):
+    """Linear-interpolation percentile (numpy 'linear' default). None if empty."""
+    vals = sorted(v for v in values if isinstance(v, (int, float)))
+    if not vals:
+        return None
+    if len(vals) == 1:
+        return vals[0]
+    rank = (len(vals) - 1) * q
+    lo, hi = int(rank), min(int(rank) + 1, len(vals) - 1)
+    frac = rank - lo
+    return vals[lo] + (vals[hi] - vals[lo]) * frac
+
+
+def summarize(values, unit="ms"):
+    """n/median/p95/mean/std/min/max; 'unmeasured' for the stats if none."""
     vals = [v for v in values if isinstance(v, (int, float))]
     if not vals:
-        return {
-            "n": 0,
-            "mean": UNMEASURED,
-            "std": UNMEASURED,
-            "min": UNMEASURED,
-            "max": UNMEASURED,
-        }
+        return {"n": 0, "median": UNMEASURED, "p95": UNMEASURED, "mean": UNMEASURED,
+                "std": UNMEASURED, "min": UNMEASURED, "max": UNMEASURED}
     return {
         "n": len(vals),
+        "median": round(statistics.median(vals), 3),
+        "p95": round(percentile(vals, 0.95), 3),
         "mean": round(statistics.fmean(vals), 3),
         "std": round(statistics.stdev(vals), 3) if len(vals) > 1 else 0.0,
         "min": round(min(vals), 3),
@@ -121,20 +169,10 @@ def summarize(values):
 def git_ref() -> str:
     import subprocess
     try:
-        branch = subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        ).stdout.strip()
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        ).stdout.strip()[:7]
+        branch = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                                cwd=REPO_ROOT, capture_output=True, text=True, timeout=10).stdout.strip()
+        commit = subprocess.run(["git", "rev-parse", "HEAD"],
+                                cwd=REPO_ROOT, capture_output=True, text=True, timeout=10).stdout.strip()[:7]
         if branch and commit:
             return f"{branch} @ {commit}"
     except Exception:
@@ -142,210 +180,419 @@ def git_ref() -> str:
     return UNMEASURED
 
 
-def run(client):
-    """One POST /evaluate. Returns (status, wall_ms, per_prong_ms, total_time_ms)."""
-    start = time.perf_counter()
-    resp = client.post(
-        "/evaluate",
-        json={"prompt": PROMPT, "text": TEXT, "language": LANGUAGE},
-    )
-    wall_ms = (time.perf_counter() - start) * 1000.0
-    if resp.status_code != 200:
-        return resp.status_code, wall_ms, {}, UNMEASURED
-
-    data = resp.json()
-    per_prong_ms = {}
-    for prong in data.get("prong_results", []):
-        name = prong.get("prong_name", "")
+def extract_call(resp_json: dict) -> dict:
+    """Pull the per-prong processing times + the metadata timings the API
+    already reports out of one /evaluate response."""
+    out = {
+        "prong_ms": {},
+        "relevance_llm_ms": None,          # tiny_judge track (Prong 1 Relevance)
+        "factual_verification_ms": None,    # Prong 3 FactualAccuracy
+        "relation_counts": None,
+        "num_claims": None,
+        "verifier_scores": [],
+        "verifier_errors": None,
+    }
+    for p in resp_json.get("prong_results", []):
+        name = p.get("prong_name", "")
+        pt = p.get("processing_time")
         for key in PRONG_KEYS:
             if name.endswith(f"({key})") or name == key:
-                pt = prong.get("processing_time")
                 if isinstance(pt, (int, float)):
-                    per_prong_ms[key] = pt * 1000.0  # seconds -> ms
+                    out["prong_ms"][key] = round(pt * 1000, 3)  # seconds -> ms
                 break
-    agg = data.get("aggregated_scores", {}).get("metadata", {}).get("total_time")
-    total_time_ms = agg * 1000.0 if isinstance(agg, (int, float)) else UNMEASURED
-    return resp.status_code, wall_ms, per_prong_ms, total_time_ms
+        for dim in p.get("dimensions", []):
+            meta = dim.get("metadata") or {}
+            dname = dim.get("name")
+            if dname == "Relevance" and "llm_processing_time_ms" in meta:
+                out["relevance_llm_ms"] = meta.get("llm_processing_time_ms")
+            if dname == "Factual Accuracy":
+                out["factual_verification_ms"] = meta.get("verification_time_ms")
+                out["relation_counts"] = meta.get("relation_counts")
+                out["num_claims"] = meta.get("num_claims")
+                if "verifier_errors" in meta:
+                    out["verifier_errors"] = meta.get("verifier_errors")
+                for cd in meta.get("claim_details", []):
+                    if isinstance(cd, dict) and "verifier_score" in cd:
+                        out["verifier_scores"].append(cd["verifier_score"])
+    return out
 
 
-def fmt(value) -> str:
-    return UNMEASURED if value == UNMEASURED else f"{value:.1f}"
+def run_track(flags: dict, text: str = TEXT, n_warm: int = N_WARM) -> dict:
+    """1 cold + n_warm warm POST /evaluate calls on this process's pipeline.
 
-
-def main():
+    Intended to run in a FRESH process (one per track) so the cold call
+    includes that track's real model loads.
+    """
     from fastapi.testclient import TestClient
     from src.api import app
+    with TestClient(app) as c:
+        runs = []
+        for i in range(1 + n_warm):
+            body = {"prompt": PROMPT, "text": text, "language": LANGUAGE, **flags}
+            t0 = time.perf_counter()
+            r = c.post("/evaluate", json=body)
+            wall = (time.perf_counter() - t0) * 1000.0
+            rec = {"run": i + 1, "cold": i == 0, "status": r.status_code,
+                   "wall_ms": round(wall, 3)}
+            if r.status_code == 200:
+                rec.update(extract_call(r.json()))
+            runs.append(rec)
+        return {
+            "flags": flags,
+            "text": text,
+            "n_warm": n_warm,
+            "cold_ms": runs[0]["wall_ms"],
+            "warm_ms": [x["wall_ms"] for x in runs[1:] if x["status"] == 200],
+            "runs": runs,
+        }
 
-    hw = hardware_fingerprint()
-    warmup_wall = []
-    runs = []
 
-    with TestClient(app) as client:
-        for i in range(N_WARM):
-            status, wall, per_prong, total = run(client)
-            warmup_wall.append(wall)
-            print(f"warmup {i + 1}/{N_WARM}: status={status} wall={wall:.1f} ms "
-                  f"prongs={ {k: round(v, 1) for k, v in per_prong.items()} }")
-            if status != 200:
-                print("warmup failed; aborting — cannot trust subsequent numbers",
-                      file=sys.stderr)
-                sys.exit(1)
+def direct_model_timings(n_warm: int = N_MODEL_WARM) -> dict:
+    """Direct timings of the three underlying models: 1 cold + n_warm warm."""
+    out = {}
+    try:
+        from src.llm_judge_client import LLMJudgeClient
+        client = LLMJudgeClient()  # reads DANKJEWEL_JUDGE_API_KEY from env
 
-        for i in range(N_TIMED):
-            status, wall, per_prong, total = run(client)
-            runs.append({
-                "run": i + 1,
-                "status": status,
-                "wall_clock_ms": round(wall, 3),
-                "prong_ms": {k: (round(v, 3) if isinstance(v, (int, float)) else UNMEASURED)
-                             for k, v in per_prong.items()},
-                "total_prong_sum_ms": (round(sum(per_prong.values()), 3)
-                                       if per_prong else UNMEASURED),
-                "aggregated_total_time_ms": (round(total, 3)
-                                             if isinstance(total, (int, float)) else UNMEASURED),
-            })
-            print(f"timed  {i + 1}/{N_TIMED}: status={status} wall={wall:.1f} ms "
-                  f"prongs={ {k: round(v, 1) for k, v in per_prong.items()} }")
+        # judge (0.5B) — one chat completion
+        t0 = time.perf_counter(); client.judge(PROMPT, TEXT); jc = (time.perf_counter() - t0) * 1000
+        jt = []
+        for _ in range(n_warm):
+            t0 = time.perf_counter(); client.judge(PROMPT, TEXT); jt.append((time.perf_counter() - t0) * 1000)
+        out["judge"] = {
+            "endpoint": "http://127.0.0.1:18092/v1/chat/completions",
+            "model": client.model_name,
+            "cold_ms": round(jc, 3),
+            "warm_ms": [round(x, 3) for x in jt],
+        }
 
-    def prong_key_values(key):
-        out = []
-        for r in runs:
-            if r["status"] != 200:
-                out.append(UNMEASURED)
-                continue
-            out.append(r["prong_ms"].get(key, UNMEASURED))
-        return out
+        # claims (1.5B) — one paragraph
+        t0 = time.perf_counter(); client.claims(TEXT); cc = (time.perf_counter() - t0) * 1000
+        ct = []
+        for _ in range(n_warm):
+            t0 = time.perf_counter(); client.claims(TEXT); ct.append((time.perf_counter() - t0) * 1000)
+        out["claims"] = {
+            "endpoint": "http://127.0.0.1:18093/v1/chat/completions",
+            "model": client.claims_model_name,
+            "cold_ms": round(cc, 3),
+            "warm_ms": [round(x, 3) for x in ct],
+        }
+        client.close()
+    except Exception as e:
+        out["_llm_error"] = f"{type(e).__name__}: {e}"
 
-    result = {
+    # verifier (MiniCheck) — direct, one claim vs one KB fact doc
+    try:
+        from src.resources.nli_verifier import NliVerifier
+        from src.resources.wikidata_offline import OfflineWikidata
+        wd = OfflineWikidata()
+        qid = wd.lookup_entity("Paris")
+        doc = wd.format_entity_facts(qid) if qid else "France is a country in Europe."
+        claim = VERIFIER_ENGAGED_TEXT
+        v = NliVerifier()
+        t0 = time.perf_counter(); p = v.score(claim, doc); vc = (time.perf_counter() - t0) * 1000
+        vt = []
+        for _ in range(n_warm):
+            t0 = time.perf_counter(); v.score(claim, doc); vt.append((time.perf_counter() - t0) * 1000)
+        out["verifier"] = {
+            "model": v.model_name,
+            "claim": claim,
+            "doc": doc,
+            "sample_support_prob": round(float(p), 4),
+            "cold_ms_includes_load": round(vc, 3),
+            "warm_ms": [round(x, 3) for x in vt],
+        }
+    except Exception as e:
+        out["_verifier_error"] = f"{type(e).__name__}: {e}"
+    return out
+
+
+# ── worker mode: one track in this (fresh) process ─────────────────────────
+
+def _worker(track: str, out_path: str, text: str):
+    flags = TRACKS[track]
+    result = run_track(flags, text=text)
+    Path(out_path).write_text(json.dumps(result, indent=2))
+
+
+# ── parent mode: orchestrate ────────────────────────────────────────────────
+
+def _spawn_track(track: str, text: str = TEXT) -> dict:
+    import subprocess, tempfile
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tf:
+        out_path = tf.name
+    log_path = out_path + ".log"
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()),
+             "--track", track, "--out", out_path, "--text", text],
+            cwd=REPO_ROOT, capture_output=True, text=True, timeout=900,
+        )
+        with open(log_path, "w") as f:
+            f.write(proc.stderr or "")
+        try:
+            return json.loads(Path(out_path).read_text())
+        except Exception as e:
+            return {"error": f"track {track} failed: {e}",
+                    "stderr_tail": (proc.stderr or proc.stdout or "")[-800:],
+                    "flags": TRACKS[track], "text": text, "runs": [],
+                    "cold_ms": UNMEASURED, "warm_ms": []}
+    finally:
+        for pth in (out_path, log_path):
+            try:
+                os.unlink(pth)
+            except OSError:
+                pass
+
+
+def _fmt(v) -> str:
+    if v is None or v == UNMEASURED:
+        return UNMEASURED
+    if isinstance(v, (int, float)):
+        return f"{v:,.1f}"
+    return str(v)
+
+
+def build_result(tracks: dict, verifier_engaged: dict, models: dict) -> dict:
+    def track_block(t):
+        d = tracks.get(t, {})
+        if "error" in d:
+            return {"label": TRACK_LABELS[t], "flags": TRACKS[t], "error": d["error"],
+                    "cold_ms": UNMEASURED, "warm": summarize([]),
+                    "runs": d.get("runs", []), "stderr_tail": d.get("stderr_tail", "")}
+        warm = d.get("warm_ms", [])
+        # representative metadata from the last successful warm run
+        meta = {}
+        for r in reversed(d.get("runs", [])):
+            if r.get("status") == 200:
+                meta = {k: r.get(k) for k in
+                        ("relevance_llm_ms", "factual_verification_ms",
+                         "relation_counts", "num_claims", "verifier_scores",
+                         "verifier_errors", "prong_ms")}
+                break
+        return {
+            "label": TRACK_LABELS[t],
+            "flags": d.get("flags", TRACKS[t]),
+            "text": d.get("text", TEXT),
+            "cold_ms": d.get("cold_ms", UNMEASURED),
+            "warm": summarize(warm),
+            "metadata_last_warm_run": meta,
+            "runs": d.get("runs", []),
+        }
+
+    return {
         "meta": {
             "path": "/evaluate",
             "method": "POST",
-            "transport": "fastapi.testclient.TestClient(src.api.app), in-process "
-                         "(no uvicorn, no TCP; lifespan built EvaluationPipeline)",
+            "transport": "fastapi.testclient.TestClient(src.api.app), in-process; "
+                         "each track in its own fresh subprocess so the cold call "
+                         "includes that track's real model loads (no uvicorn, no TCP, no vLLM)",
             "request": {"prompt": PROMPT, "text": TEXT, "language": LANGUAGE},
-            "n_warmup": N_WARM,
-            "n_timed": N_TIMED,
-            "std_definition": "sample std (n-1)",
+            "n_warm_per_track": N_WARM,
+            "n_warm_direct_model": N_MODEL_WARM,
+            "percentile_definition": "linear interpolation (numpy 'linear')",
             "units": {
-                "wall_clock_ms": "wall clock around client.post",
-                "prong_ms": "prong_results[].processing_time from JSON "
-                             "(seconds, time.time() deltas) x 1000",
+                "cold_ms": "wall clock of the first call in a fresh process (includes model loads)",
+                "warm_ms": "wall clock of steady-state calls",
+                "prong_ms": "prong_results[].processing_time from JSON (seconds, time.time()) x 1000",
             },
             "git": git_ref(),
             "timestamp_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "not_measured": [
-                "/generate-and-evaluate (needs a vLLM generation server — out of slice 1)",
+                "/generate-and-evaluate (needs a vLLM generation server with logprobs — "
+                "no generator is running; out of scope)",
+                "llm_verify /evaluate wall-clock on the plain Paris text does NOT include "
+                "MiniCheck inference — that text's claims are all KB-confirmed, so the "
+                "verifier never fires; use the 'verifier_engaged' row or the direct "
+                "verifier timing for the MiniCheck cost",
             ],
         },
-        "hardware": hw,
-        "warmup_wall_clock_ms": [round(w, 3) for w in warmup_wall],
-        "wall_clock_http_ms": {
-            "per_run_ms": [r["wall_clock_ms"] for r in runs],
-            **summarize([r["wall_clock_ms"] for r in runs]),
-        },
-        "prongs": {},
-        "total_ms": {},
-        "runs": runs,
+        "hardware": hardware_fingerprint(),
+        "tracks": {t: track_block(t) for t in TRACK_ORDER},
+        "verifier_engaged": track_block_verifier_engaged(verifier_engaged),
+        "direct_model_timings": models,
     }
 
-    prong_labels = {
-        "Prong 1": "LLM-as-Judge (Prong 1)",
-        "Prong 2": "Rule-Based (Prong 2)",
-        "Prong 3": "Extraction-Based (Prong 3)",
-        "Prong 4": "Intrinsic (Prong 4)",
-    }
-    for key in PRONG_KEYS:
-        vals = prong_key_values(key)
-        result["prongs"][key] = {
-            "response_name": prong_labels[key],
-            "per_run_ms": vals,
-            **summarize(vals),
-        }
 
-    sum_vals = [r["total_prong_sum_ms"] for r in runs]
-    agg_vals = [r["aggregated_total_time_ms"] for r in runs]
-    result["total_ms"] = {
-        "sum_of_prongs": {
-            "per_run_ms": sum_vals,
-            **summarize(sum_vals),
-        },
-        "aggregated_metadata_total_time": {
-            "per_run_ms": agg_vals,
-            **summarize(agg_vals),
-        },
-        "note": "aggregated_scores.metadata.total_time is the pipeline's own "
-                "sum of prong processing times; wall clock includes HTTP/ASGI "
-                "dispatch overhead on top.",
+def track_block_verifier_engaged(d: dict) -> dict:
+    if "error" in d:
+        return {"label": "llm_verify engaged (KB-unknown claim text)",
+                "error": d["error"], "cold_ms": UNMEASURED,
+                "warm": summarize([]), "runs": d.get("runs", []),
+                "stderr_tail": d.get("stderr_tail", "")}
+    warm = d.get("warm_ms", [])
+    meta = {}
+    for r in reversed(d.get("runs", [])):
+        if r.get("status") == 200:
+            meta = {k: r.get(k) for k in
+                    ("relevance_llm_ms", "factual_verification_ms",
+                     "relation_counts", "num_claims", "verifier_scores",
+                     "verifier_errors", "prong_ms")}
+            break
+    return {
+        "label": "llm_verify engaged (KB-unknown claim text)",
+        "flags": TRACKS["llm_verify"],
+        "text": d.get("text", VERIFIER_ENGAGED_TEXT),
+        "cold_ms": d.get("cold_ms", UNMEASURED),
+        "warm": summarize(warm),
+        "metadata_last_warm_run": meta,
+        "runs": d.get("runs", []),
     }
 
+
+def write_md(result: dict) -> list:
+    hw = result["hardware"]
+    tracks = result["tracks"]
+    ve = result["verifier_engaged"]
+    models = result["direct_model_timings"]
+    L = []
+    L.append("# Latency baseline — `/evaluate`, all shipped tracks (Phase 4)")
+    L.append("")
+    L.append(f"- Path: `POST /evaluate` via `fastapi.testclient.TestClient(src.api.app)` "
+             f"(in-process; no uvicorn, no TCP, no vLLM)")
+    L.append(f"- Request: prompt={PROMPT!r}, text={TEXT!r}, language=`{LANGUAGE}` "
+             f"(per track: 1 cold + {N_WARM} warm; each track in a fresh process so the "
+             f"cold call includes its real model loads)")
+    L.append(f"- git: `{result['meta']['git']}`")
+    L.append(f"- Timestamp (UTC): {result['meta']['timestamp_utc']}")
+    L.append("")
+    L.append(f"Hardware: `{hw['hostname']}` — {hw['cpu_model']}, "
+             f"{hw['nproc']} CPUs, {hw['mem_total_gb']} GB RAM, "
+             f"Python {hw['python_version']}, torch {hw['torch_version']}, "
+             f"CUDA available={hw['cuda_available']} → {hw['compute']}")
+    if hw.get("cuda_note"):
+        L.append(f"- CUDA note: {hw['cuda_note']}")
+    L.append("")
+    L.append("## Per-track /evaluate wall-clock (ms)")
+    L.append("")
+    L.append("| Track | cold (first, incl. loads) | warm n | warm median | warm p95 | warm mean | warm min | warm max |")
+    L.append("|---|---|---|---|---|---|---|---|")
+
+    def trow(label, cold, w):
+        return (f"| {label} | {_fmt(cold)} | {w['n']} | {_fmt(w['median'])} | "
+                f"{_fmt(w['p95'])} | {_fmt(w['mean'])} | {_fmt(w['min'])} | {_fmt(w['max'])} |")
+
+    for t in TRACK_ORDER:
+        b = tracks[t]
+        if "error" in b:
+            L.append(f"| {TRACK_LABELS[t]} | ERROR: {b['error']} | — | — | — | — | — | — |")
+        else:
+            L.append(trow(TRACK_LABELS[t], b["cold_ms"], b["warm"]))
+    if "error" in ve:
+        L.append(f"| {ve['label']} | ERROR: {ve['error']} | — | — | — | — | — | — |")
+    else:
+        L.append(trow(ve["label"], ve["cold_ms"], ve["warm"]))
+    L.append("")
+    L.append("`cold` = the first call in a fresh process. Every track pays the shared "
+             "model loads (MiniLM embeddings, toxic-bert, spaCy). The MiniCheck load "
+             "(~6.4 s) is only paid by the `verifier_engaged` row — on the plain Paris "
+             "text all claims are KB-confirmed, so the `llm_verify`/`all` rows never "
+             "fire it. Judge/claims tracks add their first remote round trip on top.")
+    L.append("")
+    L.append("> Note: on the plain Paris text **every extracted claim is KB-confirmed**, so "
+             "`llm_verify` (and `all`) do **not** invoke the MiniCheck verifier — their "
+             "wall-clock ≈ baseline. The MiniCheck cost is measured in the `verifier_engaged` "
+             "row (a KB-unknown claim) and in the direct verifier timing below.")
+    L.append("")
+
+    # metadata timings
+    L.append("## Metadata timings the API already reports (last warm run, ms)")
+    L.append("")
+    L.append("| Track | Prong 1 ms | Prong 3 ms | Relevance llm_ms | Factual verification_ms | verifier_scores | relation_counts |")
+    L.append("|---|---|---|---|---|---|---|")
+
+    def mrow(label, meta):
+        pm = (meta or {}).get("prong_ms") or {}
+        p1 = pm.get("Prong 1", UNMEASURED)
+        p3 = pm.get("Prong 3", UNMEASURED)
+        rllm = (meta or {}).get("relevance_llm_ms")
+        fv = (meta or {}).get("factual_verification_ms")
+        vs = (meta or {}).get("verifier_scores") or []
+        rc = (meta or {}).get("relation_counts") or {}
+        rcs = ",".join(f"{k}:{v}" for k, v in rc.items()) if rc else "—"
+        return (f"| {label} | {_fmt(p1)} | {_fmt(p3)} | {_fmt(rllm)} | {_fmt(fv)} | "
+                f"{('[%s]' % ', '.join(f'{x:.3f}' for x in vs)) if vs else '—'} | {rcs} |")
+
+    for t in TRACK_ORDER:
+        b = tracks[t]
+        if "error" not in b:
+            L.append(mrow(TRACK_LABELS[t], b.get("metadata_last_warm_run")))
+    if "error" not in ve:
+        L.append(mrow(ve["label"], ve.get("metadata_last_warm_run")))
+    L.append("")
+    L.append("The verifier's per-claim latency is **not** exposed per-claim in the API "
+             "response (only the FactualAccuracy `verification_time_ms` and the "
+             "`verifier_score` per claim). Per the brief, the verifier is timed directly "
+             "below.")
+    L.append("")
+
+    # direct model timings
+    L.append("## Direct model-call timings (1 cold + " + str(N_MODEL_WARM) + " warm, ms)")
+    L.append("")
+    L.append("| Model | endpoint/model | cold (incl. load) | warm n | warm median | warm p95 | warm mean | warm min | warm max |")
+    L.append("|---|---|---|---|---|---|---|---|---|")
+
+    def drow(label, d, cold_key):
+        cold = d.get(cold_key, UNMEASURED)
+        w = summarize(d.get("warm_ms", []))
+        return (f"| {label} | {d.get('model', '—')} | {_fmt(cold)} | {w['n']} | "
+                f"{_fmt(w['median'])} | {_fmt(w['p95'])} | {_fmt(w['mean'])} | "
+                f"{_fmt(w['min'])} | {_fmt(w['max'])} |")
+
+    for key, label in (("judge", "judge (0.5B)"), ("claims", "claims (1.5B)"),
+                       ("verifier", "verifier (MiniCheck 770M)")):
+        d = models.get(key)
+        if d is None:
+            L.append(f"| {label} | — | ERROR | — | — | — | — | — | — |")
+        else:
+            cold_key = "cold_ms_includes_load" if key == "verifier" else "cold_ms"
+            L.append(drow(label, d, cold_key))
+    if "_llm_error" in models:
+        L.append("")
+        L.append(f"- LLM direct timings error: {models['_llm_error']}")
+    if "_verifier_error" in models:
+        L.append(f"- verifier direct timing error: {models['_verifier_error']}")
+    L.append("")
+    L.append("verifier `cold (incl. load)` = the first score call, which pays the one-time "
+             "MiniCheck model load on CPU; warm = steady-state per-claim inference.")
+    L.append("")
+
+    # not measured
+    L.append("## Not measured (this slice)")
+    L.append("")
+    for item in result["meta"]["not_measured"]:
+        L.append(f"- {item}")
+    L.append("")
+    return L
+
+
+def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--track", choices=TRACKS, default=None)
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--text", default=TEXT)
+    args = ap.parse_args()
+
+    if args.track:
+        _worker(args.track, args.out, args.text)
+        return
+
+    print("measuring per-track /evaluate (fresh subprocess per track) ...", file=sys.stderr)
+    tracks = {t: _spawn_track(t) for t in TRACK_ORDER}
+    print("measuring llm_verify engaged (KB-unknown claim) ...", file=sys.stderr)
+    verifier_engaged = _spawn_track("llm_verify", text=VERIFIER_ENGAGED_TEXT)
+    print("measuring direct model timings ...", file=sys.stderr)
+    models = direct_model_timings()
+
+    result = build_result(tracks, verifier_engaged, models)
     out_dir = REPO_ROOT / "evaluation_results"
     out_dir.mkdir(exist_ok=True)
     json_path = out_dir / "latency_baseline.json"
     md_path = out_dir / "latency_baseline.md"
-
     json_path.write_text(json.dumps(result, indent=2) + "\n")
-
-    lines = []
-    lines.append("# Latency baseline — `/evaluate` (slice 1, current system)")
-    lines.append("")
-    lines.append(f"- Path: `POST /evaluate` via `fastapi.testclient.TestClient(src.api.app)` "
-                 f"(in-process; no uvicorn, no TCP)")
-    lines.append(f"- Request: prompt={PROMPT!r}, text={TEXT!r}, language=`{LANGUAGE}`")
-    lines.append(f"- Runs: {N_WARM} warmup (discarded), {N_TIMED} timed")
-    lines.append(f"- git: `{result['meta']['git']}`")
-    lines.append(f"- Timestamp (UTC): {result['meta']['timestamp_utc']}")
-    lines.append("")
-    lines.append(f"Hardware: `{hw['hostname']}` — {hw['cpu_model']}, "
-                 f"{hw['nproc']} CPUs, {hw['mem_total_gb']} GB RAM, "
-                 f"Python {hw['python_version']}, torch {hw['torch_version']}, "
-                 f"CUDA available={hw['cuda_available']} → {hw['compute']}")
-    if hw.get("cuda_note"):
-        lines.append(f"- CUDA note: {hw['cuda_note']}")
-    lines.append(f"- Warmup wall clock (discarded, context only): "
-                 f"{[round(w, 1) for w in warmup_wall]} ms")
-    lines.append("")
-    lines.append("## Latency (timed runs, ms)")
-    lines.append("")
-    lines.append("| Metric | n | mean | std | min | max |")
-    lines.append("|---|---|---|---|---|---|")
-
-    def row(label, s):
-        return f"| {label} | {s['n']} | {fmt(s['mean'])} | {fmt(s['std'])} | " \
-               f"{fmt(s['min'])} | {fmt(s['max'])} |"
-
-    lines.append(row("HTTP /evaluate wall clock", result["wall_clock_http_ms"]))
-    for key in PRONG_KEYS:
-        lines.append(row(f"{prong_labels[key]} processing_time", result["prongs"][key]))
-    lines.append(row("Sum of prong processing times", result["total_ms"]["sum_of_prongs"]))
-    lines.append(row("aggregated_scores.metadata.total_time",
-                     result["total_ms"]["aggregated_metadata_total_time"]))
-    lines.append("")
-    lines.append("prong `processing_time` is reported by the pipeline in seconds "
-                 "(time.time() deltas); converted to ms (x1000) above.")
-    lines.append("")
-    lines.append("Note: on `/evaluate` there is no vLLM `intrinsic_data`, so Prong 4 "
-                 "returns its Phase-1 neutral placeholders (its processing_time is "
-                 "trivially ~0 ms); Prong 4 real-logit latency is measured only via "
-                 "the generation paths.")
-    lines.append("")
-    lines.append("## Not measured (this slice)")
-    lines.append("")
-    for item in result["meta"]["not_measured"]:
-        lines.append(f"- {item}")
-    missing = []
-    for key in PRONG_KEYS:
-        for v in result["prongs"][key]["per_run_ms"]:
-            if v == UNMEASURED:
-                missing.append(key)
-                break
-    for m in sorted(set(missing)):
-        lines.append(f"- {prong_labels[m]} processing_time (prong missing or errored in response)")
-    if not missing:
-        lines.append("- (none — all four prongs returned processing_time in every timed run)")
-    lines.append("")
-    md_path.write_text("\n".join(lines))
-
-    print(f"\nwrote {json_path}\nwrote {md_path}")
+    md_path.write_text("\n".join(write_md(result)))
+    print(f"\nwrote {json_path}\nwrote {md_path}", file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -254,6 +254,43 @@ renormalized if any prong is missing or errors out.
 
 ---
 
+### Latency and hardware
+
+Measured with `scripts/measure_latency.py` (1 cold + 5 warm calls per track, each
+track in a fresh process so cold loads are real) on 2026-11-14, `feature/d75-v2`:
+
+**Host:** Intel Xeon Gold 6132, 56 CPUs, 755 GB RAM, Python 3.12.3, torch 2.15.0+cu132,
+`CUDA available=False` — CPU-only.
+
+`POST /evaluate` (in-process TestClient; prompt “What is the capital of France?”):
+
+| Track | Cold (incl. model loads) | Warm median | Warm p95 |
+|-------|--------------------------|-------------|----------|
+| baseline (all flags off) | 9.2 s | 672 ms | 684 ms |
+| + 0.5B judge (`tiny_judge`) | 9.5 s | 770 ms | 783 ms |
+| + 1.5B claims (`llm_extract`) | 9.7 s | 908 ms | 946 ms |
+| + MiniCheck verifier (`llm_verify`, not engaged) | 9.3 s | 654 ms | 678 ms |
+| all three on | 9.2 s | 1,008 ms | 1,049 ms |
+| verifier engaged (KB-unknown claim) | 11.1 s | 827 ms | 946 ms |
+
+Direct model calls (1 cold + 20 warm):
+
+| Model | Cold (incl. load) | Warm median | Warm p95 |
+|-------|-------------------|-------------|----------|
+| judge, Qwen2.5-0.5B-Instruct (OpenAI-compatible) | 268 ms | 76 ms | 85 ms |
+| claims, Qwen2.5-1.5B-Instruct (OpenAI-compatible) | 220 ms | 211 ms | 213 ms |
+| verifier, MiniCheck-Flan-T5-Large (in-process) | 6.4 s | 196 ms | 206 ms |
+
+Notes: the cold `/evaluate` cost is dominated by the embedding, toxicity and spaCy
+loads (~9 s) that every track pays; MiniCheck adds its ~6.4 s load only when the
+verifier actually runs. On the fully KB-confirmed test text `llm_verify` never
+fires, so its cost is reported separately in the “verifier engaged” row.
+`/generate-and-evaluate` is not measured here: no generator with logprobs is
+available on this host. The JSON/Markdown artifacts are
+`evaluation_results/latency_baseline.{json,md}`.
+
+---
+
 ### Benchmarking (FEVER 2.0)
 
 Prong 3 has been benchmarked on the FEVER 2.0 *fixers* development set
@@ -274,6 +311,27 @@ seed expansion does not cover any additional FEVER fixers entities (identical
 4/1174 covered on the old and new seed).
 See [DB_EXTENSION_GUIDE.md](DB_EXTENSION_GUIDE.md) and `scripts/eval_fever2.py`
 for details.
+
+#### Verifier benchmark (SciFact)
+
+A second, independent benchmark for the MiniCheck verifier
+(`lytang/MiniCheck-Flan-T5-Large`): SciFact (Wadden et al., EMNLP 2020), public
+and ungated. Pairs are evidence-annotated SUPPORT/CONTRADICT claim–sentence
+pairs; NOT_ENOUGH_INFO claims carry no labelled evidence and are excluded.
+This validates the verifier *component*, not the seed-KB path.
+
+| Split | n | Accuracy @0.5 | AUC | Mean latency | p95 latency |
+|-------|---|---------------|-----|--------------|-------------|
+| dev | 338 | 0.601 | 0.835 | 258 ms | 367 ms |
+| train | 957 | 0.555 | 0.790 | 232 ms | 340 ms |
+
+Reading: the ranking signal is strong (AUC 0.835 on dev) while accuracy at the
+0.5 cut-off lags — MiniCheck is conservative on scientific text. The 0.8/0.2
+bands are calibration-sensitive and should be checked per domain.
+`scripts/eval_scifact.py` regenerates both rows; provenance
+(source URL, file hashes, model) is in `evaluation_results/scifact.json`.
+LLM-AggreFact, the intended second benchmark, is gated on HuggingFace and could
+not be fetched.
 
 ---
 

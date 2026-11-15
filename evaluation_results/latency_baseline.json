@@ -2,23 +2,25 @@
   "meta": {
     "path": "/evaluate",
     "method": "POST",
-    "transport": "fastapi.testclient.TestClient(src.api.app), in-process (no uvicorn, no TCP; lifespan built EvaluationPipeline)",
+    "transport": "fastapi.testclient.TestClient(src.api.app), in-process; each track in its own fresh subprocess so the cold call includes that track's real model loads (no uvicorn, no TCP, no vLLM)",
     "request": {
       "prompt": "What is the capital of France?",
       "text": "The capital of France is Paris, in the north of the country.",
       "language": "en"
     },
-    "n_warmup": 2,
-    "n_timed": 5,
-    "std_definition": "sample std (n-1)",
+    "n_warm_per_track": 5,
+    "n_warm_direct_model": 20,
+    "percentile_definition": "linear interpolation (numpy 'linear')",
     "units": {
-      "wall_clock_ms": "wall clock around client.post",
-      "prong_ms": "prong_results[].processing_time from JSON (seconds, time.time() deltas) x 1000"
+      "cold_ms": "wall clock of the first call in a fresh process (includes model loads)",
+      "warm_ms": "wall clock of steady-state calls",
+      "prong_ms": "prong_results[].processing_time from JSON (seconds, time.time()) x 1000"
     },
-    "git": "feature/d75-v2 @ 0214efd",
-    "timestamp_utc": "2026-11-14T09:50:43+00:00",
+    "git": "feature/d75-v2 @ 4bd4637",
+    "timestamp_utc": "2026-11-14T20:19:46+00:00",
     "not_measured": [
-      "/generate-and-evaluate (needs a vLLM generation server \u2014 out of slice 1)"
+      "/generate-and-evaluate (needs a vLLM generation server with logprobs \u2014 no generator is running; out of scope)",
+      "llm_verify /evaluate wall-clock on the plain Paris text does NOT include MiniCheck inference \u2014 that text's claims are all KB-confirmed, so the verifier never fires; use the 'verifier_engaged' row or the direct verifier timing for the MiniCheck cost"
     ]
   },
   "hardware": {
@@ -31,182 +33,1215 @@
     "cuda_available": false,
     "compute": "CPU-only (CUDA init failed; torch built with CUDA, driver too old)"
   },
-  "warmup_wall_clock_ms": [
-    8900.38,
-    655.88
-  ],
-  "wall_clock_http_ms": {
-    "per_run_ms": [
-      657.158,
-      669.474,
-      657.38,
-      657.654,
-      660.023
-    ],
-    "n": 5,
-    "mean": 660.338,
-    "std": 5.235,
-    "min": 657.158,
-    "max": 669.474
-  },
-  "prongs": {
-    "Prong 1": {
-      "response_name": "LLM-as-Judge (Prong 1)",
-      "per_run_ms": [
-        642.563,
-        649.88,
-        642.497,
-        640.121,
-        643.195
-      ],
-      "n": 5,
-      "mean": 643.651,
-      "std": 3.674,
-      "min": 640.121,
-      "max": 649.88
+  "tracks": {
+    "baseline": {
+      "label": "baseline (all flags off)",
+      "flags": {
+        "tiny_judge": false,
+        "llm_extract": false,
+        "llm_verify": false
+      },
+      "text": "The capital of France is Paris, in the north of the country.",
+      "cold_ms": 9215.295,
+      "warm": {
+        "n": 5,
+        "median": 671.666,
+        "p95": 684.071,
+        "mean": 670.364,
+        "std": 11.097,
+        "min": 660.019,
+        "max": 686.756
+      },
+      "metadata_last_warm_run": {
+        "relevance_llm_ms": null,
+        "factual_verification_ms": 0.294386874884367,
+        "relation_counts": {
+          "confirmed": 2,
+          "denied": 0,
+          "partially_supported": 0,
+          "conflated": 0,
+          "unknown": 0
+        },
+        "num_claims": 2,
+        "verifier_scores": [],
+        "verifier_errors": null,
+        "prong_ms": {
+          "Prong 1": 656.975,
+          "Prong 2": 0.51,
+          "Prong 3": 11.472,
+          "Prong 4": 0.016
+        }
+      },
+      "runs": [
+        {
+          "run": 1,
+          "cold": true,
+          "status": 200,
+          "wall_ms": 9215.295,
+          "prong_ms": {
+            "Prong 1": 7706.319,
+            "Prong 2": 1483.938,
+            "Prong 3": 17.533,
+            "Prong 4": 0.014
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 1.8830858170986176,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 2,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 671.666,
+          "prong_ms": {
+            "Prong 1": 649.306,
+            "Prong 2": 0.782,
+            "Prong 3": 14.562,
+            "Prong 4": 0.022
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.31596701592206955,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 3,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 660.051,
+          "prong_ms": {
+            "Prong 1": 643.097,
+            "Prong 2": 0.522,
+            "Prong 3": 11.466,
+            "Prong 4": 0.013
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.27596810832619667,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 4,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 660.019,
+          "prong_ms": {
+            "Prong 1": 643.539,
+            "Prong 2": 0.541,
+            "Prong 3": 11.488,
+            "Prong 4": 0.013
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.2726600505411625,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 5,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 686.756,
+          "prong_ms": {
+            "Prong 1": 670.311,
+            "Prong 2": 0.526,
+            "Prong 3": 11.529,
+            "Prong 4": 0.013
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.28648506850004196,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 6,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 673.329,
+          "prong_ms": {
+            "Prong 1": 656.975,
+            "Prong 2": 0.51,
+            "Prong 3": 11.472,
+            "Prong 4": 0.016
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.294386874884367,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": null
+        }
+      ]
     },
-    "Prong 2": {
-      "response_name": "Rule-Based (Prong 2)",
-      "per_run_ms": [
-        0.446,
-        0.582,
-        0.453,
-        0.499,
-        0.465
-      ],
-      "n": 5,
-      "mean": 0.489,
-      "std": 0.056,
-      "min": 0.446,
-      "max": 0.582
+    "tiny_judge": {
+      "label": "tiny_judge only (0.5B judge)",
+      "flags": {
+        "tiny_judge": true,
+        "llm_extract": false,
+        "llm_verify": false
+      },
+      "text": "The capital of France is Paris, in the north of the country.",
+      "cold_ms": 9482.397,
+      "warm": {
+        "n": 5,
+        "median": 770.343,
+        "p95": 782.569,
+        "mean": 771.515,
+        "std": 10.222,
+        "min": 758.833,
+        "max": 783.129
+      },
+      "metadata_last_warm_run": {
+        "relevance_llm_ms": 104.29176781326532,
+        "factual_verification_ms": 0.3956099972128868,
+        "relation_counts": {
+          "confirmed": 2,
+          "denied": 0,
+          "partially_supported": 0,
+          "conflated": 0,
+          "unknown": 0
+        },
+        "num_claims": 2,
+        "verifier_scores": [],
+        "verifier_errors": null,
+        "prong_ms": {
+          "Prong 1": 759.712,
+          "Prong 2": 0.682,
+          "Prong 3": 11.158,
+          "Prong 4": 0.023
+        }
+      },
+      "runs": [
+        {
+          "run": 1,
+          "cold": true,
+          "status": 200,
+          "wall_ms": 9482.397,
+          "prong_ms": {
+            "Prong 1": 7959.92,
+            "Prong 2": 1489.828,
+            "Prong 3": 24.319,
+            "Prong 4": 0.019
+          },
+          "relevance_llm_ms": 169.5061456412077,
+          "factual_verification_ms": 1.030975952744484,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 2,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 770.343,
+          "prong_ms": {
+            "Prong 1": 754.949,
+            "Prong 2": 0.521,
+            "Prong 3": 9.531,
+            "Prong 4": 0.012
+          },
+          "relevance_llm_ms": 102.38974168896675,
+          "factual_verification_ms": 0.3032307140529156,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 3,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 764.941,
+          "prong_ms": {
+            "Prong 1": 750.853,
+            "Prong 2": 0.473,
+            "Prong 3": 9.183,
+            "Prong 4": 0.012
+          },
+          "relevance_llm_ms": 103.29760191962123,
+          "factual_verification_ms": 0.306474044919014,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 4,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 758.833,
+          "prong_ms": {
+            "Prong 1": 744.303,
+            "Prong 2": 0.483,
+            "Prong 3": 9.104,
+            "Prong 4": 0.012
+          },
+          "relevance_llm_ms": 100.76123289763927,
+          "factual_verification_ms": 0.30174292623996735,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 5,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 783.129,
+          "prong_ms": {
+            "Prong 1": 764.747,
+            "Prong 2": 0.518,
+            "Prong 3": 12.98,
+            "Prong 4": 0.014
+          },
+          "relevance_llm_ms": 102.54006600007415,
+          "factual_verification_ms": 0.3367750905454159,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 6,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 780.329,
+          "prong_ms": {
+            "Prong 1": 759.712,
+            "Prong 2": 0.682,
+            "Prong 3": 11.158,
+            "Prong 4": 0.023
+          },
+          "relevance_llm_ms": 104.29176781326532,
+          "factual_verification_ms": 0.3956099972128868,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": null
+        }
+      ]
     },
-    "Prong 3": {
-      "response_name": "Extraction-Based (Prong 3)",
-      "per_run_ms": [
-        9.327,
-        13.841,
-        9.325,
-        11.345,
-        11.146
-      ],
-      "n": 5,
-      "mean": 10.997,
-      "std": 1.859,
-      "min": 9.325,
-      "max": 13.841
+    "llm_extract": {
+      "label": "llm_extract only (1.5B claims)",
+      "flags": {
+        "tiny_judge": false,
+        "llm_extract": true,
+        "llm_verify": false
+      },
+      "text": "The capital of France is Paris, in the north of the country.",
+      "cold_ms": 9693.543,
+      "warm": {
+        "n": 5,
+        "median": 907.625,
+        "p95": 946.231,
+        "mean": 912.826,
+        "std": 25.099,
+        "min": 889.399,
+        "max": 955.532
+      },
+      "metadata_last_warm_run": {
+        "relevance_llm_ms": null,
+        "factual_verification_ms": 0.3538960590958595,
+        "relation_counts": {
+          "confirmed": 1,
+          "denied": 0,
+          "partially_supported": 0,
+          "conflated": 0,
+          "unknown": 0
+        },
+        "num_claims": 1,
+        "verifier_scores": [],
+        "verifier_errors": null,
+        "prong_ms": {
+          "Prong 1": 660.661,
+          "Prong 2": 0.775,
+          "Prong 3": 239.41,
+          "Prong 4": 0.032
+        }
+      },
+      "runs": [
+        {
+          "run": 1,
+          "cold": true,
+          "status": 200,
+          "wall_ms": 9693.543,
+          "prong_ms": {
+            "Prong 1": 7909.96,
+            "Prong 2": 1459.652,
+            "Prong 3": 310.975,
+            "Prong 4": 0.034
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.9961230680346489,
+          "relation_counts": {
+            "confirmed": 1,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 1,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 2,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 907.625,
+          "prong_ms": {
+            "Prong 1": 670.135,
+            "Prong 2": 0.562,
+            "Prong 3": 226.941,
+            "Prong 4": 0.019
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.3190208226442337,
+          "relation_counts": {
+            "confirmed": 1,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 1,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 3,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 955.532,
+          "prong_ms": {
+            "Prong 1": 666.262,
+            "Prong 2": 0.493,
+            "Prong 3": 283.239,
+            "Prong 4": 0.016
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.22873934358358383,
+          "relation_counts": {
+            "confirmed": 1,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 1,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 4,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 889.399,
+          "prong_ms": {
+            "Prong 1": 647.098,
+            "Prong 2": 0.516,
+            "Prong 3": 237.554,
+            "Prong 4": 0.016
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.2188100479543209,
+          "relation_counts": {
+            "confirmed": 1,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 1,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 5,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 902.546,
+          "prong_ms": {
+            "Prong 1": 656.166,
+            "Prong 2": 0.803,
+            "Prong 3": 233.521,
+            "Prong 4": 0.035
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.3572441637516022,
+          "relation_counts": {
+            "confirmed": 1,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 1,
+          "verifier_scores": [],
+          "verifier_errors": null
+        },
+        {
+          "run": 6,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 909.026,
+          "prong_ms": {
+            "Prong 1": 660.661,
+            "Prong 2": 0.775,
+            "Prong 3": 239.41,
+            "Prong 4": 0.032
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.3538960590958595,
+          "relation_counts": {
+            "confirmed": 1,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 1,
+          "verifier_scores": [],
+          "verifier_errors": null
+        }
+      ]
     },
-    "Prong 4": {
-      "response_name": "Intrinsic (Prong 4)",
-      "per_run_ms": [
-        0.011,
-        0.015,
-        0.01,
-        0.011,
-        0.01
-      ],
-      "n": 5,
-      "mean": 0.011,
-      "std": 0.002,
-      "min": 0.01,
-      "max": 0.015
+    "llm_verify": {
+      "label": "llm_verify only (MiniCheck NLI)",
+      "flags": {
+        "tiny_judge": false,
+        "llm_extract": false,
+        "llm_verify": true
+      },
+      "text": "The capital of France is Paris, in the north of the country.",
+      "cold_ms": 9332.539,
+      "warm": {
+        "n": 5,
+        "median": 653.994,
+        "p95": 677.612,
+        "mean": 661.786,
+        "std": 12.554,
+        "min": 651.505,
+        "max": 679.273
+      },
+      "metadata_last_warm_run": {
+        "relevance_llm_ms": null,
+        "factual_verification_ms": 0.4474441520869732,
+        "relation_counts": {
+          "confirmed": 2,
+          "denied": 0,
+          "partially_supported": 0,
+          "conflated": 0,
+          "unknown": 0
+        },
+        "num_claims": 2,
+        "verifier_scores": [],
+        "verifier_errors": [],
+        "prong_ms": {
+          "Prong 1": 658.212,
+          "Prong 2": 0.678,
+          "Prong 3": 14.961,
+          "Prong 4": 0.026
+        }
+      },
+      "runs": [
+        {
+          "run": 1,
+          "cold": true,
+          "status": 200,
+          "wall_ms": 9332.539,
+          "prong_ms": {
+            "Prong 1": 7822.543,
+            "Prong 2": 1483.534,
+            "Prong 3": 17.306,
+            "Prong 4": 0.018
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 1.104012131690979,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": []
+        },
+        {
+          "run": 2,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 670.97,
+          "prong_ms": {
+            "Prong 1": 649.624,
+            "Prong 2": 0.77,
+            "Prong 3": 13.155,
+            "Prong 4": 0.021
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.39511313661932945,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": []
+        },
+        {
+          "run": 3,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 653.19,
+          "prong_ms": {
+            "Prong 1": 638.552,
+            "Prong 2": 0.498,
+            "Prong 3": 10.038,
+            "Prong 4": 0.013
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.3022202290594578,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": []
+        },
+        {
+          "run": 4,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 653.994,
+          "prong_ms": {
+            "Prong 1": 640.393,
+            "Prong 2": 0.486,
+            "Prong 3": 9.362,
+            "Prong 4": 0.012
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.31150924041867256,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": []
+        },
+        {
+          "run": 5,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 651.505,
+          "prong_ms": {
+            "Prong 1": 637.643,
+            "Prong 2": 0.482,
+            "Prong 3": 9.402,
+            "Prong 4": 0.011
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.3072461113333702,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": []
+        },
+        {
+          "run": 6,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 679.273,
+          "prong_ms": {
+            "Prong 1": 658.212,
+            "Prong 2": 0.678,
+            "Prong 3": 14.961,
+            "Prong 4": 0.026
+          },
+          "relevance_llm_ms": null,
+          "factual_verification_ms": 0.4474441520869732,
+          "relation_counts": {
+            "confirmed": 2,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 2,
+          "verifier_scores": [],
+          "verifier_errors": []
+        }
+      ]
+    },
+    "all": {
+      "label": "all three on",
+      "flags": {
+        "tiny_judge": true,
+        "llm_extract": true,
+        "llm_verify": true
+      },
+      "text": "The capital of France is Paris, in the north of the country.",
+      "cold_ms": 9196.317,
+      "warm": {
+        "n": 5,
+        "median": 1008.163,
+        "p95": 1048.543,
+        "mean": 1013.15,
+        "std": 26.286,
+        "min": 991.03,
+        "max": 1057.849
+      },
+      "metadata_last_warm_run": {
+        "relevance_llm_ms": 100.77306628227234,
+        "factual_verification_ms": 0.25069573894143105,
+        "relation_counts": {
+          "confirmed": 1,
+          "denied": 0,
+          "partially_supported": 0,
+          "conflated": 0,
+          "unknown": 0
+        },
+        "num_claims": 1,
+        "verifier_scores": [],
+        "verifier_errors": [],
+        "prong_ms": {
+          "Prong 1": 757.333,
+          "Prong 2": 0.707,
+          "Prong 3": 244.509,
+          "Prong 4": 0.019
+        }
+      },
+      "runs": [
+        {
+          "run": 1,
+          "cold": true,
+          "status": 200,
+          "wall_ms": 9196.317,
+          "prong_ms": {
+            "Prong 1": 7491.863,
+            "Prong 2": 1448.457,
+            "Prong 3": 248.195,
+            "Prong 4": 0.02
+          },
+          "relevance_llm_ms": 140.15883393585682,
+          "factual_verification_ms": 0.9333137422800064,
+          "relation_counts": {
+            "confirmed": 1,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 1,
+          "verifier_scores": [],
+          "verifier_errors": []
+        },
+        {
+          "run": 2,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 1057.849,
+          "prong_ms": {
+            "Prong 1": 786.008,
+            "Prong 2": 0.565,
+            "Prong 3": 264.426,
+            "Prong 4": 0.013
+          },
+          "relevance_llm_ms": 100.10407585650682,
+          "factual_verification_ms": 0.26952195912599564,
+          "relation_counts": {
+            "confirmed": 1,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 1,
+          "verifier_scores": [],
+          "verifier_errors": []
+        },
+        {
+          "run": 3,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 997.39,
+          "prong_ms": {
+            "Prong 1": 753.479,
+            "Prong 2": 0.466,
+            "Prong 3": 238.366,
+            "Prong 4": 0.014
+          },
+          "relevance_llm_ms": 102.20290813595057,
+          "factual_verification_ms": 0.21150801330804825,
+          "relation_counts": {
+            "confirmed": 1,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 1,
+          "verifier_scores": [],
+          "verifier_errors": []
+        },
+        {
+          "run": 4,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 991.03,
+          "prong_ms": {
+            "Prong 1": 748.581,
+            "Prong 2": 0.473,
+            "Prong 3": 237.129,
+            "Prong 4": 0.014
+          },
+          "relevance_llm_ms": 101.75238084048033,
+          "factual_verification_ms": 0.2167033962905407,
+          "relation_counts": {
+            "confirmed": 1,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 1,
+          "verifier_scores": [],
+          "verifier_errors": []
+        },
+        {
+          "run": 5,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 1011.317,
+          "prong_ms": {
+            "Prong 1": 763.498,
+            "Prong 2": 0.593,
+            "Prong 3": 241.827,
+            "Prong 4": 0.018
+          },
+          "relevance_llm_ms": 103.03131304681301,
+          "factual_verification_ms": 0.3167209215462208,
+          "relation_counts": {
+            "confirmed": 1,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 1,
+          "verifier_scores": [],
+          "verifier_errors": []
+        },
+        {
+          "run": 6,
+          "cold": false,
+          "status": 200,
+          "wall_ms": 1008.163,
+          "prong_ms": {
+            "Prong 1": 757.333,
+            "Prong 2": 0.707,
+            "Prong 3": 244.509,
+            "Prong 4": 0.019
+          },
+          "relevance_llm_ms": 100.77306628227234,
+          "factual_verification_ms": 0.25069573894143105,
+          "relation_counts": {
+            "confirmed": 1,
+            "denied": 0,
+            "partially_supported": 0,
+            "conflated": 0,
+            "unknown": 0
+          },
+          "num_claims": 1,
+          "verifier_scores": [],
+          "verifier_errors": []
+        }
+      ]
     }
   },
-  "total_ms": {
-    "sum_of_prongs": {
-      "per_run_ms": [
-        652.348,
-        664.319,
-        652.285,
-        651.977,
-        654.816
-      ],
-      "n": 5,
-      "mean": 655.149,
-      "std": 5.251,
-      "min": 651.977,
-      "max": 664.319
+  "verifier_engaged": {
+    "label": "llm_verify engaged (KB-unknown claim text)",
+    "flags": {
+      "tiny_judge": false,
+      "llm_extract": false,
+      "llm_verify": true
     },
-    "aggregated_metadata_total_time": {
-      "per_run_ms": [
-        652.348,
-        664.319,
-        652.285,
-        651.977,
-        654.816
-      ],
+    "text": "Paris has a population of two million people.",
+    "cold_ms": 11071.974,
+    "warm": {
       "n": 5,
-      "mean": 655.149,
-      "std": 5.251,
-      "min": 651.977,
-      "max": 664.319
+      "median": 826.537,
+      "p95": 946.418,
+      "mean": 858.505,
+      "std": 64.013,
+      "min": 824.816,
+      "max": 972.19
     },
-    "note": "aggregated_scores.metadata.total_time is the pipeline's own sum of prong processing times; wall clock includes HTTP/ASGI dispatch overhead on top."
+    "metadata_last_warm_run": {
+      "relevance_llm_ms": null,
+      "factual_verification_ms": 189.63308166712523,
+      "relation_counts": {
+        "confirmed": 0,
+        "denied": 1,
+        "partially_supported": 0,
+        "conflated": 0,
+        "unknown": 0
+      },
+      "num_claims": 1,
+      "verifier_scores": [
+        0.0118
+      ],
+      "verifier_errors": [],
+      "prong_ms": {
+        "Prong 1": 625.002,
+        "Prong 2": 0.406,
+        "Prong 3": 197.752,
+        "Prong 4": 0.014
+      }
+    },
+    "runs": [
+      {
+        "run": 1,
+        "cold": true,
+        "status": 200,
+        "wall_ms": 11071.974,
+        "prong_ms": {
+          "Prong 1": 7378.587,
+          "Prong 2": 1401.156,
+          "Prong 3": 2286.354,
+          "Prong 4": 0.013
+        },
+        "relevance_llm_ms": null,
+        "factual_verification_ms": 2272.8041959926486,
+        "relation_counts": {
+          "confirmed": 0,
+          "denied": 1,
+          "partially_supported": 0,
+          "conflated": 0,
+          "unknown": 0
+        },
+        "num_claims": 1,
+        "verifier_scores": [
+          0.0118
+        ],
+        "verifier_errors": []
+      },
+      {
+        "run": 2,
+        "cold": false,
+        "status": 200,
+        "wall_ms": 972.19,
+        "prong_ms": {
+          "Prong 1": 765.585,
+          "Prong 2": 0.451,
+          "Prong 3": 202.191,
+          "Prong 4": 0.015
+        },
+        "relevance_llm_ms": null,
+        "factual_verification_ms": 193.83233971893787,
+        "relation_counts": {
+          "confirmed": 0,
+          "denied": 1,
+          "partially_supported": 0,
+          "conflated": 0,
+          "unknown": 0
+        },
+        "num_claims": 1,
+        "verifier_scores": [
+          0.0118
+        ],
+        "verifier_errors": []
+      },
+      {
+        "run": 3,
+        "cold": false,
+        "status": 200,
+        "wall_ms": 825.653,
+        "prong_ms": {
+          "Prong 1": 625.942,
+          "Prong 2": 0.4,
+          "Prong 3": 195.807,
+          "Prong 4": 0.015
+        },
+        "relevance_llm_ms": null,
+        "factual_verification_ms": 187.70443135872483,
+        "relation_counts": {
+          "confirmed": 0,
+          "denied": 1,
+          "partially_supported": 0,
+          "conflated": 0,
+          "unknown": 0
+        },
+        "num_claims": 1,
+        "verifier_scores": [
+          0.0118
+        ],
+        "verifier_errors": []
+      },
+      {
+        "run": 4,
+        "cold": false,
+        "status": 200,
+        "wall_ms": 843.331,
+        "prong_ms": {
+          "Prong 1": 633.073,
+          "Prong 2": 0.377,
+          "Prong 3": 206.421,
+          "Prong 4": 0.015
+        },
+        "relevance_llm_ms": null,
+        "factual_verification_ms": 195.85182517766953,
+        "relation_counts": {
+          "confirmed": 0,
+          "denied": 1,
+          "partially_supported": 0,
+          "conflated": 0,
+          "unknown": 0
+        },
+        "num_claims": 1,
+        "verifier_scores": [
+          0.0118
+        ],
+        "verifier_errors": []
+      },
+      {
+        "run": 5,
+        "cold": false,
+        "status": 200,
+        "wall_ms": 824.816,
+        "prong_ms": {
+          "Prong 1": 624.413,
+          "Prong 2": 0.417,
+          "Prong 3": 196.582,
+          "Prong 4": 0.015
+        },
+        "relevance_llm_ms": null,
+        "factual_verification_ms": 188.4610583074391,
+        "relation_counts": {
+          "confirmed": 0,
+          "denied": 1,
+          "partially_supported": 0,
+          "conflated": 0,
+          "unknown": 0
+        },
+        "num_claims": 1,
+        "verifier_scores": [
+          0.0118
+        ],
+        "verifier_errors": []
+      },
+      {
+        "run": 6,
+        "cold": false,
+        "status": 200,
+        "wall_ms": 826.537,
+        "prong_ms": {
+          "Prong 1": 625.002,
+          "Prong 2": 0.406,
+          "Prong 3": 197.752,
+          "Prong 4": 0.014
+        },
+        "relevance_llm_ms": null,
+        "factual_verification_ms": 189.63308166712523,
+        "relation_counts": {
+          "confirmed": 0,
+          "denied": 1,
+          "partially_supported": 0,
+          "conflated": 0,
+          "unknown": 0
+        },
+        "num_claims": 1,
+        "verifier_scores": [
+          0.0118
+        ],
+        "verifier_errors": []
+      }
+    ]
   },
-  "runs": [
-    {
-      "run": 1,
-      "status": 200,
-      "wall_clock_ms": 657.158,
-      "prong_ms": {
-        "Prong 1": 642.563,
-        "Prong 2": 0.446,
-        "Prong 3": 9.327,
-        "Prong 4": 0.011
-      },
-      "total_prong_sum_ms": 652.348,
-      "aggregated_total_time_ms": 652.348
+  "direct_model_timings": {
+    "judge": {
+      "endpoint": "http://127.0.0.1:18092/v1/chat/completions",
+      "model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "cold_ms": 267.855,
+      "warm_ms": [
+        93.092,
+        84.288,
+        78.038,
+        73.117,
+        76.153,
+        75.965,
+        76.437,
+        76.514,
+        76.474,
+        76.769,
+        76.206,
+        83.539,
+        77.333,
+        76.486,
+        76.164,
+        75.905,
+        76.211,
+        75.682,
+        76.033,
+        76.096
+      ]
     },
-    {
-      "run": 2,
-      "status": 200,
-      "wall_clock_ms": 669.474,
-      "prong_ms": {
-        "Prong 1": 649.88,
-        "Prong 2": 0.582,
-        "Prong 3": 13.841,
-        "Prong 4": 0.015
-      },
-      "total_prong_sum_ms": 664.319,
-      "aggregated_total_time_ms": 664.319
+    "claims": {
+      "endpoint": "http://127.0.0.1:18093/v1/chat/completions",
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "cold_ms": 219.963,
+      "warm_ms": [
+        211.714,
+        210.99,
+        210.105,
+        210.0,
+        210.898,
+        209.308,
+        211.742,
+        212.843,
+        211.127,
+        213.023,
+        211.935,
+        212.14,
+        209.812,
+        209.048,
+        212.127,
+        209.743,
+        210.056,
+        210.112,
+        210.95,
+        208.81
+      ]
     },
-    {
-      "run": 3,
-      "status": 200,
-      "wall_clock_ms": 657.38,
-      "prong_ms": {
-        "Prong 1": 642.497,
-        "Prong 2": 0.453,
-        "Prong 3": 9.325,
-        "Prong 4": 0.01
-      },
-      "total_prong_sum_ms": 652.285,
-      "aggregated_total_time_ms": 652.285
-    },
-    {
-      "run": 4,
-      "status": 200,
-      "wall_clock_ms": 657.654,
-      "prong_ms": {
-        "Prong 1": 640.121,
-        "Prong 2": 0.499,
-        "Prong 3": 11.345,
-        "Prong 4": 0.011
-      },
-      "total_prong_sum_ms": 651.977,
-      "aggregated_total_time_ms": 651.977
-    },
-    {
-      "run": 5,
-      "status": 200,
-      "wall_clock_ms": 660.023,
-      "prong_ms": {
-        "Prong 1": 643.195,
-        "Prong 2": 0.465,
-        "Prong 3": 11.146,
-        "Prong 4": 0.01
-      },
-      "total_prong_sum_ms": 654.816,
-      "aggregated_total_time_ms": 654.816
+    "verifier": {
+      "model": "lytang/MiniCheck-Flan-T5-Large",
+      "claim": "Paris has a population of two million people.",
+      "doc": "Paris locate \u00cele-de-France.\nParis capital of France.\nParis country France.",
+      "sample_support_prob": 0.0109,
+      "cold_ms_includes_load": 6395.782,
+      "warm_ms": [
+        206.076,
+        189.065,
+        191.052,
+        188.42,
+        185.651,
+        194.218,
+        196.275,
+        195.577,
+        198.364,
+        195.414,
+        195.33,
+        196.475,
+        200.94,
+        197.694,
+        196.813,
+        209.65,
+        196.807,
+        197.857,
+        196.507,
+        196.183
+      ]
     }
-  ]
+  }
 }
