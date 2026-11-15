@@ -6,15 +6,17 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `7c0a9f6` — Show baseline vs LLM track agreement for dual-output dimensions
+- **Latest commit:** `dc5c9bd` — Add an iteration timeline with a two-entry delta view to the history panel
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); unified evidence view (stages A–E done, stage F open); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
+- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); unified evidence view complete (stages A–F); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-15 | `PENDING` | chore / index | Record Stage E track agreement in commit index | chore |
+| 2026-11-15 | `PENDING` | chore / index | Record Stage F timeline in commit index | chore |
+| 2026-11-15 | `dc5c9bd` | dashboard / evidence | Add an iteration timeline with a two-entry delta view to the history panel | V55p iteration visibility |
+| 2026-11-15 | `adbb665` | chore / index | Record Stage E track agreement in commit index | chore |
 | 2026-11-15 | `7c0a9f6` | dashboard / evidence | Show baseline vs LLM track agreement for dual-output dimensions | V55p dual-output transparency |
 | 2026-11-15 | `5220e44` | chore / index | Record Stage D signal matrix in commit index | chore |
 | 2026-11-15 | `62a7f9e` | dashboard / evidence | Add a dimensions x evidence-source signal matrix to the results panel | V55p transparency (signal provenance) |
@@ -61,9 +63,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record Stage E track agreement in commit index (2026-11-15)
+### `PENDING` — Record Stage F timeline in commit index (2026-11-15)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the Stage F timeline land; backfill the Stage E index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `dc5c9bd` — Add an iteration timeline with a two-entry delta view to the history panel (2026-11-15)
+
+- **Hash:** `dc5c9bd14f6f7f59df3d2e0d557940996c5338e7`
+- **Why:** Stage F (last) of the unified evidence view. The History card gains an Iterations sparkline of the last evaluations' totals (oldest left), with per-point tooltips; clicking a point restores that entry. A Compare mode turns clicks into selections (up to two) and shows a delta panel: `A → B · Δ`, plus per-prong deltas (`P1 -0.144 · P2 0.000 ...`) colour-coded. Selection identity is the entry timestamp; the plot has one click handler that picks the nearest point by x so the 6px dots are usable. Hidden with fewer than two scored entries; hidden again after Clear.
+- **Files:** `frontend/index.html`, `frontend/locales/en.json`
+- **Closes:** V55p iteration visibility (compare two evaluations and see which prong moved); Stage F of the unified-view plan
+- **Verify:** Selenium (headless Chromium): hidden with no history; 3 evaluations -> 3 dots + polyline + score tooltips; Compare activates (button becomes Done); selecting the oldest and newest shows `0.826 → 0.778 · Δ -0.048` with `P1 -0.144 · P2 0.000 · P3 0.000` and coloured spans; exiting compare and clicking a point restores the entry (history list intact); Clear hides the panel; true 390 via CDP -> page 375 == 375 with the panel visible; screenshots `.shots/stage_f_desktop.png`, `.shots/stage_f_390.png`. pytest 361 passed + 2 skipped (frontend-only).
+
+### `adbb665` — Record Stage E track agreement in commit index (2026-11-15)
+
+- **Hash:** `adbb665bb74c267f859eb1fe3cd64a45c09f5d5a`
 - **Why:** Record the Stage E track-agreement land; backfill the Stage D index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
