@@ -43,7 +43,12 @@ Sentence-level order in `sentence_reject_reason`: markdown → question → meta
 
 ## Limits
 
-- **Quoted/reported claims**: spaCy drops propositions embedded in reporting clauses ("The teacher said the Earth is flat" yields no triple); the optional LLM track handles some. Treat quoted claims as supported only when `llm_extract` is on (ASSUMPTIONS.md §A5).
+- **Quoted/reported claims**: a deterministic use-mention pass extracts quoted
+  spans and `Claim:`-labelled sentences as claims with `source="quote"` and gates
+  the quoted sentence itself; the reporting line around it is treated as
+  commentary. Propositions embedded mid-sentence in unquoted reported speech
+  ("the teacher said that the Earth is flat") still depend on the optional LLM
+  track (ASSUMPTIONS.md §A5).
 - **Accepted leaks**: the fragment `smoking is that bad` and the advice sentence `Critical thinking is your best defense against false claims!` pass all gates; both evaluate `unknown` and do not affect scoring.
 - **Unknown vs error**: no claims / no KB / `verifiable == 0` → `status='unknown'` (0.5 is display-only, never aggregated). Verifier down → relation stays UNKNOWN, the error string goes to `verifier_errors`, `minicheck` evidence status is `error`; a score is never fabricated.
 

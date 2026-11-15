@@ -21,7 +21,7 @@ different dimension family of generated text:
 |-------|------|--------|--------|
 | **1** | LLM-as-Judge | Sentence embeddings (MiniLM) + toxicity classifier (toxic-bert); default backend `embeddings`, with an optional 0.5B local LLM judge as a dual-output track (`tiny_judge`) | ✅ Complete |
 | **2** | Rule-Based | Lexicon/heuristic scoring (validated for English; 8 further Germanic lexicons are unvalidated translations) | ✅ Complete |
-| **3** | Extraction-Based | spaCy triple extraction + offline Wikidata fact-checking (122-entity seed KB, labeled as a seed) + optional 1.5B atomic-claim track and MiniCheck verifier (`llm_extract`, `llm_verify`) | ✅ Complete |
+| **3** | Extraction-Based | spaCy triple extraction + offline Wikidata fact-checking (122-entity seed KB, labeled as a seed) + deterministic claim admission + optional 1.5B atomic-claim track, MiniCheck verifier and LLM admission (`llm_extract`, `llm_verify`, `llm_admit`) | ✅ Complete |
 | **4** | Intrinsic | Model log-probabilities from vLLM (perplexity, uncertainty, entropy) | ⚠️ Requires logprobs — without them all Prong 4 dimensions are `unknown` |
 
 A FastAPI server (`src/api.py`) with a single-page HTML5 frontend
@@ -216,6 +216,23 @@ unvalidated translations — treat scores in those languages as experimental.
 | **Comparative Factuality** | JJR/JJS comparative claims → Wikidata | |
 | **Modality Awareness** | Hedged vs. asserted claim fraction | `aggregate=False` |
 
+**Claim pipeline.** Extraction proposes candidates; only admitted claims are
+shown, counted and verified. Two tracks feed it: deterministic spaCy triples and
+the optional 1.5B atomic-claim track. Markdown is cleaned first, then sentence
+gates drop headings, questions, imperatives and meta-discourse, and triple gates
+drop pronouns without a resolved referent, malformed triples, encyclopedic
+definitions, text-deictic subjects and duplicates. Quoted propositions and
+`Claim:`-labelled sentences are extracted as mentioned claims (`source="quote"`)
+so teaching prose does not turn its examples into commentary. The ablation on the
+exported teaching-prose fixture: 76 raw candidates → 28 after markdown → 17 after
+sentence gates → 8 after triple gates → 9 with the use-mention pass, while the
+hand-labelled junk falls from 46 to 2 and all five intended false-claim examples
+survive. The optional LLM admission classifier (`llm_admit`, off by default) drops
+two genuine claims on the same fixture, so it is documented as an experiment
+rather than a default. See [docs/CLAIM_ADMISSION.md](docs/CLAIM_ADMISSION.md),
+[docs/LEXICON_VALIDATION.md](docs/LEXICON_VALIDATION.md) and
+[docs/EXTERNAL_EVALS.md](docs/EXTERNAL_EVALS.md).
+
 #### Prong 4 — Intrinsic (requires vLLM logprobs)
 
 | Dimension | Method | Notes |
@@ -377,9 +394,10 @@ pytest tests/ --cov=src
 
 See [TODO.md](TODO.md). Key next steps:
 
-- LLM-based claim extraction for Prong 3 (vLLM-prompted, à la FActScore/Claimify)
 - LLM-based readability for Prong 2 (replacing Flesch baseline)
-- Dual-output benchmarking: baseline vs. LLM score per dimension
+- LLM-AggreFact benchmark once the dataset terms are accepted (harness ready)
+- Native-speaker validation of the eight non-English lexicons
+- Human-annotation study correlating dimension scores with human ratings
 - Expand Wikidata DB toward 200k entities via SPARQL dump
 
 ---

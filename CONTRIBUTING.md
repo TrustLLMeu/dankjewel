@@ -232,7 +232,8 @@ See [TODO.md](TODO.md) for planned work. Good starting points:
 | Add a fifth dimension (worked example) | Low–Medium | follow the recipe in `docs/EXTENSIBILITY.md`; one file in `src/dimensions/`, one in `tests/` |
 | Extend claim extraction (harder cases, more languages) | Medium | `src/extraction/llm_claim_extractor.py` |
 | LLM-based readability (Prong 2) | Medium | `src/dimensions/prong2_dimensions.py` |
-| Extend the verifier benchmark | Medium | `scripts/eval_verifier.py`, `scripts/eval_scifact.py` |
+| Extend the verifier benchmark | Medium | `scripts/eval_verifier.py`, `scripts/eval_scifact.py`, `scripts/eval_aggrefact.py` |
+| Re-run the admission ablation or robustness matrix | Low | `scripts/eval_admission_ablation.py`, `scripts/eval_robustness.py` |
 
 ---
 
