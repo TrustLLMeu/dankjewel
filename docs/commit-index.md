@@ -6,15 +6,18 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `dc5c9bd` — Add an iteration timeline with a two-entry delta view to the history panel
+- **Latest commit:** `3b629f5` — Refresh contributing guide, aggregation guidance and extensibility recipe
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); unified evidence view complete (stages A–F); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
+- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion and lexicon validation; the eight non-English lexicons remain unvalidated translations
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-15 | `PENDING` | chore / index | Record Stage F timeline in commit index | chore |
+| 2026-11-15 | `PENDING` | chore / index | Record worked example and docs refresh in commit index | chore |
+| 2026-11-15 | `3b629f5` | docs / honesty | Refresh contributing guide, aggregation guidance and extensibility recipe | V55p aggregation guidance; wXze extensibility |
+| 2026-11-15 | `55164ce` | prong 2 / worked example | Add Lexical Diversity as a documented worked example | wXze extensibility (worked example) |
+| 2026-11-15 | `f015dc7` | chore / index | Record Stage F timeline in commit index | chore |
 | 2026-11-15 | `dc5c9bd` | dashboard / evidence | Add an iteration timeline with a two-entry delta view to the history panel | V55p iteration visibility |
 | 2026-11-15 | `adbb665` | chore / index | Record Stage E track agreement in commit index | chore |
 | 2026-11-15 | `7c0a9f6` | dashboard / evidence | Show baseline vs LLM track agreement for dual-output dimensions | V55p dual-output transparency |
@@ -48,6 +51,7 @@ Newest first. `git log` remains the source of truth for hashes.
 | 2026-11-14 | `86b397d` | chore / ignore | Ignore local crew worktrees and verification screenshots | chore |
 | 2026-11-14 | `9013249` | tiny judge / Prong 1 | Add optional tiny-LLM judge track on Prong 1 Relevance (dual output) | wXze Prong 1 no LLM (API half) |
 | 2026-11-14 | `37fa6e4` | dashboard | Add a browsable commit history page at /commits | YE7H / wXze history in the UI |
+| 2026-11-14 | `892265a` | chore / index | Record the commit-history page in the commit index | chore |
 | 2026-11-14 | `0e1be7d` | chore / index | Complete slice 3 entries in the commit index | chore |
 | 2026-11-14 | `28d2464` | dashboard | Show Equal as the active weight preset on load | wXze weights / active preset |
 | 2026-11-14 | `873d651` | chore / index | Record slice 3 instrument panel in commit index | chore |
@@ -63,9 +67,33 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record Stage F timeline in commit index (2026-11-15)
+### `PENDING` — Record worked example and docs refresh in commit index (2026-11-15)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the worked-example and docs-refresh lands; backfill the Stage F index hash and the missing `892265a` row.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `3b629f5` — Refresh contributing guide, aggregation guidance and extensibility recipe (2026-11-15)
+
+- **Hash:** `3b629f53bdc1c4c676a40a9ec417dae4a40d267b`
+- **Why:** Close the wXze/YE7H documentation gaps. CONTRIBUTING.md now names Dankjewel (was `online-eval-base`), uses the real remote, replaces the "vLLM needed for Prongs 1 and 4" note with the default local setup plus the optional judge/claims/verifier servers and their env vars, documents the evidence-provenance and honesty-state conventions, updates the contribution table (claim extraction and dual-output benchmarking now exist; adds the worked example and verifier-benchmark tasks) and the project structure (llm_judge_client.py, evidence.py, MiniCheck). README gains a "Choosing weights" subsection (presets are exploration aids; Equal is the default; no validation claimed) and honest Prong 1 and 3 table rows; docs/EXTENSIBILITY.md records the measured recipe.
+- **Files:** `CONTRIBUTING.md`, `README.md`, `docs/EXTENSIBILITY.md`
+- **Closes:** V55p aggregation-weight guidance (documented); wXze reproducibility/dependency clarity; the documentation half of wXze extensibility
+- **Verify:** docs-only; `pytest` unaffected (364 passed + 2 skipped at this state). No numbers invented: the latency/benchmark tables were left as landed.
+
+### `55164ce` — Add Lexical Diversity as a documented worked example (2026-11-15)
+
+- **Hash:** `55164ce7f96c24ae30ffbf704d8c7dddaef92dfc`
+- **Why:** The reviewer's extensibility item asked for a performed example with a measured line count. `LexicalDiversity` (type-token ratio, `aggregate=False`, evidence_sources `rules`) is registered in Prong 2 and covered by three tests (scored case pinned at 5/6, empty text -> unknown, registry assertion). Total: 34 lines in the dimension module, 4 in the prong registration, 32 lines of tests, 16-line snapshot update — 86 changed lines, recorded in docs/EXTENSIBILITY.md.
+- **Files:** `src/dimensions/prong2_dimensions.py`, `src/prongs/prong2_rule_based.py`, `tests/test_prong2.py`, `tests/evidence_flags_off_snapshot.json`
+- **Closes:** wXze "no worked fifth dimension" (a dimension, not a fifth prong; the doc states what remains)
+- **Verify:** full suite 364 passed + 2 skipped; the flags-off snapshot was regenerated intentionally (indent=1, sort_keys) and the additive-guarantee test passes; the dimension returns 0.75 for the snapshot text (12 tokens, 9 types).
+
+### `f015dc7` — Record Stage F timeline in commit index (2026-11-15)
+
+- **Hash:** `f015dc78552f8f22e89392dda00eb0230ec0336c`
 - **Why:** Record the Stage F timeline land; backfill the Stage E index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
