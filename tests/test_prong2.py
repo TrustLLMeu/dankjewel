@@ -194,3 +194,35 @@ def test_fluency_metadata_fields():
     assert score.metadata['words'] > 0
     assert score.metadata['sentences'] > 0
     assert score.metadata['syllables'] > 0
+
+
+def test_lexical_diversity_worked_example():
+    """The worked example in docs/EXTENSIBILITY.md stays wired in."""
+    from src.dimensions.prong2_dimensions import LexicalDiversity
+
+    dim = LexicalDiversity()
+    score = dim.evaluate("The cat sat on the mat.")
+
+    assert score.name == "Lexical Diversity"
+    assert score.aggregate is False
+    assert score.status == "scored"
+    assert abs(score.value - 5 / 6) < 1e-6
+    assert score.metadata["tokens"] == 6
+    assert score.metadata["types"] == 5
+    src = score.metadata["evidence_sources"]["rules"]
+    assert src["status"] == "scored" and src["n"] == 6
+
+
+def test_lexical_diversity_empty_text_is_unknown():
+    """No tokens -> unknown, never a numeric score."""
+    from src.dimensions.prong2_dimensions import LexicalDiversity
+
+    score = LexicalDiversity().evaluate("")
+    assert score.status == "unknown"
+    assert score.metadata["evidence_sources"]["rules"]["status"] == "unknown"
+
+
+def test_language_diversity_registered_in_prong2():
+    """The new dimension is part of Prong 2's dimension registry."""
+    prong = Prong2RuleBased()
+    assert "Lexical Diversity" in prong.dimensions

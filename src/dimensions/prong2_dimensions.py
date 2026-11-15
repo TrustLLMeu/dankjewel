@@ -1,5 +1,6 @@
 """Prong 2: Rule-Based Dimensions."""
 
+import re
 import threading
 import textstat
 from nltk.sentiment import SentimentIntensityAnalyzer
@@ -113,6 +114,39 @@ class PolitenessDetection(ScorableDimension):
         except Exception as e:
             return self.create_score(value=0.5, metadata={'error': str(e)}, status='error',
                                      evidence_sources={'rules': source(None, 'error', None)})
+
+
+class LexicalDiversity(ScorableDimension):
+    """Type-token ratio over word tokens (worked extensibility example).
+
+    A descriptive style axis: lexical diversity has no universal "better"
+    direction for short texts, so it is reported but excluded from the
+    prong average (aggregate=False). Adding this class plus its
+    registration and one test is the complete recipe in
+    docs/EXTENSIBILITY.md.
+    """
+
+    def __init__(self):
+        super().__init__(name="Lexical Diversity")
+
+    def evaluate(self, text: str, **kwargs) -> DimensionScore:
+        """Compute unique words / total words over case-folded tokens."""
+        lang = kwargs.get('lang', 'en')
+        tokens = re.findall(r"[a-z0-9']+", text.lower())
+        if not tokens:
+            return self.create_score(
+                value=0.0, aggregate=False,
+                metadata={'tokens': 0, 'types': 0, 'lang': lang},
+                status='unknown',
+                evidence_sources={'rules': source(None, 'unknown', 0)},
+            )
+        types = len(set(tokens))
+        ratio = types / len(tokens)
+        return self.create_score(
+            value=ratio, aggregate=False,
+            metadata={'tokens': len(tokens), 'types': types, 'lang': lang},
+            evidence_sources={'rules': source(ratio, 'scored', len(tokens))},
+        )
 
 
 class EmotionalIntensity(ScorableDimension):

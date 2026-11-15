@@ -22,6 +22,9 @@
    "Hedging": [
     0.0
    ],
+   "Lexical Diversity": [
+    0.75
+   ],
    "Modality Awareness": [
     0.0
    ],
@@ -205,6 +208,19 @@
      "raw_value": null,
      "status": "scored",
      "value": 0.0
+    },
+    {
+     "agg_value": null,
+     "aggregate": false,
+     "metadata": {
+      "lang": "en",
+      "tokens": 12,
+      "types": 9
+     },
+     "name": "Lexical Diversity",
+     "raw_value": null,
+     "status": "scored",
+     "value": 0.75
     }
    ],
    "error": null,

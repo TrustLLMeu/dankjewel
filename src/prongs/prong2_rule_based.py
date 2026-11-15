@@ -8,7 +8,8 @@ from src.dimensions.prong2_dimensions import (
     PolitenessDetection,
     EmotionalIntensity,
     FormalityDimension,
-    HedgingDetection
+    HedgingDetection,
+    LexicalDiversity
 )
 
 
@@ -26,6 +27,7 @@ class Prong2RuleBased(Evaluator):
         self.register_dimension(EmotionalIntensity())
         self.register_dimension(FormalityDimension())
         self.register_dimension(HedgingDetection())
+        self.register_dimension(LexicalDiversity())
 
     def evaluate(self, text: str, **kwargs) -> ProngResult:
         """
