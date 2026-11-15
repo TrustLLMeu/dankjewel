@@ -6,15 +6,17 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `62a7f9e` — Add a dimensions x evidence-source signal matrix to the results panel
+- **Latest commit:** `7c0a9f6` — Show baseline vs LLM track agreement for dual-output dimensions
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); unified evidence view (stages A–D done, stages E–F open); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
+- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); unified evidence view (stages A–E done, stage F open); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-15 | `PENDING` | chore / index | Record Stage D signal matrix in commit index | chore |
+| 2026-11-15 | `PENDING` | chore / index | Record Stage E track agreement in commit index | chore |
+| 2026-11-15 | `7c0a9f6` | dashboard / evidence | Show baseline vs LLM track agreement for dual-output dimensions | V55p dual-output transparency |
+| 2026-11-15 | `5220e44` | chore / index | Record Stage D signal matrix in commit index | chore |
 | 2026-11-15 | `62a7f9e` | dashboard / evidence | Add a dimensions x evidence-source signal matrix to the results panel | V55p transparency (signal provenance) |
 | 2026-11-15 | `ab1df04` | chore / index | Record Stage C claim strip in commit index | chore |
 | 2026-11-15 | `a4f36c3` | dashboard / evidence | Add a subject-grouped claim evidence strip to the results panel | V55p transparency (claim level) |
@@ -59,10 +61,26 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record Stage D signal matrix in commit index (2026-11-15)
+### `PENDING` — Record Stage E track agreement in commit index (2026-11-15)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
-- **Why:** Record the Stage D signal-matrix land; backfill the Stage C index hash.
+- **Why:** Record the Stage E track-agreement land; backfill the Stage D index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `7c0a9f6` — Show baseline vs LLM track agreement for dual-output dimensions (2026-11-15)
+
+- **Hash:** `7c0a9f6349c91f59e391029f6edb5c2b94b33ef1`
+- **Why:** Stage E of the unified evidence view. A Track agreement panel inside the Evidence section draws a dumbbell per dual-output dimension: Relevance (embedding baseline vs tiny-LLM judge) and Factual Accuracy (KB-exact score vs MiniCheck support rate over the claims the verifier scored). Grey baseline dot, blue LLM dot, connector line = the gap; value text "baseline → track"; tooltips carry the model and the supported/scored counts. Rows appear only when both tracks have data (Relevance needs the judge, Factual Accuracy needs at least one verifier-scored claim); hidden otherwise.
+- **Files:** `frontend/index.html`, `frontend/locales/en.json`
+- **Closes:** V55p dual-output transparency (the embedding and LLM tracks visible side by side); Stage E of the unified-view plan
+- **Verify:** Selenium (headless Chromium): hidden before evaluation and with all flags off; judge track -> one Relevance row "0.85 → 1.00" with dots at 85.18% and 100% (positions match values); mixed text "0.74 → 0.50"; verifier track -> Factual Accuracy "0.50 → 0.00" (0/1 supported); both flags -> two rows; true 390 via CDP -> page 375 == 375 with the panel visible; screenshots `.shots/stage_e_desktop.png`, `.shots/stage_e_390.png`. pytest 361 passed + 2 skipped (frontend-only).
+
+### `5220e44` — Record Stage D signal matrix in commit index (2026-11-15)
+
+- **Hash:** `5220e44062eb5e1a5f17abba52da8a73d87768bf`
+- **Why:** Record the Stage D signal-matrix land; backfill the Stage C index hash. Committed by the Captain after the dj-git pane hit its context limit mid-task.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
 - **Verify:** untested (docs only)
