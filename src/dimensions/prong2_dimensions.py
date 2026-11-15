@@ -4,6 +4,7 @@ import threading
 import textstat
 from nltk.sentiment import SentimentIntensityAnalyzer
 from src.dimensions.base_dimension import ScorableDimension
+from src.evidence import source
 from src.base import DimensionScore
 from src.resources.lexicon_manager import lexicon_manager
 from src.config import (
@@ -53,7 +54,8 @@ class FluidityDimension(ScorableDimension):
                     value=0.0,
                     raw_value=0.0,
                     metadata={'formula': formula, 'lang': lang,
-                              'note': 'degenerate text (no words or sentences)'}
+                              'note': 'degenerate text (no words or sentences)'},
+                    evidence_sources={'rules': source(0.0, 'scored', None)},
                 )
 
             asl = words / sentences          # average sentence length
@@ -73,10 +75,12 @@ class FluidityDimension(ScorableDimension):
                     'words': words,
                     'sentences': sentences,
                     'syllables': syllables,
-                }
+                },
+                evidence_sources={'rules': source(normalized, 'scored', None)},
             )
         except Exception as e:
-            return self.create_score(value=0.0, metadata={'error': str(e)}, status='error')
+            return self.create_score(value=0.0, metadata={'error': str(e)}, status='error',
+                                     evidence_sources={'rules': source(None, 'error', None)})
 
 
 class PolitenessDetection(ScorableDimension):
@@ -103,10 +107,12 @@ class PolitenessDetection(ScorableDimension):
             return self.create_score(
                 value=score,
                 metadata={'politeness_cues': politeness_count, 'rudeness_cues': rudeness_count,
-                          'lang': lang}
+                          'lang': lang},
+                evidence_sources={'rules': source(score, 'scored', None)},
             )
         except Exception as e:
-            return self.create_score(value=0.5, metadata={'error': str(e)}, status='error')
+            return self.create_score(value=0.5, metadata={'error': str(e)}, status='error',
+                                     evidence_sources={'rules': source(None, 'error', None)})
 
 
 class EmotionalIntensity(ScorableDimension):
@@ -128,7 +134,8 @@ class EmotionalIntensity(ScorableDimension):
         """Evaluate emotional intensity."""
         try:
             if self.vader is None:
-                return self.create_score(value=0.0, metadata={'error': 'VADER not available'}, aggregate=False, status='error')
+                return self.create_score(value=0.0, metadata={'error': 'VADER not available'}, aggregate=False, status='error',
+                                       evidence_sources={'rules': source(None, 'error', None)})
 
             scores = self.vader.polarity_scores(text)
             # Use compound score as baseline
@@ -146,9 +153,11 @@ class EmotionalIntensity(ScorableDimension):
                 raw_value=scores,
                 metadata={'exclamations': exclamation_count, 'questions': question_count},
                 aggregate=False,
+                evidence_sources={'rules': source(intensity, 'scored', None)},
             )
         except Exception as e:
-            return self.create_score(value=0.0, metadata={'error': str(e)}, aggregate=False, status='error')
+            return self.create_score(value=0.0, metadata={'error': str(e)}, aggregate=False, status='error',
+                                     evidence_sources={'rules': source(None, 'error', None)})
 
 
 class FormalityDimension(ScorableDimension):
@@ -182,9 +191,11 @@ class FormalityDimension(ScorableDimension):
                 metadata={'formal_markers': formal_count, 'informal_markers': informal_count,
                           'lang': lang},
                 aggregate=False,
+                evidence_sources={'rules': source(score, 'scored', None)},
             )
         except Exception as e:
-            return self.create_score(value=0.5, metadata={'error': str(e)}, aggregate=False, status='error')
+            return self.create_score(value=0.5, metadata={'error': str(e)}, aggregate=False, status='error',
+                                     evidence_sources={'rules': source(None, 'error', None)})
 
 
 class HedgingDetection(ScorableDimension):
@@ -219,7 +230,9 @@ class HedgingDetection(ScorableDimension):
                 metadata={'modal_verbs': modal_count, 'uncertainty_cues': uncertainty_count,
                           'lang': lang},
                 aggregate=False,
+                evidence_sources={'rules': source(hedging_score, 'scored', None)},
             )
         except Exception as e:
-            return self.create_score(value=0.0, metadata={'error': str(e)}, aggregate=False, status='error')
+            return self.create_score(value=0.0, metadata={'error': str(e)}, aggregate=False, status='error',
+                                     evidence_sources={'rules': source(None, 'error', None)})
 

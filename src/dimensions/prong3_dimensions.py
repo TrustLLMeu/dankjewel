@@ -28,6 +28,7 @@ from typing import List, Optional
 
 from src.dimensions.base_dimension import ScorableDimension
 from src.base import DimensionScore
+from src.evidence import source
 from src.extraction.claim_extractor import Claim
 from src.resources.nli_verifier import NliVerifier, VerifierUnavailableError
 from src.resources.wikidata_offline import (
@@ -54,6 +55,17 @@ def _invert_result(result: VerificationResult) -> VerificationResult:
     if result == VerificationResult.DENIED:
         return VerificationResult.CONFIRMED
     return result
+
+
+def _claim_source_counts(claims: List[Claim]) -> dict:
+    """Count claims per extraction track for the evidence contract.
+
+    'both' claims (an LLM atomic claim matching a spaCy triple) count
+    toward both tracks — each track contributed that claim.
+    """
+    spacy = sum(1 for c in claims if c.source in ('spacy', 'both'))
+    llm = sum(1 for c in claims if c.source in ('llm', 'both'))
+    return {'spacy': spacy, 'llm': llm}
 
 
 class FactualAccuracy(ScorableDimension):
@@ -132,6 +144,8 @@ class FactualAccuracy(ScorableDimension):
         }
         claim_details = []
         verifier_errors: List[str] = []
+        verifier_scored = 0  # claims the MiniCheck model actually scored
+        source_counts = _claim_source_counts(claims)
 
         for claim in claims:
             # Skip claims with no object — unless existential, which
@@ -159,6 +173,8 @@ class FactualAccuracy(ScorableDimension):
                 relation, verifier_score, err = self._verifier_relation(claim)
                 if err:
                     verifier_errors.append(err)
+                if verifier_score is not None:
+                    verifier_scored += 1
 
             relation_counts[relation.value] += 1
 
@@ -201,11 +217,33 @@ class FactualAccuracy(ScorableDimension):
         }
         if llm_verify:
             metadata['verifier_errors'] = verifier_errors
+
+        # ── Evidence contract (Stage A) ────────────────────────────────
+        # Extraction tracks are listed when they contributed claims;
+        # kb_exact always ran (one verify_triple per claim) with its own
+        # binary ratio and the count of claims it resolved; minicheck is
+        # listed only when the verifier was actually invoked (attempted
+        # scores, not the no-facts early return).
+        evidence_sources = {}
+        if source_counts['spacy']:
+            evidence_sources['spacy'] = source(None, 'scored', source_counts['spacy'])
+        if source_counts['llm']:
+            evidence_sources['llm_claims'] = source(None, 'scored', source_counts['llm'])
+        evidence_sources['kb_exact'] = source(
+            score if verifiable else None,
+            'scored' if verifiable else 'unknown',
+            verifiable,
+        )
+        if llm_verify and (verifier_scored or verifier_errors):
+            evidence_sources['minicheck'] = source(
+                None, 'scored' if verifier_scored else 'error', verifier_scored)
+
         return self.create_score(
             value=score,
             raw_value={'confirmed': confirmed, 'denied': denied, 'unknown': unknown},
             metadata=metadata,
             status=status,
+            evidence_sources=evidence_sources,
         )
 
     def _verifier_relation(self, claim: Claim) -> tuple:
@@ -288,6 +326,8 @@ class FactualConsistency(ScorableDimension):
         contradictions = 0
         total_pairs = 0
         contradiction_details = []
+        kb_consulted = 0  # pairs whose check consulted Wikidata (QID subject)
+        kb_decided = 0    # pairs whose verdict came from Wikidata
 
         for key, group in subject_groups.items():
             if len(group) < 2:
@@ -298,7 +338,15 @@ class FactualConsistency(ScorableDimension):
                     c1, c2 = group[i], group[j]
                     total_pairs += 1
 
+                    # _check_pair consults Wikidata only for QID-grouped
+                    # subjects — mirror that condition for the evidence
+                    # contract.
+                    if self.wikidata and isinstance(key, str) and key.startswith('Q'):
+                        kb_consulted += 1
+
                     is_contradiction, method = self._check_pair(c1, c2, key)
+                    if method == 'wikidata':
+                        kb_decided += 1
                     if is_contradiction:
                         contradictions += 1
                         contradiction_details.append({
@@ -313,6 +361,20 @@ class FactualConsistency(ScorableDimension):
             score = 1.0 - (contradictions / total_pairs)
 
         elapsed = (time.perf_counter() - start) * 1000
+        # Evidence contract (Stage A): extraction tracks are listed when
+        # they contributed claims; kb_exact is listed when its conflict
+        # check ran on at least one pair — n counts the pairs Wikidata
+        # decided. The consistency score itself blends Wikidata and
+        # string-fallback verdicts, so kb_exact carries no own [0,1] value.
+        source_counts = _claim_source_counts(claims)
+        evidence_sources = {}
+        if source_counts['spacy']:
+            evidence_sources['spacy'] = source(None, 'scored', source_counts['spacy'])
+        if source_counts['llm']:
+            evidence_sources['llm_claims'] = source(None, 'scored', source_counts['llm'])
+        if kb_consulted:
+            evidence_sources['kb_exact'] = source(
+                None, 'scored' if kb_decided else 'unknown', kb_decided)
         return self.create_score(
             value=max(0.0, min(1.0, score)),
             raw_value={'contradictions': contradictions, 'total_pairs': total_pairs},
@@ -320,7 +382,8 @@ class FactualConsistency(ScorableDimension):
                 'num_claims': len(claims),
                 'contradiction_details': contradiction_details,
                 'verification_time_ms': elapsed,
-            }
+            },
+            evidence_sources=evidence_sources,
         )
 
     def _check_pair(self, c1: Claim, c2: Claim, subject_key: str) -> tuple:
@@ -441,6 +504,20 @@ class TemporalAccuracy(ScorableDimension):
             status = 'scored'
 
         elapsed = (time.perf_counter() - start) * 1000
+        # Evidence contract (Stage A): extraction tracks listed when they
+        # contributed temporal claims; kb_exact always ran with its own
+        # binary ratio and the count of date claims it resolved.
+        source_counts = _claim_source_counts(temporal_claims)
+        evidence_sources = {}
+        if source_counts['spacy']:
+            evidence_sources['spacy'] = source(None, 'scored', source_counts['spacy'])
+        if source_counts['llm']:
+            evidence_sources['llm_claims'] = source(None, 'scored', source_counts['llm'])
+        evidence_sources['kb_exact'] = source(
+            score if verifiable else None,
+            'scored' if verifiable else 'unknown',
+            verifiable,
+        )
         return self.create_score(
             value=score,
             raw_value={'confirmed': confirmed, 'denied': denied, 'unknown': unknown},
@@ -450,6 +527,7 @@ class TemporalAccuracy(ScorableDimension):
                 'verification_time_ms': elapsed,
             },
             status=status,
+            evidence_sources=evidence_sources,
         )
 
     def _verify_temporal(self, claim: Claim) -> str:
@@ -585,6 +663,20 @@ class ComparativeFactuality(ScorableDimension):
             status = 'scored'
 
         elapsed = (time.perf_counter() - start) * 1000
+        # Evidence contract (Stage A): extraction tracks listed when they
+        # contributed comparative claims; kb_exact always ran with its
+        # own binary ratio and the count of claims it resolved.
+        source_counts = _claim_source_counts(comp_claims)
+        evidence_sources = {}
+        if source_counts['spacy']:
+            evidence_sources['spacy'] = source(None, 'scored', source_counts['spacy'])
+        if source_counts['llm']:
+            evidence_sources['llm_claims'] = source(None, 'scored', source_counts['llm'])
+        evidence_sources['kb_exact'] = source(
+            score if verifiable else None,
+            'scored' if verifiable else 'unknown',
+            verifiable,
+        )
         return self.create_score(
             value=score,
             raw_value={'confirmed': confirmed, 'denied': denied, 'unknown': unknown},
@@ -594,6 +686,7 @@ class ComparativeFactuality(ScorableDimension):
                 'verification_time_ms': elapsed,
             },
             status=status,
+            evidence_sources=evidence_sources,
         )
 
 
@@ -655,4 +748,7 @@ class ModalityAwareness(ScorableDimension):
                 'evaluation_time_ms': elapsed,
             },
             aggregate=False,
+            # Evidence contract (Stage A): the hedged/asserted count is a
+            # rule over the extracted claims — n is the claims classified.
+            evidence_sources={'rules': source(score, 'scored', total)},
         )

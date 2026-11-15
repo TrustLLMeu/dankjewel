@@ -3,6 +3,7 @@
 import json
 from typing import List, Optional
 from src import config
+from src.evidence import compute_coverage
 from src.llm_judge_client import LLMJudgeClient
 from src.prongs import Prong1LLMAsJudge, Prong2RuleBased, Prong3Extraction, Prong4Intrinsic
 from src.aggregation.aggregator import ScoreAggregator
@@ -65,7 +66,10 @@ class EvaluationPipeline:
                 rule-based five-way labels only, no model load.
 
         Returns:
-            Dictionary containing all prong results and aggregated scores
+            Dictionary containing all prong results and aggregated scores,
+            plus the Stage A additions: a top-level "coverage" summary
+            (see src/evidence.py) and per-dimension
+            metadata["evidence_sources"] records.
         """
         results = []
 
@@ -93,11 +97,14 @@ class EvaluationPipeline:
         # Build final output. `metadata.prong1_backend` records which
         # Prong 1 implementation produced the scores — the default
         # embeddings + toxic-bert backend ("embeddings"), never a
-        # generative LLM judge.
+        # generative LLM judge. `coverage` is the Stage A top-level
+        # evidence summary, computed from the same results.
         output = {
             'text_length': len(text),
             'prong_results': [r.to_dict() for r in results],
-            'aggregated_scores': aggregated
+            'aggregated_scores': aggregated,
+            'coverage': compute_coverage(results, aggregated['prong_scores'],
+                                         prongs_total=len(self.prongs)),
         }
         if 'Prong 1' in self.prongs:
             output['metadata'] = {'prong1_backend': 'embeddings'}

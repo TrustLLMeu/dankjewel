@@ -1,6 +1,7 @@
 """Base classes for dimensions."""
 
 from src.base import Dimension, DimensionScore
+from src.evidence import normalize
 
 
 class ScorableDimension(Dimension):
@@ -15,7 +16,7 @@ class ScorableDimension(Dimension):
 
     def create_score(self, value: float, raw_value=None, metadata=None,
                       aggregate: bool = True, agg_value: float = None,
-                      status: str = "scored") -> DimensionScore:
+                      status: str = "scored", evidence_sources: dict = None) -> DimensionScore:
         """Create a DimensionScore with this dimension's name.
 
         Args:
@@ -34,9 +35,16 @@ class ScorableDimension(Dimension):
                 missing (value becomes a display-only placeholder),
                 "error" when the computation raised an exception.
                 Anything but "scored" is excluded from aggregation.
+            evidence_sources: Stage A evidence contract — which evidence
+                sources informed this dimension, as source key ->
+                {"value", "status", "n"} (see src/evidence.py). None (the
+                default) records an empty contract; entries are
+                validated and normalized, so a bad key/shape raises.
         """
         if metadata is None:
             metadata = {}
+        metadata = dict(metadata)
+        metadata['evidence_sources'] = normalize(evidence_sources)
         return DimensionScore(
             name=self.name,
             value=value,

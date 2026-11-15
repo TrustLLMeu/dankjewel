@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Optional, List
 from src.base import Evaluator, ProngResult
 from src.dimensions.base_dimension import ScorableDimension
+from src.evidence import source
 
 
 @dataclass
@@ -83,6 +84,7 @@ class Uncertainty(ScorableDimension):
                     raw_value={'mean_confidence': mean_confidence},
                     metadata={'method': 'log_likelihoods', 'num_tokens': len(confidences)},
                     agg_value=1.0 - uncertainty,
+                    evidence_sources={'logprob': source(uncertainty, 'scored', len(confidences))},
                 )
             elif intrinsic_data.has_logits():
                 logits = intrinsic_data.logits
@@ -98,15 +100,18 @@ class Uncertainty(ScorableDimension):
                     raw_value={'mean_confidence': mean_confidence},
                     metadata={'method': 'logits', 'num_tokens': len(confidences)},
                     agg_value=1.0 - uncertainty,
+                    evidence_sources={'logprob': source(uncertainty, 'scored', len(confidences))},
                 )
             else:
                 # No logprob data = missing evidence, not a measured 0.5.
                 return self.create_score(
                     0.5, metadata={'reason': 'No logprob data available'},
                     agg_value=0.5, status='unknown',
+                    evidence_sources={'logprob': source(None, 'unknown', None)},
                 )
         except Exception as e:
-            return self.create_score(0.5, metadata={'error': str(e)}, agg_value=0.5, status='error')
+            return self.create_score(0.5, metadata={'error': str(e)}, agg_value=0.5, status='error',
+                                     evidence_sources={'logprob': source(None, 'error', None)})
 
 
 class Perplexity(ScorableDimension):
@@ -136,6 +141,9 @@ class Perplexity(ScorableDimension):
                     raw_value={'mean_nll': mean_nll, 'perplexity': ppl},
                     metadata={'method': 'log_likelihoods', 'num_tokens': len(log_liks)},
                     agg_value=1.0 / (1.0 + ppl),
+                    # Raw perplexity is unbounded; the logprob source's
+                    # defined [0,1] form is the agg_value transform.
+                    evidence_sources={'logprob': source(1.0 / (1.0 + ppl), 'scored', len(log_liks))},
                 )
             elif intrinsic_data.has_logits():
                 # Estimate from logits: use max logit prob
@@ -152,6 +160,7 @@ class Perplexity(ScorableDimension):
                     raw_value={'perplexity': ppl},
                     metadata={'method': 'logits', 'num_tokens': len(logits)},
                     agg_value=1.0 / (1.0 + ppl),
+                    evidence_sources={'logprob': source(1.0 / (1.0 + ppl), 'scored', len(logits))},
                 )
             else:
                 # No logits/log-likelihoods = missing evidence, not a
@@ -159,9 +168,11 @@ class Perplexity(ScorableDimension):
                 return self.create_score(
                     1.0, metadata={'reason': 'No logits or log_likelihoods'},
                     agg_value=0.5, status='unknown',
+                    evidence_sources={'logprob': source(None, 'unknown', None)},
                 )
         except Exception as e:
-            return self.create_score(1.0, metadata={'error': str(e)}, agg_value=0.5, status='error')
+            return self.create_score(1.0, metadata={'error': str(e)}, agg_value=0.5, status='error',
+                                     evidence_sources={'logprob': source(None, 'error', None)})
 
 
 class TokenEntropy(ScorableDimension):
@@ -203,6 +214,7 @@ class TokenEntropy(ScorableDimension):
                     raw_value={'mean_entropy_bits': mean_entropy, 'max_entropy_bits': max_entropy},
                     metadata={'method': 'logits', 'num_tokens': len(logits), 'vocab_size': intrinsic_data.vocab_size},
                     aggregate=False,
+                    evidence_sources={'logprob': source(normalized_entropy, 'scored', len(logits))},
                 )
 
             elif intrinsic_data.has_top_k_logprobs():
@@ -232,14 +244,17 @@ class TokenEntropy(ScorableDimension):
                         'assumption': 'A1',
                     },
                     aggregate=False,
+                    evidence_sources={'logprob': source(normalized_entropy, 'scored', len(top_k_lp))},
                 )
             else:
                 return self.create_score(
                     0.5, metadata={'reason': 'No logits or top_k_logprobs available'},
                     aggregate=False, status='unknown',
+                    evidence_sources={'logprob': source(None, 'unknown', None)},
                 )
         except Exception as e:
-            return self.create_score(0.5, metadata={'error': str(e)}, aggregate=False, status='error')
+            return self.create_score(0.5, metadata={'error': str(e)}, aggregate=False, status='error',
+                                     evidence_sources={'logprob': source(None, 'error', None)})
 
 
 class SemanticEntropy(ScorableDimension):
@@ -284,6 +299,7 @@ class SemanticEntropy(ScorableDimension):
                 return self.create_score(
                     0.5, metadata={'reason': 'No logits or top_k_logprobs available'},
                     aggregate=False, status='unknown',
+                    evidence_sources={'logprob': source(None, 'unknown', None)},
                 )
 
             # Renormalize top-k probabilities to sum to 1
@@ -313,9 +329,11 @@ class SemanticEntropy(ScorableDimension):
                 raw_value={'mean_semantic_entropy_bits': mean_semantic_entropy, 'max_entropy_bits': max_entropy},
                 metadata=metadata,
                 aggregate=False,
+                evidence_sources={'logprob': source(normalized_entropy, 'scored', len(top_k_probs))},
             )
         except Exception as e:
-            return self.create_score(0.5, metadata={'error': str(e)}, aggregate=False, status='error')
+            return self.create_score(0.5, metadata={'error': str(e)}, aggregate=False, status='error',
+                                     evidence_sources={'logprob': source(None, 'error', None)})
 
 
 class Prong4Intrinsic(Evaluator):
@@ -362,7 +380,8 @@ class Prong4Intrinsic(Evaluator):
                     name='Uncertainty',
                     value=0.5,
                     raw_value=None,
-                    metadata={'note': 'No intrinsic data available (vLLM required)'},
+                    metadata={'note': 'No intrinsic data available (vLLM required)',
+                            'evidence_sources': {'logprob': source(None, 'unknown', None)}},
                     agg_value=0.5,
                     status='unknown',
                 ),
@@ -370,7 +389,8 @@ class Prong4Intrinsic(Evaluator):
                     name='Perplexity',
                     value=1.0,
                     raw_value=None,
-                    metadata={'note': 'No intrinsic data available (vLLM required)'},
+                    metadata={'note': 'No intrinsic data available (vLLM required)',
+                            'evidence_sources': {'logprob': source(None, 'unknown', None)}},
                     agg_value=0.5,
                     status='unknown',
                 ),
@@ -378,7 +398,8 @@ class Prong4Intrinsic(Evaluator):
                     name='Token Entropy',
                     value=0.5,
                     raw_value=None,
-                    metadata={'note': 'No intrinsic data available (vLLM required)'},
+                    metadata={'note': 'No intrinsic data available (vLLM required)',
+                            'evidence_sources': {'logprob': source(None, 'unknown', None)}},
                     aggregate=False,
                     status='unknown',
                 ),
@@ -386,7 +407,8 @@ class Prong4Intrinsic(Evaluator):
                     name='Semantic Entropy',
                     value=0.5,
                     raw_value=None,
-                    metadata={'note': 'No intrinsic data available (vLLM required)'},
+                    metadata={'note': 'No intrinsic data available (vLLM required)',
+                            'evidence_sources': {'logprob': source(None, 'unknown', None)}},
                     aggregate=False,
                     status='unknown',
                 ),

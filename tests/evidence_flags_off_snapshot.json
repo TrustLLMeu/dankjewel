@@ -1,0 +1,411 @@
+{
+ "aggregated_scores": {
+  "dimension_scores": {
+   "Comparative Factuality": [
+    0.5
+   ],
+   "Emotional Intensity": [
+    0.0
+   ],
+   "Factual Accuracy": [
+    1.0
+   ],
+   "Factual Consistency": [
+    1.0
+   ],
+   "Fluency": [
+    0.80895
+   ],
+   "Formality": [
+    0.5
+   ],
+   "Hedging": [
+    0.0
+   ],
+   "Modality Awareness": [
+    0.0
+   ],
+   "Perplexity": [
+    1.0
+   ],
+   "Politeness": [
+    0.5
+   ],
+   "Relevance": [
+    0.890992
+   ],
+   "Reliability": [
+    0.948013
+   ],
+   "Semantic Coherence": [
+    0.948013
+   ],
+   "Semantic Entropy": [
+    0.5
+   ],
+   "Temporal Accuracy": [
+    0.5
+   ],
+   "Token Entropy": [
+    0.5
+   ],
+   "Toxicity": [
+    0.00082
+   ],
+   "Uncertainty": [
+    0.5
+   ]
+  },
+  "metadata": {
+   "coverage": "partial",
+   "num_prongs": 4
+  },
+  "prong_scores": {
+   "Extraction-Based (Prong 3)": 1.0,
+   "LLM-as-Judge (Prong 1)": 0.946549,
+   "Rule-Based (Prong 2)": 0.654475
+  },
+  "total_score": 0.867008
+ },
+ "metadata": {
+  "prong1_backend": "embeddings"
+ },
+ "prong_results": [
+  {
+   "dimensions": [
+    {
+     "agg_value": null,
+     "aggregate": true,
+     "metadata": {
+      "model": "sentence-transformers/all-MiniLM-L6-v2",
+      "sentences": 2
+     },
+     "name": "Relevance",
+     "raw_value": 0.781984,
+     "status": "scored",
+     "value": 0.890992
+    },
+    {
+     "agg_value": null,
+     "aggregate": true,
+     "metadata": {
+      "sentences": 2
+     },
+     "name": "Semantic Coherence",
+     "raw_value": 0.896025,
+     "status": "scored",
+     "value": 0.948013
+    },
+    {
+     "agg_value": null,
+     "aggregate": true,
+     "metadata": {},
+     "name": "Reliability",
+     "raw_value": {
+      "mean_sim": 0.896025,
+      "var_sim": 0.0
+     },
+     "status": "scored",
+     "value": 0.948013
+    },
+    {
+     "agg_value": 0.99918,
+     "aggregate": true,
+     "metadata": {
+      "model": "unitary/toxic-bert"
+     },
+     "name": "Toxicity",
+     "raw_value": {
+      "probability": 0.00082,
+      "raw_logits": [
+       -7.105415,
+       -9.0702,
+       -8.621984,
+       -9.107102,
+       -8.650008,
+       -8.755336
+      ]
+     },
+     "status": "scored",
+     "value": 0.00082
+    }
+   ],
+   "error": null,
+   "prong_name": "LLM-as-Judge (Prong 1)"
+  },
+  {
+   "dimensions": [
+    {
+     "agg_value": null,
+     "aggregate": true,
+     "metadata": {
+      "formula": "Flesch Reading Ease",
+      "lang": "en",
+      "sentences": 2,
+      "syllables": 17,
+      "words": 12
+     },
+     "name": "Fluency",
+     "raw_value": 80.895,
+     "status": "scored",
+     "value": 0.80895
+    },
+    {
+     "agg_value": null,
+     "aggregate": true,
+     "metadata": {
+      "lang": "en",
+      "politeness_cues": 0,
+      "rudeness_cues": 0
+     },
+     "name": "Politeness",
+     "raw_value": null,
+     "status": "scored",
+     "value": 0.5
+    },
+    {
+     "agg_value": null,
+     "aggregate": false,
+     "metadata": {
+      "exclamations": 0,
+      "questions": 0
+     },
+     "name": "Emotional Intensity",
+     "raw_value": {
+      "compound": 0.0,
+      "neg": 0.0,
+      "neu": 1.0,
+      "pos": 0.0
+     },
+     "status": "scored",
+     "value": 0.0
+    },
+    {
+     "agg_value": null,
+     "aggregate": false,
+     "metadata": {
+      "formal_markers": 0,
+      "informal_markers": 0,
+      "lang": "en"
+     },
+     "name": "Formality",
+     "raw_value": null,
+     "status": "scored",
+     "value": 0.5
+    },
+    {
+     "agg_value": null,
+     "aggregate": false,
+     "metadata": {
+      "lang": "en",
+      "modal_verbs": 0,
+      "uncertainty_cues": 0
+     },
+     "name": "Hedging",
+     "raw_value": null,
+     "status": "scored",
+     "value": 0.0
+    }
+   ],
+   "error": null,
+   "prong_name": "Rule-Based (Prong 2)"
+  },
+  {
+   "dimensions": [
+    {
+     "agg_value": null,
+     "aggregate": true,
+     "metadata": {
+      "claim_details": [
+       {
+        "claim": {
+         "atomic_text": null,
+         "comparative_tag": null,
+         "modifiers": [],
+         "negated": false,
+         "object": "the capital of France",
+         "predicate": "be",
+         "source": "spacy",
+         "source_sentence": "Paris is the capital of France.",
+         "subject": "Paris",
+         "temporal_anchor": null
+        },
+        "effective_result": "confirmed",
+        "negated": false,
+        "relation": "confirmed",
+        "verification": {
+         "expected_value": "the capital of France",
+         "method": "wikidata",
+         "property_id": "P1376",
+         "result": "confirmed",
+         "subject_qid": "Q90",
+         "wikidata_value": "France"
+        }
+       },
+       {
+        "claim": {
+         "atomic_text": null,
+         "comparative_tag": null,
+         "modifiers": [],
+         "negated": false,
+         "object": "a city in France",
+         "predicate": "be",
+         "source": "spacy",
+         "source_sentence": "Paris is a city in France.",
+         "subject": "Paris",
+         "temporal_anchor": null
+        },
+        "effective_result": "confirmed",
+        "negated": false,
+        "relation": "confirmed",
+        "verification": {
+         "expected_value": "a city in France",
+         "method": "wikidata",
+         "property_id": "P17",
+         "result": "confirmed",
+         "subject_qid": "Q90",
+         "wikidata_value": "France"
+        }
+       }
+      ],
+      "num_claims": 2,
+      "relation_counts": {
+       "confirmed": 2,
+       "conflated": 0,
+       "denied": 0,
+       "partially_supported": 0,
+       "unknown": 0
+      },
+      "verifiable": 2
+     },
+     "name": "Factual Accuracy",
+     "raw_value": {
+      "confirmed": 2,
+      "denied": 0,
+      "unknown": 0
+     },
+     "status": "scored",
+     "value": 1.0
+    },
+    {
+     "agg_value": null,
+     "aggregate": true,
+     "metadata": {
+      "contradiction_details": [],
+      "num_claims": 2
+     },
+     "name": "Factual Consistency",
+     "raw_value": {
+      "contradictions": 0,
+      "total_pairs": 1
+     },
+     "status": "scored",
+     "value": 1.0
+    },
+    {
+     "agg_value": null,
+     "aggregate": true,
+     "metadata": {
+      "num_claims": 2,
+      "status": "no_temporal_claims"
+     },
+     "name": "Temporal Accuracy",
+     "raw_value": null,
+     "status": "unknown",
+     "value": 0.5
+    },
+    {
+     "agg_value": null,
+     "aggregate": true,
+     "metadata": {
+      "num_claims": 2,
+      "status": "no_comparative_claims"
+     },
+     "name": "Comparative Factuality",
+     "raw_value": null,
+     "status": "unknown",
+     "value": 0.5
+    },
+    {
+     "agg_value": null,
+     "aggregate": false,
+     "metadata": {
+      "details": [
+       {
+        "hedged": false,
+        "modifiers": [],
+        "sentence": "Paris is the capital of France."
+       },
+       {
+        "hedged": false,
+        "modifiers": [],
+        "sentence": "Paris is a city in France."
+       }
+      ],
+      "num_claims": 2
+     },
+     "name": "Modality Awareness",
+     "raw_value": {
+      "asserted": 2,
+      "hedged": 0
+     },
+     "status": "scored",
+     "value": 0.0
+    }
+   ],
+   "error": null,
+   "prong_name": "Extraction-Based (Prong 3)"
+  },
+  {
+   "dimensions": [
+    {
+     "agg_value": 0.5,
+     "aggregate": true,
+     "metadata": {
+      "note": "No intrinsic data available (vLLM required)"
+     },
+     "name": "Uncertainty",
+     "raw_value": null,
+     "status": "unknown",
+     "value": 0.5
+    },
+    {
+     "agg_value": 0.5,
+     "aggregate": true,
+     "metadata": {
+      "note": "No intrinsic data available (vLLM required)"
+     },
+     "name": "Perplexity",
+     "raw_value": null,
+     "status": "unknown",
+     "value": 1.0
+    },
+    {
+     "agg_value": null,
+     "aggregate": false,
+     "metadata": {
+      "note": "No intrinsic data available (vLLM required)"
+     },
+     "name": "Token Entropy",
+     "raw_value": null,
+     "status": "unknown",
+     "value": 0.5
+    },
+    {
+     "agg_value": null,
+     "aggregate": false,
+     "metadata": {
+      "note": "No intrinsic data available (vLLM required)"
+     },
+     "name": "Semantic Entropy",
+     "raw_value": null,
+     "status": "unknown",
+     "value": 0.5
+    }
+   ],
+   "error": null,
+   "prong_name": "Intrinsic (Prong 4)"
+  }
+ ],
+ "text_length": 58
+}

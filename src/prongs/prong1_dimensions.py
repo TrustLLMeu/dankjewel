@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 from src.dimensions.base_dimension import ScorableDimension
 from src.base import DimensionScore
+from src.evidence import source
 from src.llm_judge_client import LLMJudgeClient, JudgeUnavailableError
 from src.models.embeddings import Embeddings
 from src.models.toxicity_model import ToxicityModel
@@ -43,11 +44,15 @@ class Relevance(ScorableDimension):
             # (The old fallback scored the response against a fake
             # first-sentence pseudo-prompt, which measures cohesion,
             # not relevance.) Report unknown; the placeholder value is
-            # display-only and never aggregated.
+            # display-only and never aggregated. The embedding source
+            # is never invoked; a judge, if requested, has nothing to
+            # rate relevance against (its track runs and abstains).
             score = self.create_score(
                 value=0.5,
                 metadata={'reason': 'no prompt provided'},
                 status='unknown',
+                evidence_sources={} if judge is None else
+                {'llm_judge': source(None, 'unknown', None)},
             )
             if judge is not None:
                 score.metadata.update(self._judge_track(judge, None, response,
@@ -70,17 +75,31 @@ class Relevance(ScorableDimension):
             score = cos_to_01(raw)
             metadata = {'model': self.emb.model_name, 'sentences': len(sents)}
         except Exception as e:
-            err = self.create_score(value=0.5, metadata={'error': str(e)}, status='error')
+            err = self.create_score(value=0.5, metadata={'error': str(e)}, status='error',
+                                    evidence_sources={'embedding': source(None, 'error', None)})
             if judge is not None:
-                err.metadata.update(self._judge_track(judge, prompt, response,
-                                                      err.value, time.time() - start))
+                track = self._judge_track(judge, prompt, response,
+                                          err.value, time.time() - start)
+                err.metadata.update(track)
+                err.metadata['evidence_sources'].update(self._judge_evidence(track))
             return err
         result = self.create_score(value=score, raw_value=raw,
-                                   metadata={**metadata, 'time': time.time()-start})
+                                   metadata={**metadata, 'time': time.time()-start},
+                                   evidence_sources={'embedding': source(score, 'scored', len(sents))})
         if judge is not None:
-            result.metadata.update(self._judge_track(judge, prompt, response,
-                                                     result.value, time.time() - start))
+            track = self._judge_track(judge, prompt, response,
+                                      result.value, time.time() - start)
+            result.metadata.update(track)
+            result.metadata['evidence_sources'].update(self._judge_evidence(track))
         return result
+
+    @staticmethod
+    def _judge_evidence(track: Dict[str, Any]) -> Dict[str, Any]:
+        """Evidence-contract entry for the judge track half of the dual output."""
+        scored = track.get('judge_status') == 'scored'
+        return {'llm_judge': source(track.get('llm_value'),
+                                    track.get('judge_status', 'unknown'),
+                                    1 if scored else None)}
 
     def _judge_track(self, judge: LLMJudgeClient, prompt: Optional[str], response: str,
                      baseline_value: float, baseline_elapsed_s: float) -> Dict[str, Any]:
@@ -139,7 +158,9 @@ class SemanticCoherence(ScorableDimension):
             doc = nlp(response)
             sents = [s.text.strip() for s in doc.sents if s.text.strip()]
             if len(sents) <= 1:
-                # short texts are considered coherent by default
+                # short texts are considered coherent by default — a
+                # documented assumption, not an embedding measurement,
+                # so the evidence contract lists no source here.
                 return self.create_score(value=1.0, raw_value=1.0, metadata={'time': time.time()-start})
             sent_embs = self.emb.embed_texts(sents)
             sims = []
@@ -147,9 +168,11 @@ class SemanticCoherence(ScorableDimension):
                 sims.append(self.emb.cosine_sim(sent_embs[i], sent_embs[i+1]))
             raw = float(np.mean(sims))
             score = cos_to_01(raw)
-            return self.create_score(value=score, raw_value=raw, metadata={'sentences': len(sents), 'time': time.time()-start})
+            return self.create_score(value=score, raw_value=raw, metadata={'sentences': len(sents), 'time': time.time()-start},
+                                     evidence_sources={'embedding': source(score, 'scored', len(sents))})
         except Exception as e:
-            return self.create_score(value=0.5, metadata={'error': str(e)}, status='error')
+            return self.create_score(value=0.5, metadata={'error': str(e)}, status='error',
+                                     evidence_sources={'embedding': source(None, 'error', None)})
 
 
 class Reliability(ScorableDimension):
@@ -171,6 +194,8 @@ class Reliability(ScorableDimension):
                 doc = nlp(resp)
                 sents = [s.text.strip() for s in doc.sents if s.text.strip()]
                 if len(sents) <= 1:
+                    # short-text default (0.8) — an assumption, not an
+                    # embedding measurement; no evidence source listed.
                     return self.create_score(value=0.8, metadata={'note': 'short text'})
                 sent_embs = self.emb.embed_texts(sents)
                 sims = []
@@ -180,7 +205,8 @@ class Reliability(ScorableDimension):
                 var_sim = float(np.var(sims))
                 # combine mean and variance into score
                 score = cos_to_01(mean_sim) * (1.0 - min(1.0, var_sim*2.0))
-                return self.create_score(value=score, raw_value={'mean_sim': mean_sim, 'var_sim': var_sim, 'time': time.time()-start})
+                return self.create_score(value=score, raw_value={'mean_sim': mean_sim, 'var_sim': var_sim, 'time': time.time()-start},
+                                         evidence_sources={'embedding': source(score, 'scored', len(sents))})
             else:
                 # multiple responses: compare full-response embeddings
                 emb = self.emb.embed_texts(responses)
@@ -189,13 +215,16 @@ class Reliability(ScorableDimension):
                     for j in range(i+1, len(emb)):
                         sims.append(self.emb.cosine_sim(emb[i], emb[j]))
                 if not sims:
-                    return self.create_score(value=0.5, metadata={'reason': 'no pairwise similarities computable'}, status='unknown')
+                    return self.create_score(value=0.5, metadata={'reason': 'no pairwise similarities computable'}, status='unknown',
+                                             evidence_sources={'embedding': source(None, 'unknown', None)})
                 mean_sim = float(np.mean(sims))
                 var_sim = float(np.var(sims))
                 score = cos_to_01(mean_sim) * (1.0 - min(1.0, var_sim*2.0))
-                return self.create_score(value=score, raw_value={'mean_sim': mean_sim, 'var_sim': var_sim, 'time': time.time()-start})
+                return self.create_score(value=score, raw_value={'mean_sim': mean_sim, 'var_sim': var_sim, 'time': time.time()-start},
+                                         evidence_sources={'embedding': source(score, 'scored', len(responses))})
         except Exception as e:
-            return self.create_score(value=0.5, metadata={'error': str(e)}, status='error')
+            return self.create_score(value=0.5, metadata={'error': str(e)}, status='error',
+                                     evidence_sources={'embedding': source(None, 'error', None)})
 
 
 class Toxicity(ScorableDimension):
@@ -218,9 +247,11 @@ class Toxicity(ScorableDimension):
                 value=prob, raw_value=res,
                 metadata={'model': self.model.model_name, 'time': time.time()-start},
                 agg_value=1.0 - prob,
+                evidence_sources={'classifier': source(prob, 'scored', None)},
             )
         except Exception as e:
             # A failed toxicity check must not contribute a perfect
             # agg_value=1.0 to the average — status="error" excludes it.
-            return self.create_score(value=0.0, metadata={'error': str(e)}, agg_value=1.0, status='error')
+            return self.create_score(value=0.0, metadata={'error': str(e)}, agg_value=1.0, status='error',
+                                     evidence_sources={'classifier': source(None, 'error', None)})
 
