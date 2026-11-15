@@ -1,0 +1,28 @@
+{
+  "provenance": {
+    "source": "https://scifact.s3-us-west-2.amazonaws.com/release/latest/data.tar.gz",
+    "downloaded": "2026-11-14",
+    "sha256": {
+      "corpus.jsonl": "b8d6c89624cb2ed74dee8938effc4f5d8bd2086887880af8110d64be4ceade62",
+      "claims_dev.jsonl": "86f0435d08fdb65d1aa41d1472684f57e6e71930626497bdf4d7a9ec1a632217",
+      "claims_train.jsonl": "f4c8fa82d8bd0653a9cc8d61a6ea48c25eacea64e90af5dbf390ebb1b74372f0"
+    },
+    "model": "lytang/MiniCheck-Flan-T5-Large"
+  },
+  "splits": {
+    "dev": {
+      "n": 338,
+      "accuracy": 0.6006,
+      "auc": 0.835,
+      "mean_latency_ms": 257.5,
+      "p95_latency_ms": 367.3
+    },
+    "train": {
+      "n": 957,
+      "accuracy": 0.5549,
+      "auc": 0.7897,
+      "mean_latency_ms": 231.7,
+      "p95_latency_ms": 339.5
+    }
+  }
+}

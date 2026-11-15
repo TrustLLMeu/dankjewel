@@ -40,8 +40,9 @@ evaluation_results/fever2_*.md
 evaluation_results/verifier_eval.json
 evaluation_results/verifier_eval.md
 
-# Vendored upstream FEVER checkout; obtain separately when needed
+# Vendored upstream checkouts and benchmark extracts; obtain separately when needed
 fever/
+data/scifact_raw/
 
 # Local configuration and credentials
 .env
