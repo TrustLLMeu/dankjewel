@@ -1,0 +1,41 @@
+{
+  "fixture": "tests/fixtures/teacher_false_claims.json",
+  "stages": [
+    {
+      "stage": "A raw",
+      "claims": 76,
+      "expected_of_5": 5,
+      "known_nonclaims": 46
+    },
+    {
+      "stage": "B +markdown",
+      "claims": 28,
+      "expected_of_5": 5,
+      "known_nonclaims": 15
+    },
+    {
+      "stage": "C +sentence",
+      "claims": 17,
+      "expected_of_5": 5,
+      "known_nonclaims": 8
+    },
+    {
+      "stage": "D +triple",
+      "claims": 8,
+      "expected_of_5": 5,
+      "known_nonclaims": 2
+    },
+    {
+      "stage": "E +dedupe",
+      "claims": 8,
+      "expected_of_5": 5,
+      "known_nonclaims": 2
+    },
+    {
+      "stage": "F +use-mention",
+      "claims": 9,
+      "expected_of_5": 5,
+      "known_nonclaims": 2
+    }
+  ]
+}

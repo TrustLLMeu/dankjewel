@@ -73,3 +73,24 @@ admitting the advice, so it trades recall for precision. The deterministic gates
 remain the default; the classifier stays available for experiments, records
 `llm_admit_dropped`/`llm_admit_unknown` in `metadata.claim_admission`, and keeps
 claims when the model is unavailable.
+
+## Ablation (teacher-prose fixture)
+
+`scripts/eval_admission_ablation.py` adds one layer at a time and regenerates
+`evaluation_results/admission_ablation.{json,md}`:
+
+| Stage | Claims | Expected of 5 | Known non-claims |
+|---|---|---|---|
+| A raw | 76 | 5 | 46 |
+| B +markdown | 28 | 5 | 15 |
+| C +sentence | 17 | 5 | 8 |
+| D +triple | 8 | 5 | 2 |
+| E +dedupe | 8 | 5 | 2 |
+| F +use-mention | 9 | 5 | 2 |
+
+Reading: markdown cleaning removes most formatting fragments (76→28, junk 46→15);
+the sentence gates remove headings, questions and meta-discourse (28→17, junk
+15→8); the triple gates are the largest precision win (17→8, junk 8→2); the
+use-mention pass adds the quoted claim with its provenance while keeping all five
+intended lies. The two remaining non-claims are the documented leaks (the
+"smoking is that bad" fragment and the advice sentence).
