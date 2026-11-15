@@ -6,15 +6,18 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `8adab97` — Wrap the header on narrow viewports (fix 390px overflow)
+- **Latest commit:** `8ad0da9` — Benchmark the MiniCheck verifier on SciFact (second public benchmark)
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** judge/verifier latency rows for the Phase-4 table; seed coverage still 0.3% on FEVER; slice 6b follow-ups (AVeriTeC/LLM-AggreFact second benchmark, Nordic seed, partially_supported reachable mainly via the authored eval)
+- **Open slices:** /generate-and-evaluate latency unmeasured (no generator with logprobs on this host); seed coverage still 0.3% on FEVER; AVeriTeC/LLM-AggreFact second benchmark gated on HF; Nordic seed expansion; CONTRIBUTING.md stale (project name, vLLM note)
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-14 | `PENDING` | chore / index | Record 390px header fix in commit index | chore |
+| 2026-11-15 | `PENDING` | chore / index | Record Phase-4 latency and SciFact benchmark in commit index | chore |
+| 2026-11-15 | `8ad0da9` | eval / verifier benchmark | Benchmark the MiniCheck verifier on SciFact (second public benchmark) | wXze single-benchmark content / V55p discriminative signal (component) |
+| 2026-11-15 | `11fdf3e` | eval / latency | Measure per-track /evaluate latency and document hardware (Phase 4) | wXze latency/hardware unmeasured |
+| 2026-11-14 | `4bd4637` | chore / index | Record 390px header fix in commit index | chore |
 | 2026-11-14 | `8adab97` | dashboard / responsive | Wrap the header on narrow viewports (fix 390px overflow) | chore / honesty (measured claims) |
 | 2026-11-14 | `906c099` | chore / index | Record slice 6c qualifier gates in commit index | chore |
 | 2026-11-14 | `7fd15b9` | prong 3 / tests+docs | Pin qualifier-gate abstentions and document seed pruning | wXze coverage robustness (qualifier gates) |
@@ -45,10 +48,34 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record 390px header fix in commit index (2026-11-14)
+### `PENDING` — Record Phase-4 latency and SciFact benchmark in commit index (2026-11-15)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
-- **Why:** Record the 390px header fix land.
+- **Why:** Record the two Phase-4/benchmark lands below and backfill the previous index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `8ad0da9` — Benchmark the MiniCheck verifier on SciFact (second public benchmark) (2026-11-15)
+
+- **Hash:** `8ad0da9deb5012a7c9e7505b330b8c5630a43d59`
+- **Why:** The 6b reviewer required a second, independent benchmark before further verifier work. LLM-AggreFact is gated on HuggingFace (403, no mirror), so SciFact (Wadden et al., EMNLP 2020) was used: public, ungated, human-labelled evidence pairs. `scripts/eval_scifact.py` scores the SAME shipped `NliVerifier` on SUPPORT/CONTRADICT (older releases: REFUTE) claim-sentence pairs; NOT_ENOUGH_INFO claims excluded. README gains the verifier table and the calibration reading; `.gitignore` excludes the raw data tree (source URL and sha256 recorded in the report). This validates the verifier component, not the seed-KB path.
+- **Files:** `scripts/eval_scifact.py`, `evaluation_results/scifact.json`, `evaluation_results/scifact.md`, `README.md`, `.gitignore`
+- **Closes:** the reviewer's second-benchmark gate for the verifier component; the KB-path coverage item (0.3% FEVER) stays open
+- **Verify:** dev n=338, accuracy@0.5 0.601, AUC 0.835, mean 258 ms, p95 367 ms; train n=957, accuracy 0.555, AUC 0.790, mean 232 ms, p95 340 ms; provenance in `evaluation_results/scifact.json`. Honest caveat recorded: MiniCheck is conservative on scientific text; the 0.8/0.2 bands are calibration-sensitive.
+
+### `11fdf3e` — Measure per-track /evaluate latency and document hardware (Phase 4) (2026-11-15)
+
+- **Hash:** `11fdf3e44875b3fe80ddf9ea4bba3fa108dbba38`
+- **Why:** The slice-1 baseline predated the judge, claims and verifier tracks. The harness now measures five track combinations (all flags off, each flag alone, all three, plus a verifier-engaged row on KB-unknown claims) with 1 cold + 5 warm calls per track, each track in a fresh subprocess so cold loads are real, and 1 cold + 20 warm direct calls of the three models, with a hardware fingerprint. README gains a Latency and hardware section with the measured tables. Measured on malvik (Xeon Gold 6132, 56 CPUs, 755 GB, CPU-only).
+- **Files:** `scripts/measure_latency.py`, `evaluation_results/latency_baseline.json`, `evaluation_results/latency_baseline.md`, `README.md`
+- **Closes:** wXze "no latency/hardware figures" for `/evaluate`; `/generate-and-evaluate` stays open (no generator with logprobs on this host)
+- **Verify:** warm `/evaluate` medians: baseline 672 ms, +0.5B judge 770 ms, +1.5B claims 908 ms, +MiniCheck (not engaged) 654 ms, all three 1,008 ms, verifier engaged 827 ms; cold 9.2-11.1 s (embedding/toxicity/spaCy loads dominate). Direct warm medians: judge 76 ms, claims 211 ms, verifier 196 ms (verifier cold load 6.4 s). pytest 320 passed + 2 skipped (no backend change).
+
+### `4bd4637` — Record 390px header fix in commit index (2026-11-14)
+
+- **Hash:** `4bd46370d56ca97a4ff0546f81abc67924d2d073`
+- **Why:** Record the 390px header fix land and backfill the previous index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
 - **Verify:** untested (docs only)
