@@ -443,3 +443,49 @@ def test_demonstrative_gate_keeps_world_reference():
     admitted, reason = admit_triple(claim)
     assert admitted
     assert reason == 'admitted'
+
+
+# ── Use-mention pass: quoted / reported claims ──────────────────────────────
+
+def test_quoted_claim_from_reporting_sentence():
+    """A proposition in quotes is admitted as a claim the text mentions."""
+    from src.extraction.claim_extractor import ClaimExtractor
+
+    claims = ClaimExtractor().extract('The teacher said "The Earth is flat."').claims
+    quotes = [c for c in claims if c.source == 'quote']
+    assert len(quotes) == 1
+    assert quotes[0].subject == 'The Earth'
+    assert quotes[0].atomic_text == 'The Earth is flat.'
+
+
+def test_claim_label_line_is_extracted_as_quote():
+    """A 'Claim: \"...\"' label yields the quoted sentence as the claim."""
+    from src.extraction.claim_extractor import ClaimExtractor
+
+    claims = ClaimExtractor().extract('Claim: "Water boils at 200 °C."').claims
+    assert len(claims) == 1
+    assert claims[0].source == 'quote'
+    assert claims[0].subject == 'Water'
+
+
+def test_quote_provenance_wins_duplicate():
+    """When the reporting line also yields the triple, quote provenance wins."""
+    from src.extraction.claim_extractor import ClaimExtractor
+
+    claims = ClaimExtractor().extract('Claim: "Water boils at 200 °C."').claims
+    assert claims[0].source == 'quote'
+
+
+def test_fixture_reported_claims_keep_quote_provenance():
+    """The teacher fixture's quoted lies are admitted as mentioned claims."""
+    import json
+    from pathlib import Path
+    from src.extraction.claim_extractor import ClaimExtractor
+
+    fixture = json.loads(Path('tests/fixtures/teacher_false_claims.json').read_text())
+    claims = ClaimExtractor().extract(fixture['text']).claims
+    quotes = [c for c in claims if c.source == 'quote']
+    assert len(quotes) >= 5
+    joined = ' '.join(f"{c.subject} {c.predicate} {c.object}" for c in quotes).lower()
+    for expected in ('earth', 'five eyes', 'dentists', 'crime', 'boil'):
+        assert expected in joined

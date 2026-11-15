@@ -104,15 +104,15 @@ near-duplicates. The gates and their discard reasons are documented in
 `src/extraction/claim_admission.py`; the fixture from an exported
 teaching-prose run is `tests/fixtures/teacher_false_claims.json`.
 
-**Quoted/reported claims:** the spaCy track drops propositions embedded in
-reporting clauses ("The teacher said the Earth is flat" yields no triple for
-"The Earth is flat"), because the reporting verb confuses the dependency
-parse. The optional LLM extraction track handles some of these; treat quoted
-claims as supported only when that track is on.
+**Quoted/reported claims:** a deterministic use-mention pass extracts quoted
+propositions and `Claim:`-labelled sentences, marks them `source="quote"`, and
+gates the quoted sentence itself while treating the reporting line as
+commentary. This covers the common `Claim: "..."` teaching format. Propositions
+embedded mid-sentence in reported speech without quotes ("the teacher said that
+the Earth is flat") still depend on the optional LLM extraction track.
 
-**To revisit when:** Integrating the LLM claim-extraction track for all prose
-(it exists as an opt-in) and adding a dedicated reported-claim pass for
-quote patterns.
+**To revisit when:** adding a reported-speech parser for unquoted embedded
+propositions, and a dedicated pass for quote patterns in other languages.
 
 ### A6. Inverted Copula Heuristic
 

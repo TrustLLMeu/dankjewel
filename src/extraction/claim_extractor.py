@@ -14,7 +14,8 @@ from typing import List, Optional
 import spacy
 
 from src.extraction.claim_admission import (
-    clean_markdown, filter_claims, is_commentary_label, split_label,
+    clean_markdown, extract_reported_claims, filter_claims,
+    is_commentary_label, split_label,
 )
 
 
@@ -148,6 +149,17 @@ class ClaimExtractor:
             num_sentences += len(sents)
             for sent in sents:
                 candidates.extend(self._extract_from_sentence(sent))
+
+        # ── Reported/mentioned claims (use-mention pass) ──────────────
+        # Quoted propositions and "Claim: ..." lines are claims the text
+        # mentions without asserting; extract them from the quoted span
+        # and mark the track, so admission gates the quote itself.
+        for quoted, outer in extract_reported_claims(cleaned):
+            for claim in self.extract_from_sentence_text(quoted):
+                claim.source = 'quote'
+                claim.source_sentence = outer
+                claim.atomic_text = quoted
+                candidates.append(claim)
 
         claims, gate_discarded = filter_claims(candidates)
         for reason, count in gate_discarded.items():

@@ -202,6 +202,52 @@ def _is_heading_or_label(sent: str) -> bool:
     return len(capitalized) >= max(2, (len(words) + 1) // 2)
 
 
+_QUOTE_SPAN_RE = re.compile(r'["“”]([^"“”]{10,300}?)["“”]')
+_REPORTED_LABEL_RE = re.compile(
+    r'^(?:claim|statement|example|false claim)\s*:\s*(.+)$', re.I)
+
+
+def extract_reported_claims(text: str) -> List[Tuple[str, str]]:
+    """Find quoted or labelled propositions that the text *mentions*.
+
+    The spaCy track treats every sentence as the speaker's assertion, but
+    teaching and reporting prose embeds claims in quotes or after a
+    ``Claim:`` label (the use-mention distinction). This pass returns
+    ``(quoted_sentence, outer_line)`` pairs for those embedded
+    propositions; the extractor runs its triple logic on the quoted
+    sentence and marks the claim ``source="quote"``. Admission then
+    applies the sentence gates to the quoted sentence (via
+    ``atomic_text``) rather than to the commentary line.
+
+    Deduplicated, order-preserving. Quoted spans shorter than three words
+    or without terminal punctuation are ignored.
+    """
+    found: List[Tuple[str, str]] = []
+    seen = set()
+
+    def add(quoted: str, outer: str) -> None:
+        quoted = quoted.strip().strip('"“”\'')
+        if not quoted or len(quoted.split()) < 3:
+            return
+        if not quoted.rstrip().endswith(('.', '!', '?')):
+            return
+        if quoted in seen:
+            return
+        seen.add(quoted)
+        found.append((quoted, outer))
+
+    for raw_line in text.split('\n'):
+        line = raw_line.strip()
+        if not line:
+            continue
+        for match in _QUOTE_SPAN_RE.finditer(line):
+            add(match.group(1), line)
+        label_match = _REPORTED_LABEL_RE.match(line)
+        if label_match:
+            add(label_match.group(1), line)
+    return found
+
+
 def sentence_reject_reason(sent: str) -> Optional[str]:
     """Why a sentence is not admissible, or None if it is.
 
@@ -312,7 +358,14 @@ def admit_triple(claim) -> Tuple[bool, str]:
     still junk.
     """
     # ── Sentence-level reasons (from the source sentence) ─────────────
-    reason = sentence_reject_reason(claim.source_sentence or '')
+    # Quoted/reported claims are gated on the quoted sentence itself;
+    # the outer line ("Claim: ...", "The teacher said ...") is
+    # commentary by construction.
+    if getattr(claim, 'source', '') == 'quote' and claim.atomic_text:
+        sentence_text = claim.atomic_text
+    else:
+        sentence_text = claim.source_sentence or ''
+    reason = sentence_reject_reason(sentence_text)
     if reason:
         return False, reason
 
@@ -383,6 +436,14 @@ def filter_claims(claims: List) -> Tuple[List, Dict[str, int]]:
         key = _dedup_key(claim)
         if key in seen:
             discard_counts['duplicate'] = discard_counts.get('duplicate', 0) + 1
+            # Prefer the quoted provenance when the same triple also came
+            # from the reporting line: the use-mention pass is the better
+            # description of where this claim came from.
+            if getattr(claim, 'source', '') == 'quote':
+                for index, kept in enumerate(admitted):
+                    if _dedup_key(kept) == key:
+                        admitted[index] = claim
+                        break
             continue
         seen.add(key)
         admitted.append(claim)
