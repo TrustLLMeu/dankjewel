@@ -15,6 +15,7 @@ from typing import Optional
 from src.base import Evaluator, ProngResult
 from src.extraction.claim_extractor import ClaimExtractor
 from src.extraction.llm_claim_extractor import LLMClaimExtractor
+from src.llm_judge_client import get_shared_judge_client
 from src.resources.nli_verifier import NliVerifier
 from src.resources.wikidata_offline import OfflineWikidata
 from src.dimensions.prong3_dimensions import (
@@ -70,7 +71,8 @@ class Prong3Extraction(Evaluator):
         self.register_dimension(ModalityAwareness())
 
     def evaluate(self, text: str, llm_extract: bool = False,
-                 llm_verify: bool = False) -> ProngResult:
+                 llm_verify: bool = False,
+                 llm_admit: bool = False) -> ProngResult:
         """
         Evaluate text using extraction-based approaches.
 
@@ -92,6 +94,13 @@ class Prong3Extraction(Evaluator):
                 subject's formatted KB facts (confirmed / denied /
                 partially_supported). Default False: rule-based five-way
                 labels only, no model load, binary math unchanged.
+            llm_admit: opt in to the 1.5B admission classifier: each
+                admitted claim's sentence is classified as a checkable
+                claim or not ([ADMIT] task) and non-claims are dropped.
+                The classifier never invents claims; when it is
+                unreachable the rule-filtered claims are kept and the
+                metadata records how many verdicts were unknown. Default
+                False: deterministic gates only.
 
         Evaluates:
         - Factual Accuracy (claim extraction + Wikidata verification)
@@ -116,6 +125,25 @@ class Prong3Extraction(Evaluator):
                 'admitted_claims': extraction_result.metadata.get('admitted_claims', len(claims)),
                 'discarded_candidates': extraction_result.metadata.get('discarded_candidates', {}),
             }
+
+            # Optional LLM admission: drop candidates the 1.5B classifies
+            # as non-claims; keep them when the model is unavailable.
+            if llm_admit and claims:
+                kept = []
+                dropped = 0
+                unknown = 0
+                for claim in claims:
+                    sentence = claim.atomic_text or claim.source_sentence or ''
+                    verdict = get_shared_judge_client().admit(sentence)
+                    if verdict is None:
+                        unknown += 1
+                    elif not verdict:
+                        dropped += 1
+                        continue
+                    kept.append(claim)
+                claims = kept
+                admission['llm_admit_dropped'] = dropped
+                admission['llm_admit_unknown'] = unknown
 
             # Evaluate each dimension with pre-extracted claims
             verification_start = time.perf_counter()

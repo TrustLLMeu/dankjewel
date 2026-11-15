@@ -39,7 +39,7 @@ class EvaluationPipeline:
 
     def evaluate(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en",
                  tiny_judge: bool = False, llm_extract: bool = False,
-                 llm_verify: bool = False) -> dict:
+                 llm_verify: bool = False, llm_admit: bool = False) -> dict:
         """
         Evaluate text across all enabled prongs.
 
@@ -84,7 +84,8 @@ class EvaluationPipeline:
                     result = prong.evaluate(text, lang=lang)
                 elif prong_name == 'Prong 3':
                     result = prong.evaluate(text, llm_extract=llm_extract,
-                                            llm_verify=llm_verify)
+                                            llm_verify=llm_verify,
+                                            llm_admit=llm_admit)
                 else:
                     result = prong.evaluate(text)
                 results.append(result)
@@ -113,7 +114,7 @@ class EvaluationPipeline:
 
     def evaluate_to_json(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en",
                          tiny_judge: bool = False, llm_extract: bool = False,
-                         llm_verify: bool = False) -> str:
+                         llm_verify: bool = False, llm_admit: bool = False) -> str:
         """
         Evaluate text and return results as JSON string.
 
@@ -134,6 +135,6 @@ class EvaluationPipeline:
         """
         results = self.evaluate(text, prompt=prompt, intrinsic_data=intrinsic_data, lang=lang,
                                 tiny_judge=tiny_judge, llm_extract=llm_extract,
-                                llm_verify=llm_verify)
+                                llm_verify=llm_verify, llm_admit=llm_admit)
         return json.dumps(results, indent=2)
 

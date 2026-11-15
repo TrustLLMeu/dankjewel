@@ -99,6 +99,17 @@ _CLAIMS_SYSTEM_PROMPT = (
     'in the 2018 World Cup final."] Text with no verifiable facts -> []'
 )
 
+_ADMIT_SYSTEM_PROMPT = (
+    "[ADMIT] Decide whether the sentence is a checkable factual claim about a "
+    "named entity: it must assert something that could be verified against a "
+    "knowledge base. Commentary, advice, definitions, opinions, questions and "
+    "instructions are not claims. Reply with ONLY the word yes or no. "
+    "Examples: 'Oslo is the capital of Norway.' -> yes. "
+    "'A false claim is a statement.' -> no. "
+    "'Critical thinking is your best defense.' -> no. "
+    "'The Earth is flat.' -> yes."
+)
+
 
 class JudgeError(Exception):
     """Base class for tiny-judge failures."""
@@ -165,6 +176,20 @@ def _outermost_array_span(text: str) -> Optional[str]:
     if start != -1 and end > start:
         return text[start:end + 1]
     return None
+
+
+def _parse_yes_no(content: str) -> Optional[bool]:
+    """Parse a yes/no admission reply; None when the reply is unclear.
+
+    The prompt asks for a single word, but the 1.5B occasionally prefixes
+    it ("Yes." / "It is a claim: yes"). Look for the first standalone
+    yes/no token; anything else is treated as unknown.
+    """
+    text = _strip_code_fence((content or "").strip()).lower()
+    match = re.search(r'\b(yes|no)\b', text)
+    if not match:
+        return None
+    return match.group(1) == 'yes'
 
 
 def _parse_claims(content: str) -> List[str]:
@@ -377,6 +402,44 @@ class LLMJudgeClient:
         """Close the underlying HTTP client (idempotent)."""
         if self._http is not None and not self._http.is_closed:
             self._http.close()
+
+    def admit(self, sentence: str) -> Optional[bool]:
+        """Ask the [ADMIT] model whether a sentence is a checkable claim.
+
+        Used by the optional LLM admission filter in Prong 3. Returns True
+        or False, and None when the model is unreachable or the reply
+        cannot be parsed — the caller then keeps the claim (the
+        deterministic gates already ran).
+
+        Args:
+            sentence: the claim's atomic_text or source sentence.
+
+        Returns:
+            True (claim), False (not a claim), or None (unknown).
+        """
+        headers = {"Content-Type": "application/json"}
+        if self.claims_api_key:
+            headers["Authorization"] = f"Bearer {self.claims_api_key}"
+        payload = {
+            "model": self.claims_model_name,
+            "messages": [
+                {"role": "system", "content": _ADMIT_SYSTEM_PROMPT},
+                {"role": "user", "content": f"Sentence: {sentence}"},
+            ],
+            "temperature": 0.0,
+            "max_tokens": 4,
+        }
+        try:
+            http = self._get_http()
+            resp = http.post(f"{self.claims_base_url}/chat/completions",
+                             json=payload, headers=headers,
+                             timeout=self.claims_timeout)
+            resp.raise_for_status()
+            content = resp.json()["choices"][0]["message"]["content"]
+        except (httpx.HTTPError, KeyError, IndexError, TypeError,
+                json.JSONDecodeError):
+            return None
+        return _parse_yes_no(content)
 
 
 _shared_client: Optional[LLMJudgeClient] = None

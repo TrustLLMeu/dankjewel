@@ -489,3 +489,56 @@ def test_fixture_reported_claims_keep_quote_provenance():
     joined = ' '.join(f"{c.subject} {c.predicate} {c.object}" for c in quotes).lower()
     for expected in ('earth', 'five eyes', 'dentists', 'crime', 'boil'):
         assert expected in joined
+
+
+# ── llm_admit: optional 1.5B admission classifier ───────────────────────────
+
+def test_llm_admit_drops_classified_nonclaims(monkeypatch):
+    """Claims the classifier rejects are removed and counted."""
+    import src.prongs.prong3_extraction as p3mod
+
+    class StubClient:
+        def admit(self, sentence):
+            return 'smoking' not in sentence.lower()
+
+    monkeypatch.setattr(p3mod, 'get_shared_judge_client', lambda: StubClient())
+    prong = p3mod.Prong3Extraction()
+    result = prong.evaluate('Smoking is that bad. Oslo is the capital of Norway.',
+                            llm_admit=True)
+    fa = [d for d in result.dimensions if d.name == 'Factual Accuracy'][0]
+    meta = fa.metadata['claim_admission']
+    assert meta['llm_admit_dropped'] == 1
+    assert meta['llm_admit_unknown'] == 0
+    subjects = [c['claim']['subject'] for c in fa.metadata['claim_details']]
+    assert 'Smoking' not in subjects and 'Oslo' in subjects
+
+
+def test_llm_admit_keeps_claims_when_classifier_is_unavailable(monkeypatch):
+    """Unknown verdicts never remove claims."""
+    import src.prongs.prong3_extraction as p3mod
+
+    class StubClient:
+        def admit(self, sentence):
+            return None
+
+    monkeypatch.setattr(p3mod, 'get_shared_judge_client', lambda: StubClient())
+    prong = p3mod.Prong3Extraction()
+    result = prong.evaluate('Oslo is the capital of Norway.', llm_admit=True)
+    fa = [d for d in result.dimensions if d.name == 'Factual Accuracy'][0]
+    meta = fa.metadata['claim_admission']
+    assert meta['llm_admit_unknown'] == 1
+    assert meta['llm_admit_dropped'] == 0
+
+
+def test_llm_admit_off_makes_no_model_calls(monkeypatch):
+    """Flag off: the classifier is never consulted."""
+    import src.prongs.prong3_extraction as p3mod
+
+    class ExplodingClient:
+        def admit(self, sentence):
+            raise AssertionError('classifier must not be called')
+
+    monkeypatch.setattr(p3mod, 'get_shared_judge_client', lambda: ExplodingClient())
+    prong = p3mod.Prong3Extraction()
+    result = prong.evaluate('Oslo is the capital of Norway.', llm_admit=False)
+    assert result.error is None

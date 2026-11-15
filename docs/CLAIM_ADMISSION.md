@@ -59,3 +59,17 @@ Sentence-level order in `sentence_reject_reason`: markdown → question → meta
 - `pytest tests/test_claim_admission.py -q` at `bbb7d99`: **41 passed**, 1 warning (unrelated CUDA driver notice), ~10 s.
 - Live fixture run (default, `llm_verify` off): 8 admitted; discarded `{meta 15, definition 1, pronoun 6, demonstrative 2, question 7}`; all five expected lies present; `relation_counts` all `unknown` (verifiable 0, status `unknown`).
 - Pre-fix numbers (76 / ~39 / 0 verifiable / 11 false denials) are from the export file and commit index `f49c1db`; the pre-fix lookup mis-resolution was reproduced directly against the seed DB.
+
+## Optional LLM admission (`llm_admit`)
+
+An opt-in 1.5B classifier (`[ADMIT]` task, `LLMJudgeClient.admit`) can review the
+admitted claims and drop those it classifies as non-claims (commentary, advice,
+definitions). It is **not enabled by default and not recommended** for the current
+model: on the teacher fixture it drops 4 of 9 claims — two intended (the "smoking
+is that bad" fragment and the "Critical thinking..." advice) and two false
+negatives ("Humans have five eyes", "This new supplement is 100% natural"). A
+revised prompt that admits general-class claims still drops "five eyes" and starts
+admitting the advice, so it trades recall for precision. The deterministic gates
+remain the default; the classifier stays available for experiments, records
+`llm_admit_dropped`/`llm_admit_unknown` in `metadata.claim_admission`, and keeps
+claims when the model is unavailable.
