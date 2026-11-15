@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `8e3d7a7` — Add the LLM-AggreFact harness and record external-work status
+- **Latest commit:** `7ad2c88` — Align throughput figures with the robustness artifact
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
 - **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); LLM-AggreFact auto-gated — harness ready, one account click needed; seed coverage still 0.3% on FEVER; AVeriTeC (future work); Nordic seed expansion and native lexicon validation; human-annotation and user studies
 
@@ -14,7 +14,10 @@ Newest first. `git log` remains the source of truth for hashes.
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-16 | `PENDING` | chore / index | Record external-work status in commit index | chore |
+| 2026-11-16 | `PENDING` | chore / index | Record documentation update in commit index | chore |
+| 2026-11-16 | `7ad2c88` | docs / robustness | Align throughput figures with the robustness artifact | YE7H latency/throughput reporting |
+| 2026-11-16 | `897eab1` | docs / claim admission | Update documentation for claim admission, robustness and external work | wXze claim precision / V55p transparency |
+| 2026-11-16 | `c08c35a` | chore / index | Record external-work status in commit index | chore |
 | 2026-11-16 | `8e3d7a7` | eval / external | Add the LLM-AggreFact harness and record external-work status | wXze single-benchmark content |
 | 2026-11-16 | `a138e3a` | chore / index | Record robustness matrix and ablation index in commit index | chore |
 | 2026-11-16 | `dc423d1` | eval / robustness | Add a robustness matrix and sequential throughput measurements | YE7H real-time/throughput (robustness matrix) |
@@ -84,9 +87,33 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record external-work status in commit index (2026-11-16)
+### `PENDING` — Record documentation update in commit index (2026-11-16)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the documentation refresh and the throughput correction; backfill the external-work index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `7ad2c88` — Align throughput figures with the robustness artifact (2026-11-16)
+
+- **Hash:** `7ad2c88cf976e6e7334b81d600fc6711b7f78548`
+- **Why:** the README quoted the first robustness run (91/78 evals/min); the committed artifact records 93.0 evals/min (mean 645.4 ms, p95 659.9) and 76.2/min (mean 787.4 ms, p95 1262.5). The artifact is authoritative; the README now matches it.
+- **Files:** `README.md`
+- **Closes:** the throughput reporting correction
+- **Verify:** values checked against `evaluation_results/robustness.json`.
+
+### `897eab1` — Update documentation for claim admission, robustness and external work (2026-11-16)
+
+- **Hash:** `897eab13d91f0491c8fdc902535ac41acaf916d5`
+- **Why:** README gains the claim-pipeline paragraph (use-mention, the 76→28→17→8→9 ablation, `llm_admit` as an experiment) and updated planned work; CONTRIBUTING lists the new eval scripts; docs/CLAIM_ADMISSION.md describes the quoted/reported-claim pass correctly.
+- **Files:** `README.md`, `CONTRIBUTING.md`, `docs/CLAIM_ADMISSION.md`
+- **Closes:** documentation of the 2026-11-16 admission/robustness/external work
+- **Verify:** docs checked against the scripts and artifacts.
+
+### `c08c35a` — Record external-work status in commit index (2026-11-16)
+
+- **Hash:** `c08c35a520786f5df2e7abfd8b7aca3303d9de32`
 - **Why:** Record the external-work note and the AggreFact harness; backfill the robustness/ablation index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
