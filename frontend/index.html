@@ -329,6 +329,33 @@ footer {
 }
 .evidence-chip.muted { color: var(--text3); border-style: dashed; }
 
+/* ── Stage C: claim evidence strip (grouped by subject) ───────────── */
+.claim-strip { margin-top: 0.55rem; }
+.claim-strip-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.3rem;
+}
+.evidence-subtitle {
+  font-size: 0.66rem; font-weight: 600; letter-spacing: 0.03em;
+  text-transform: uppercase; color: var(--text3);
+}
+.claim-strip-meter {
+  display: flex; height: 6px; width: 96px; border-radius: 3px;
+  overflow: hidden; border: 1px solid var(--border);
+}
+.meter-seg { height: 100%; }
+.claim-strip-groups { display: flex; flex-direction: column; gap: 0.3rem; }
+.claim-group { display: flex; gap: 0.3rem; align-items: baseline; flex-wrap: wrap; }
+.claim-group-subject { font-size: 0.66rem; font-weight: 600; color: var(--text2); }
+.claim-chip {
+  font-family: var(--mono); font-size: 0.62rem; font-weight: 600;
+  padding: 0.1rem 0.35rem; border-radius: 3px; cursor: pointer;
+  border: 1px solid transparent;
+}
+.claim-chip.claim-chip-unknown { border-style: dashed; border-color: var(--border); }
+.claim-chip .claim-src { opacity: 0.65; font-weight: 400; margin-left: 0.25rem; }
+.claim-row-highlight { background: #fef9c3 !important; }
+
 /* ── Unknown/Error state styling ──────────────────────────────────── */
 .unknown-bar {
   background: #9aa0a6 !important; border-style: dashed !important;
@@ -637,6 +664,14 @@ footer {
         </div>
         <div class="anatomy-bar" id="anatomy-bar" role="img"></div>
         <div class="coverage-ribbon" id="coverage-ribbon"></div>
+
+        <div class="claim-strip" id="claim-strip" hidden>
+          <div class="claim-strip-head">
+            <span class="evidence-subtitle" data-i18n="claim_strip_title">Claim evidence</span>
+            <span class="claim-strip-meter" id="claim-strip-meter"></span>
+          </div>
+          <div class="claim-strip-groups" id="claim-strip-groups"></div>
+        </div>
       </div>
 
       <div class="eval-spinner" id="eval-spinner" data-i18n="evaluating">⏳ Evaluating…</div>
@@ -1904,7 +1939,119 @@ function renderEvidence(evalData) {
     note.hidden = false;
   }
 
+  renderClaimStrip(evalData);
+
   card.hidden = false;
+}
+
+// ── Stage C: claim evidence strip ───────────────────────────────────
+// Compact, subject-grouped view of Prong 3's claims: one chip per
+// claim, coloured by the five-way relation, badged with provenance and
+// the verifier score in the tooltip. Clicking focuses the matching row
+// in the claims table.
+function renderClaimStrip(evalData) {
+  const strip = document.getElementById('claim-strip');
+  const groupsEl = document.getElementById('claim-strip-groups');
+  const meterEl = document.getElementById('claim-strip-meter');
+  if (!strip || !groupsEl || !meterEl) return;
+
+  const prong3 = (evalData.prong_results || []).find(p => p.prong_name.includes('Extraction'));
+  const facDim = prong3 && (prong3.dimensions || []).find(d => d.name === 'Factual Accuracy');
+  const details = facDim?.metadata?.claim_details || [];
+  if (!details.length) { strip.hidden = true; return; }
+
+  const relationOf = c => c.relation || c.effective_result || 'unknown';
+  const srcLetter = s => (s === 'llm' ? 'L' : s === 'both' ? 'B' : 'S');
+
+  // Coverage meter: verified / partial / unverified
+  const cov = evalData.coverage;
+  let verified = 0, partial = 0, unverified = 0;
+  if (cov) {
+    verified = cov.claims_verified || 0;
+    partial = cov.claims_partial || 0;
+    unverified = cov.claims_unverified || 0;
+  } else {
+    details.forEach(c => {
+      const r = relationOf(c);
+      if (r === 'confirmed' || r === 'denied') verified += 1;
+      else if (r === 'partially_supported') partial += 1;
+      else unverified += 1;
+    });
+  }
+  const total = verified + partial + unverified;
+  meterEl.innerHTML = '';
+  meterEl.title = t('claim_meter_title')
+    .replace('{{v}}', verified).replace('{{p}}', partial).replace('{{u}}', unverified);
+  const seg = (n, color) => {
+    if (!n || !total) return;
+    const s = document.createElement('div');
+    s.className = 'meter-seg';
+    s.style.flex = n + ' 0 0';
+    s.style.background = color;
+    meterEl.appendChild(s);
+  };
+  seg(verified, '#10b981');
+  seg(partial, '#f59e0b');
+  seg(unverified, '#d1d5db');
+
+  // Group chips by subject, preserving order
+  const groups = new Map();
+  details.forEach(c => {
+    const cl = c.claim || {};
+    const key = cl.subject || t('claim_strip_untitled');
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(c);
+  });
+
+  groupsEl.innerHTML = '';
+  groups.forEach((items, subject) => {
+    const row = document.createElement('div');
+    row.className = 'claim-group';
+    const head = document.createElement('span');
+    head.className = 'claim-group-subject';
+    head.textContent = subject;
+    row.appendChild(head);
+
+    items.forEach(c => {
+      const cl = c.claim || {};
+      const relation = relationOf(c);
+      const chip = document.createElement('span');
+      chip.className = 'claim-chip verdict-' + relation;
+      if (relation === 'unknown') chip.classList.add('claim-chip-unknown');
+
+      let label = cl.object || cl.predicate || '—';
+      if (label.length > 34) label = label.slice(0, 33) + '…';
+      chip.innerHTML = esc(label) + `<span class="claim-src">${esc(srcLetter(cl.source))}</span>`;
+
+      const bits = [`${cl.subject || ''} ${cl.predicate || ''} ${cl.object || ''}`.trim(),
+                    relation];
+      if (c.verifier_score != null) bits.push('p=' + Number(c.verifier_score).toFixed(2));
+      if (c.verification?.rationale) bits.push(c.verification.rationale);
+      chip.title = bits.join(' · ');
+
+      chip.addEventListener('click', () => focusClaimRow(cl.subject || '', cl.object || ''));
+      row.appendChild(chip);
+    });
+    groupsEl.appendChild(row);
+  });
+
+  strip.hidden = false;
+}
+
+// Open the claims table and highlight the row matching subject+object.
+function focusClaimRow(subject, object) {
+  const summary = document.querySelector('#claims-card summary');
+  if (summary && summary.parentElement && !summary.parentElement.open) summary.click();
+  const rows = document.querySelectorAll('#claims-body tbody tr');
+  let match = null;
+  rows.forEach(r => {
+    const text = r.textContent || '';
+    if (text.includes(subject) && object && text.includes(object)) match = r;
+  });
+  if (!match) return;
+  document.querySelectorAll('#claims-body tbody tr').forEach(r => r.classList.remove('claim-row-highlight'));
+  match.classList.add('claim-row-highlight');
+  match.scrollIntoView({ block: 'center' });
 }
 
 function claimSourceCounts(claimDetails) {

@@ -112,5 +112,8 @@
   "evidence_label_claims": "{{n}}/{{m}} claims verified",
   "evidence_label_dimensions": "{{n}}/{{m}} dimensions scored",
   "evidence_label_coverage_unavailable": "coverage unavailable",
-  "evidence_label_no_logprobs": "no logprobs"
+  "evidence_label_no_logprobs": "no logprobs",
+  "claim_strip_title": "Claim evidence",
+  "claim_strip_untitled": "—",
+  "claim_meter_title": "{{v}} verified · {{p}} partial · {{u}} unverified"
 }
