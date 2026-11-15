@@ -37,6 +37,31 @@ constraint.
 | Reviewer | `reviewer.md` | `moonshotai/Kimi-K2.6` | none (read-only) | no |
 | Nordic Linguist | `nordic-linguist.md` | `NorwAI/NorwAI-Magistral-24B-reasoning` | none (read-only) | lexicons only if asked |
 | Git Historian | `git-historian.md` | `Qwen/Qwen3.8-27B-FP8` | none | commits + `docs/commit-index.md` |
+| Docs Keeper | `docs-keeper.md` | `Qwen/Qwen3.8-27B` (Malvik) | worktree | docs only (`*.md`) |
+| Paper Writer | `paper-writer.md` | `Qwen/Qwen3.8-27B` (Malvik) | worktree | `paper/` only |
+| Paper Reviewer | `paper-reviewer.md` | `moonshotai/Kimi-K2.6` (NTNU) | none (read-only) | no |
+
+Panes and tabs (workspace `w0`, short tab labels in brackets):
+Captain t1 [Cap], Scout t3 [Scout], Protocol t4 [Proto], Implementer
+t5 [Impl], Dashboard t6 [Dash], Eval t7 [Eval], Reviewer t8 [Rev],
+Nordic t9 [Nord], Git tA [Git], Docs tB [Docs], Paper tC [Paper],
+Paper review tD [PRev]. The shell tab t2 is labelled [sh].
+
+New-role boundaries:
+
+- **Docs Keeper** owns every user- and method-facing doc (`README.md`,
+  `QUICKSTART.md`, `CONTRIBUTING.md`, `docs/*.md`, `DB_EXTENSION_GUIDE.md`,
+  `ASSUMPTIONS.md`, `TODO.md`). It never edits code, tests, data, the
+  commit index, `review.txt`, or `inspiration.txt`. Documentation of a
+  method lands with the method's slice or immediately after.
+- **Paper Writer** owns `paper/` and writes from repo artifacts only.
+  Every number is traced to `evaluation_results/` or the commit index;
+  gaps are written as "not measured". It never edits code or data.
+- **Paper Reviewer** is read-only and adversarial: it checks every
+  number against an artifact, tests the paper's answers against
+  `review.txt`, and returns a verdict with ranked findings. It holds
+  the single NTNU slot while it runs; Docs and Paper writers run on
+  Malvik and serialise with the other Malvik Qwen panes.
 
 Qwen host is **not** a free choice. See [NTNU rate window](#ntnu-rate-window).
 
