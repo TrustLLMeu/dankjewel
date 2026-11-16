@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `cda4755` — Include the shipped 0.5B judge in the multilingual judge test
+- **Latest commit:** `b022109` — Support authenticated OpenAI-compatible generators in the vLLM client
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
 - **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); LLM-AggreFact auto-gated — harness ready, one account click needed; seed coverage still 0.3% on FEVER; AVeriTeC (future work); Nordic seed expansion and native lexicon validation; human-annotation and user studies
 
@@ -14,7 +14,8 @@ Newest first. `git log` remains the source of truth for hashes.
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-16 | `PENDING` | chore / index | Record multilingual judge test in commit index | chore |
+| 2026-11-16 | `PENDING` | chore / index | Record generator auth fix in commit index | chore |
+| 2026-11-16 | `b022109` | generator / client | Support authenticated OpenAI-compatible generators in the vLLM client | YE7H reproducibility / demo path |
 | 2026-11-16 | `cda4755` | prong 1 / judge | Include the shipped 0.5B judge in the multilingual judge test | wXze multilingual validation |
 | 2026-11-16 | `13127ce` | docs / judge | Document the multilingual judge-agreement test and decision | wXze multilingual validation |
 | 2026-11-16 | `f8b36ea` | chore / models | Raise the judge cap to 1.7B and add AggreFact sampling | V55p model cap / wXze benchmark |
@@ -92,13 +93,21 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record multilingual judge test in commit index (2026-11-16)
+### `PENDING` — Record generator auth fix in commit index (2026-11-16)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
-- **Why:** Record the multilingual judge-agreement test, the 0.5B correction, the cap raise and the method note; backfill the documentation index hash.
+- **Why:** Record the generator-client auth/serving fix and backfill the multilingual index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
 - **Verify:** untested (docs only)
+
+### `b022109` — Support authenticated OpenAI-compatible generators in the vLLM client (2026-11-16)
+
+- **Hash:** `b022109fdd4e355873fa41edf82cb198bc1c9a53`
+- **Why:** the app probed a vLLM at `localhost:8000`, but the Qwen generator on Malvik is llama.cpp on `:18091` behind an API key. `VLLMClient` now takes `api_key` (env `VLLM_API_KEY`) and sends a Bearer header, accepts the llama.cpp `models` shape as well as vLLM's `data`, and normalizes chat-shaped `logprobs.content` into the parallel arrays the Prong-4 adapter expects. `VLLM_BASE_URL`/`VLLM_API_KEY` documented in QUICKSTART/README.
+- **Files:** `src/vllm_client.py`, `src/config.py`, `src/api.py`, `tests/test_vllm_client.py`, `QUICKSTART.md`, `README.md`
+- **Closes:** the "vLLM offline" mismatch; the interactive path now works against the local llama.cpp generator
+- **Verify:** 5 new client tests pass; live check on `:18091` (`Qwen/Qwen3.8-27B`): health green, `/models` lists the alias, `/generate-and-evaluate` returns text with all four Prong-4 dimensions `scored` (Uncertainty 0.114, Perplexity 1.15, Token Entropy 0.117, Semantic Entropy 0.117).
 
 ### `cda4755` — Include the shipped 0.5B judge in the multilingual judge test (2026-11-16)
 
