@@ -1,0 +1,91 @@
+{
+  "dataset": "lytang/LLM-AggreFact",
+  "split": "dev",
+  "model": "lytang/MiniCheck-Flan-T5-Large",
+  "per_dataset": {
+    "AggreFact-CNN": {
+      "n": 150,
+      "accuracy": 0.9333,
+      "auc": 0.7473,
+      "mean_latency_ms": 795.3,
+      "p95_latency_ms": 1264.0
+    },
+    "AggreFact-XSum": {
+      "n": 150,
+      "accuracy": 0.6333,
+      "auc": 0.7607,
+      "mean_latency_ms": 583.6,
+      "p95_latency_ms": 761.9
+    },
+    "ClaimVerify": {
+      "n": 150,
+      "accuracy": 0.4867,
+      "auc": 0.5658,
+      "mean_latency_ms": 1332.0,
+      "p95_latency_ms": 1628.1
+    },
+    "ExpertQA": {
+      "n": 150,
+      "accuracy": 0.5,
+      "auc": 0.6353,
+      "mean_latency_ms": 452.8,
+      "p95_latency_ms": 1402.1
+    },
+    "FactCheck-GPT": {
+      "n": 150,
+      "accuracy": 0.8333,
+      "auc": 0.8821,
+      "mean_latency_ms": 313.7,
+      "p95_latency_ms": 381.1
+    },
+    "Lfqa": {
+      "n": 150,
+      "accuracy": 0.8267,
+      "auc": 0.8833,
+      "mean_latency_ms": 500.7,
+      "p95_latency_ms": 626.2
+    },
+    "RAGTruth": {
+      "n": 150,
+      "accuracy": 0.5267,
+      "auc": 0.667,
+      "mean_latency_ms": 949.1,
+      "p95_latency_ms": 1537.8
+    },
+    "Reveal": {
+      "n": 150,
+      "accuracy": 0.8933,
+      "auc": 0.9426,
+      "mean_latency_ms": 294.9,
+      "p95_latency_ms": 398.9
+    },
+    "TofuEval-MediaS": {
+      "n": 150,
+      "accuracy": 0.5067,
+      "auc": 0.4148,
+      "mean_latency_ms": 1544.3,
+      "p95_latency_ms": 1634.9
+    },
+    "TofuEval-MeetB": {
+      "n": 150,
+      "accuracy": 0.6067,
+      "auc": 0.7103,
+      "mean_latency_ms": 1194.9,
+      "p95_latency_ms": 1558.6
+    },
+    "Wice": {
+      "n": 150,
+      "accuracy": 0.6667,
+      "auc": 0.657,
+      "mean_latency_ms": 1316.7,
+      "p95_latency_ms": 1582.0
+    }
+  },
+  "pooled": {
+    "n": 1650,
+    "accuracy": 0.6739,
+    "auc": 0.7685,
+    "mean_latency_ms": 843.5,
+    "p95_latency_ms": 1589.9
+  }
+}

@@ -382,8 +382,33 @@ Reading: the ranking signal is strong (AUC 0.835 on dev) while accuracy at the
 bands are calibration-sensitive and should be checked per domain.
 `scripts/eval_scifact.py` regenerates both rows; provenance
 (source URL, file hashes, model) is in `evaluation_results/scifact.json`.
-LLM-AggreFact, the intended second benchmark, is gated on HuggingFace and could
-not be fetched.
+
+#### Verifier benchmark (LLM-AggreFact)
+
+The intended pooled benchmark is now available (auto-gated; terms accepted).
+`scripts/eval_aggrefact.py --split dev --limit-per-dataset 150` scores 1,650
+claim–document pairs across 11 sub-datasets:
+
+| Sub-dataset | n | Accuracy @0.5 | AUC |
+|---|---|---|---|
+| Reveal | 150 | 0.893 | 0.943 |
+| Lfqa | 150 | 0.827 | 0.883 |
+| FactCheck-GPT | 150 | 0.833 | 0.882 |
+| AggreFact-XSum | 150 | 0.633 | 0.761 |
+| AggreFact-CNN | 150 | 0.933 | 0.747 |
+| TofuEval-MeetB | 150 | 0.607 | 0.710 |
+| RAGTruth | 150 | 0.527 | 0.667 |
+| Wice | 150 | 0.667 | 0.657 |
+| ExpertQA | 150 | 0.500 | 0.635 |
+| ClaimVerify | 150 | 0.487 | 0.566 |
+| TofuEval-MediaS | 150 | 0.507 | 0.415 |
+| **pooled** | 1,650 | **0.674** | **0.769** |
+
+Reading: the verifier transfers well on some domains (Reveal, Lfqa,
+FactCheck-GPT) and poorly on others (TofuEval-MediaS, ClaimVerify, Wice);
+mean latency 844 ms, p95 1,590 ms per pair on CPU. This validates the verifier
+component and its domain sensitivity; it does not validate the seed-KB path.
+Provenance: `evaluation_results/aggrefact.{json,md}`.
 
 ---
 
@@ -402,7 +427,7 @@ pytest tests/ --cov=src
 See [TODO.md](TODO.md). Key next steps:
 
 - LLM-based readability for Prong 2 (replacing Flesch baseline)
-- LLM-AggreFact benchmark once the dataset terms are accepted (harness ready)
+- LLM-AggreFact benchmark across more sub-datasets and the test split (dev slice landed)
 - Native-speaker validation of the eight non-English lexicons
 - Human-annotation study correlating dimension scores with human ratings
 - Expand Wikidata DB toward 200k entities via SPARQL dump
