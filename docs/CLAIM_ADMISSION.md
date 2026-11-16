@@ -1,6 +1,6 @@
 # Claim Admission (Prong 3)
 
-Deterministic gates between claim extraction and claim verification. Extraction proposes candidates; only admitted claims are shown, counted and verified. All gates are lexicons and regexes — no models, no network. Code: `src/extraction/claim_admission.py`; tests: `tests/test_claim_admission.py` (41 passed).
+Deterministic gates between claim extraction and claim verification. Extraction proposes candidates; only admitted claims are shown, counted and verified. All gates are lexicons and regexes — no models, no network. Code: `src/extraction/claim_admission.py`; tests: `tests/test_claim_admission.py` (56 passed).
 
 ## Why admission exists
 
@@ -11,10 +11,10 @@ The exported teaching-prose run (`dj_result_2026-11-15T19-56-34.json`, prompt "Y
 `ClaimExtractor.extract` (spaCy track, always on) and `LLMClaimExtractor.extract` (dual track, `llm_extract` opt-in):
 
 1. `clean_markdown` — curly quotes → ASCII; strip `#`/`>`/`-`/`1.` line markers and `**`/`*`/`_`/backtick markup.
-2. Line-based parse units: bullets, headings and labels never merge into the neighbouring sentence; `split_label` splits "Label:" prefixes and commentary labels ("Why it's false:") gate their whole line as `meta`.
+2. Line-based parse units: bullets, headings and labels never merge into the neighbouring sentence; `split_label` splits "Label:" prefixes and commentary labels ("Why it's false:") gate their whole line as `meta`. A correction line (`Correction:` label, or a line-initial `Actually,`/`In fact,`/`To be precise,`) retracts the preceding line: that line's claims become `source="quote"` (mentioned, not asserted) and only the correction is asserted. `metadata.correction_pairs` counts the pairs.
 3. spaCy dependency parse → (subject, predicate, object) candidate triples (per ROOT verb, per subject × object pair). LLM track: one `[CLAIMS]` call per paragraph on the local 1.5B server; each atomic claim is re-parsed by the same triple logic (`source='llm'`); identical triples merge to `source='both'`.
-4. `filter_claims` → `admit_triple` per candidate, in order: sentence gates (on `source_sentence`) → `malformed` → `definition` → `demonstrative` → `pronoun`/lexical head (skipped for `source='llm'`) → near-duplicate drop (lemma key, `duplicate`). LLM atoms also pass the sentence gates before triple parsing.
-5. Verification: KB exact (`verify_triple`, always on), then the optional MiniCheck verifier (`_verifier_relation`, `llm_verify`) for claims the KB left UNKNOWN.
+4. `filter_claims` → `admit_triple` per candidate, in order: sentence gates (on `source_sentence`) → `malformed` → `adverbial`/`placeholder`/`anaphoric` objects → `definition` → `demonstrative` → `pronoun`/lexical head (skipped for `source='llm'`) → near-duplicate drop (lemma key, `duplicate`). LLM atoms also pass the sentence gates before triple parsing.
+5. Verification: KB exact (`verify_triple`, always on), then the optional MiniCheck verifier (`_verifier_relation`, `llm_verify`) for claims the KB left UNKNOWN. The verifier only runs when its grounding document lexically covers the claim (`kb_coverage >= 0.75`); otherwise the claim stays UNKNOWN with reason `insufficient_kb_coverage` rather than being falsely denied.
 
 ## Gate reference
 
@@ -26,20 +26,34 @@ The exported teaching-prose run (`dj_result_2026-11-15T19-56-34.json`, prompt "Y
 | imperative | verb-first openers | `Always question, verify, and seek evidence.` | `Critical thinking is your best defense against false claims!` |
 | meta | teaching/organising meta-discourse | `Here are several examples of false claims:` | `Water boils at 200°C at sea level.` |
 | pronoun | bare pronoun/determiner subject or object, or no lexical head (LLM track exempt) | `It is happy.` | `9 out of 10 dentists recommend Brand X toothpaste.` |
-| malformed | empty/punct-only parts, contraction predicates, empty object (except `exist`), subject==object, deictic object | `The boiling point changes there.` | `There was an uprising.` (existential) |
+| malformed | empty/punct-only parts, contraction predicates, empty object (except `exist`), subject==object, deictic object, unbalanced parentheses/brackets | `The boiling point changes there.`; `Article I Section 8)` | `There was an uprising.` (existential) |
+| adverbial | a bare adverb/prepositional fragment in object position | `The United States has it by default.`; `In most states, electors cast votes.` → object `in most states` | `The UK has an uncodified constitution.` |
+| placeholder | an object that asserts nothing (`unknown`, `unclear`, `disputed`) | `The true cause is unknown.` | `The cause was a spark from the oven.` |
+| anaphoric | an object whose referent lies outside the triple (`the term`, `the latter`, `the concept`) | `Nixon popularized the term.` | `Nixon popularized the phrase "silent majority".` |
 | definition | `X is a/an <abstract noun>` | `A false claim is a statement.` | `Oslo is a city.` |
 | demonstrative | text-deictic subjects | `These claims use real numbers.` | `Those two cities are in Norway.` |
 | duplicate | near-duplicate of an admitted triple (lemmas, case/punct folded) | `THE EARTH is flat.` after `The Earth is flat.` | `Paris is the capital of France.` kept |
 
-Sentence-level order in `sentence_reject_reason`: markdown → question → meta → imperative → heading. The `definition` and `demonstrative` gates are the slice 6d additions (`4028602`).
+Sentence-level order in `sentence_reject_reason`: markdown → question → meta → imperative → heading. The `definition` and `demonstrative` gates are the slice 6d additions (`4028602`); `adverbial`, `placeholder`, `anaphoric` and the unbalanced-delimiter check are the Stage-3 extraction-quality additions.
+
+## Corrections (use-mention)
+
+A listicle that states a false claim and then corrects it ("**The UK has a written, codified constitution.** / *Correction:* The UK has an uncodified constitution.") mentions the first statement and asserts the second. `ClaimExtractor.extract` treats a `Correction:` label or a line-initial `Actually,`/`In fact,`/`In reality,`/`To be precise,`/`More precisely,`/`Clarification:` as a retraction of the preceding content line: that line's claims get `source="quote"`, the correction's claims stay `source="spacy"`, and `metadata.correction_pairs` increments. A correction with no preceding line is an ordinary assertion (no pair).
+
+## Measured effect on the political export
+
+`dj_result_2026-11-16T17-04-14.json` (prompt "Tell ten untrue things about politics") had 23 claims, 0 verified, and no per-claim explanation. Re-running the same text through the current pipeline:
+
+- **16 claims** (7 correction pairs separated; the gated-away candidates were 1 placeholder, 3 adverbial, 2 malformed, 1 anaphoric, 5 pronoun, 1 demonstrative). The seven bolded "untrue" statements are now `source="quote"`; the seven corrections are the asserted claims.
+- **Civic seed expansion** (`data/wikidata_seed.db`, 144 entities = 122 geographic + 22 civic): subject resolution rises from 4/16 to 13/16. The remaining three are unresolved names ("Nuclear Option", "electors").
+- **1 claim verified**: "The President is the Commander-in-Chief of the armed forces" → confirmed via `President of the United States` P279 `commander-in-chief`. The other 15 stay UNKNOWN with reasons (`insufficient_kb_coverage` for the constitutional/legal claims, `entity_not_in_kb` for the three unresolved names), which is the honest outcome for a seed KB that does not model constitutional law.
 
 ## The lookup guard
-
 `OfflineWikidata.lookup_entity` (Slice 0, `f49c1db`) resolves by exact label, article-stripped label and exact alias first; prefix matching comes last and now requires a **3+ character** query and a **word boundary** (the stored label/alias equals the query or starts with the query plus a space). `is_junk_name` rejects punctuation-only strings, bare pronouns/determiners and bare stopwords before any match. Pre-fix, `LIKE 'i%'` resolved **I/it → Q38 Italy** (reproduced against `data/wikidata_seed.db`); post-fix `I`, `it`, `Trondh`, `Icel` → None while `South` → Q258 (South Africa) still prefix-matches. The verifier mirrors the guard: `_verifier_relation` returns UNKNOWN without scoring when `is_referential_subject(claim.subject)` fails, so a pronoun claim can no longer be judged against the wrong entity's facts.
 
 ## Metadata contract
 
-`ExtractionResult.metadata` carries `admission_metadata(...)`: `{admitted_claims: n, discarded_candidates: {reason: count}}`; the LLM track adds `llm_paragraphs`, `llm_claims`, `llm_errors`. `Prong3Extraction` forwards the summary to `FactualAccuracy.evaluate`, which stores it as `metadata.claim_admission` — diagnostics only, never part of the score. Each admitted claim's `source` is `spacy` | `llm` | `both`. The UI (`frontend/index.html`) reads `claim_details` from the Factual Accuracy metadata: dual-track counts, the claim evidence strip with per-claim source chips (locale `claim_source_spacy/llm/both`) and the KB ↔ MiniCheck agreement dumbbell (`verifier_score`). The `claim_admission` summary is in the API response but not rendered.
+`ExtractionResult.metadata` carries `admission_metadata(...)`: `{admitted_claims: n, discarded_candidates: {reason: count}}`, plus `correction_pairs` (spaCy track) and the LLM track's `llm_paragraphs`, `llm_claims`, `llm_errors`. `Prong3Extraction` forwards the summary to `FactualAccuracy.evaluate`, which stores it as `metadata.claim_admission` — diagnostics only, never part of the score. Each admitted claim's `source` is `spacy` | `llm` | `both` | `quote`. Every UNKNOWN claim detail also carries a `reason` (`non_referential_subject`, `entity_not_in_kb`, `no_kb_facts`, `verifier_off`, `verifier_unavailable`, `insufficient_kb_coverage`, `property_not_matched`, `no_object`) that the UI shows in the chip and table tooltips. The UI (`frontend/index.html`) reads `claim_details` from the Factual Accuracy metadata: dual-track counts, the claim evidence strip with per-claim source chips (locale `claim_source_spacy/llm/both/quote`) and the KB ↔ MiniCheck agreement dumbbell (`verifier_score`). The `claim_admission` summary is in the API response but not rendered.
 
 ## Limits
 

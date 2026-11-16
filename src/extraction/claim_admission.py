@@ -68,6 +68,36 @@ DISCOURSE_MARKER_OBJECTS = frozenset({
     'here', 'there', 'now', 'then', 'always', 'never', 'again', 'instead',
 })
 
+# Adverbial/prepositional fragments that the dependency parser hands back
+# as objects although they assert nothing checkable. "The United States
+# has a standing army in peacetime by default" produced an object
+# "by default"; "In most states, electors cast ..." produced an object
+# "In most states" from the sentence-initial adjunct.
+ADVERBIAL_OBJECT_FRAGMENTS = frozenset({
+    'by default', 'in general', 'in fact', 'in practice', 'in theory',
+    'at least', 'at most', 'in particular', 'on average', 'of course',
+    'in most states', 'in some states', 'in a few states', 'in many states',
+    'as slates', 'as a result', 'for example', 'for instance',
+    'in response', 'in turn', 'by contrast', 'on the other hand',
+    'in addition', 'in reality', 'in principle', 'per se',
+})
+
+# Placeholder objects mark a non-assertion, not a fact about the subject:
+# "The true cause is unknown" asserts nothing that a KB can check.
+PLACEHOLDER_OBJECTS = frozenset({
+    'unknown', 'unclear', 'uncertain', 'not known', 'not clear',
+    'undetermined', 'debatable', 'disputed', 'tbd', 'n/a', 'none',
+})
+
+# Anaphoric objects whose referent lies outside the triple: "Nixon later
+# popularized the term" — which term is only recoverable from the previous
+# sentence, so the triple is not verifiable on its own.
+ANAPHORIC_OBJECTS = frozenset({
+    'the term', 'the terms', 'the latter', 'the former', 'the same',
+    'the opposite', 'the reverse', 'the concept', 'the idea', 'the phrase',
+    'the word', 'the process', 'the practice',
+})
+
 # Encyclopedic-definition gate (slice 6d): "X is a/an <abstract noun>"
 # asserts a category, not a checkable fact about a specific entity
 # ("A false claim is a statement", "A country is a political entity").
@@ -183,6 +213,49 @@ def is_commentary_label(label: str) -> bool:
     """
     low = (label or '').strip().lower()
     return low.startswith(('why', 'how', 'explanation', 'note'))
+
+
+# ── Corrections (use-mention) ────────────────────────────────────────────────
+
+# A correction line retracts or replaces the statement immediately before
+# it. That makes the earlier statement a *mentioned* claim (source=quote)
+# and the correction the speaker's assertion. The opener list is matched
+# at line start only: "Actually, ..." as a whole-sentence discourse marker,
+# never the same word inside a clause.
+CORRECTION_LABELS = frozenset({
+    'correction', 'corrections', 'correction to the claim', 'update',
+    'clarification', 'erratum',
+})
+CORRECTION_OPENERS = (
+    'actually,', 'in fact,', 'in reality,', 'to be precise,',
+    'more precisely,', 'more accurately,', 'correction:', 'update:',
+    'clarification:', 'i was wrong', "that's false", 'that is false',
+    'this is false', 'this is incorrect', 'the correct statement is',
+)
+
+
+def is_correction_label(label: str) -> bool:
+    """True when a line label announces a correction."""
+    return (label or '').strip().lower() in CORRECTION_LABELS
+
+
+def split_correction_opener(line: str) -> Tuple[str, bool]:
+    """Strip a line-initial correction opener.
+
+    Returns ``(content, is_correction)``. "Actually, the UK has ..." →
+    ("the UK has ...", True); an ordinary line is returned unchanged
+    with ``False``. A colon opener ("Correction: X") is normally already
+    split off by ``split_label``; this helper covers the label-less forms
+    and the case where the label regex declined (long content).
+    """
+    stripped = (line or '').lstrip()
+    low = stripped.lower()
+    for opener in CORRECTION_OPENERS:
+        if low.startswith(opener):
+            rest = stripped[len(opener):].lstrip(' ,;:-—')
+            if rest:
+                return rest, True
+    return line, False
 
 
 # ── Sentence-level gates ─────────────────────────────────────────────────────
@@ -341,13 +414,28 @@ def _is_punct_only(s: str) -> bool:
     return not re.search(r'\w', s.strip(), re.UNICODE)
 
 
+def _has_unbalanced_delimiter(s: str) -> bool:
+    """True when parentheses/brackets do not pair up.
+
+    The spaCy track can hand back a parenthetical fragment as a subject
+    or object ("Article I Section 8)", "Under the U.S. Constitution
+    Article I Section 8)") when the source had an inline citation. A
+    dangling delimiter marks a parser artifact, never a checkable name.
+    """
+    text = s or ''
+    for opener, closer in (('(', ')'), ('[', ']')):
+        if text.count(opener) != text.count(closer):
+            return True
+    return False
+
+
 def admit_triple(claim) -> Tuple[bool, str]:
     """Decide whether an extracted Claim is an admissible factual claim.
 
     Returns (admitted, reason); reason is 'admitted' or one of the
     discard reasons (markdown / heading / question / imperative / meta /
-    pronoun / malformed / definition / demonstrative). 'duplicate' is
-    assigned by filter_claims.
+    pronoun / malformed / definition / demonstrative / adverbial /
+    placeholder / anaphoric). 'duplicate' is assigned by filter_claims.
 
     Sentence-level reasons come from claim.source_sentence; the
     triple-level gates inspect the extracted strings. Claims produced by
@@ -385,8 +473,22 @@ def admit_triple(claim) -> Tuple[bool, str]:
         return False, 'malformed'
     if subj.lower() == obj.lower():
         return False, 'malformed'
+    if _has_unbalanced_delimiter(subj) or _has_unbalanced_delimiter(obj):
+        return False, 'malformed'
     if obj.lower() in DISCOURSE_MARKER_OBJECTS:
         return False, 'malformed'
+
+    # ── Adverbial / placeholder / anaphoric objects ───────────────────
+    # "The United States has ... by default"; "The true cause is
+    # unknown"; "Nixon popularized the term". None of these objects
+    # denote a checkable value.
+    obj_low = obj.lower().strip().rstrip('.').strip()
+    if obj_low in ADVERBIAL_OBJECT_FRAGMENTS:
+        return False, 'adverbial'
+    if obj_low in PLACEHOLDER_OBJECTS:
+        return False, 'placeholder'
+    if obj_low in ANAPHORIC_OBJECTS:
+        return False, 'anaphoric'
 
     # ── Encyclopedic definitions: "X is a/an <abstract noun>" ─────────
     if pred.lower() == 'be' and _DEFINITION_ARTICLE_RE.match(obj):

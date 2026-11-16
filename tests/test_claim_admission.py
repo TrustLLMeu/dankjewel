@@ -113,8 +113,10 @@ class TestVerifierReferentialGate:
         assert len(stub.calls) == 0
         assert score.metadata['relation_counts']['unknown'] == 1
 
-    def test_verifier_scores_normal_claims(self):
+    def test_verifier_scores_normal_claims(self, monkeypatch):
         """A referential subject with KB facts is scored by the verifier."""
+        import src.dimensions.prong3_dimensions as p3
+        monkeypatch.setattr(p3, "VERIFIER_MIN_KB_COVERAGE", 0.0)
         stub = StubVerifier(0.9)
         dim = FactualAccuracy(wikidata=OfflineWikidata(), verifier=stub)
         score = dim.evaluate("", claims=[WHARVES_CLAIM], llm_verify=True)
@@ -282,6 +284,61 @@ class TestAdmitTriple:
         for claim, expected in cases:
             ok, reason = admit_triple(claim)
             assert not ok and reason == expected
+
+    def test_adverbial_object_fragments_rejected(self):
+        for obj in ('by default', 'In most states', 'as slates',
+                    'in general', 'for example'):
+            claim = Claim(subject='The United States', predicate='have',
+                          object=obj,
+                          source_sentence=f'The United States has it {obj}.')
+            ok, reason = admit_triple(claim)
+            assert not ok and reason == 'adverbial', obj
+
+    def test_placeholder_objects_rejected(self):
+        for obj in ('unknown', 'unclear', 'not known', 'disputed'):
+            claim = Claim(subject='The true cause', predicate='be',
+                          object=obj,
+                          source_sentence=f'The true cause is {obj}.')
+            ok, reason = admit_triple(claim)
+            assert not ok and reason == 'placeholder', obj
+
+    def test_anaphoric_objects_rejected(self):
+        for obj in ('the term', 'the phrase', 'the latter', 'the concept'):
+            claim = Claim(subject='Nixon', predicate='popularize',
+                          object=obj,
+                          source_sentence=f'Nixon popularized {obj}.')
+            ok, reason = admit_triple(claim)
+            assert not ok and reason == 'anaphoric', obj
+
+    def test_unbalanced_parenthetical_fragments_rejected(self):
+        cases = [
+            Claim(subject='Article I Section 8)', predicate='grant',
+                  object='the power to declare',
+                  source_sentence='Article I, Section 8 grants the power.'),
+            Claim(subject='only Congress', predicate='have',
+                  object='Under the U.S. Constitution Article I Section 8)',
+                  source_sentence='Only Congress has the power.'),
+        ]
+        for claim in cases:
+            ok, reason = admit_triple(claim)
+            assert not ok and reason == 'malformed'
+
+    def test_well_formed_political_claims_still_admitted(self):
+        """The new object gates keep ordinary political facts."""
+        cases = [
+            Claim(subject='The UK', predicate='have',
+                  object='an uncodified constitution',
+                  source_sentence='The UK has an uncodified constitution.'),
+            Claim(subject='The President', predicate='be',
+                  object='the Commander in Chief of the armed forces',
+                  source_sentence='The President is the Commander in Chief.'),
+            Claim(subject='electors', predicate='cast',
+                  object='separate votes',
+                  source_sentence='Electors cast separate votes.'),
+        ]
+        for claim in cases:
+            ok, reason = admit_triple(claim)
+            assert ok and reason == 'admitted', claim.object
 
 
 class TestFilterClaims:
@@ -489,6 +546,43 @@ def test_fixture_reported_claims_keep_quote_provenance():
     joined = ' '.join(f"{c.subject} {c.predicate} {c.object}" for c in quotes).lower()
     for expected in ('earth', 'five eyes', 'dentists', 'crime', 'boil'):
         assert expected in joined
+
+
+# ── Corrections: the corrected statement is the assertion ───────────────────
+
+def test_correction_marks_previous_statement_as_quote():
+    """A Correction line retracts the preceding line's claim."""
+    from src.extraction.claim_extractor import ClaimExtractor
+
+    text = ("The United Kingdom has a written, codified constitution.\n"
+            "Correction: The UK has an uncodified constitution.")
+    result = ClaimExtractor().extract(text)
+    assert result.metadata['correction_pairs'] == 1
+    by_text = {c.object: c.source for c in result.claims}
+    assert by_text['a written codified constitution'] == 'quote'
+    assert by_text['an uncodified constitution'] == 'spacy'
+
+
+def test_actually_opener_marks_previous_statement_as_quote():
+    """A line-initial 'Actually,' also retracts the preceding line."""
+    from src.extraction.claim_extractor import ClaimExtractor
+
+    text = ("The United States has a standing army in peacetime.\n"
+            "Actually, the United States has no standing army in peacetime.")
+    result = ClaimExtractor().extract(text)
+    assert result.metadata['correction_pairs'] == 1
+    quotes = [c for c in result.claims if c.source == 'quote']
+    assert any('standing army' in c.object for c in quotes)
+
+
+def test_correction_without_a_previous_line_is_not_a_pair():
+    """A standalone correction line adds no pair and stays asserted."""
+    from src.extraction.claim_extractor import ClaimExtractor
+
+    result = ClaimExtractor().extract(
+        'Correction: The UK has an uncodified constitution.')
+    assert result.metadata['correction_pairs'] == 0
+    assert [c.source for c in result.claims] == ['spacy']
 
 
 # ── llm_admit: optional 1.5B admission classifier ───────────────────────────

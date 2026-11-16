@@ -15,7 +15,8 @@ import spacy
 
 from src.extraction.claim_admission import (
     clean_markdown, extract_reported_claims, filter_claims,
-    is_commentary_label, split_label,
+    is_commentary_label, is_correction_label, split_label,
+    split_correction_opener,
 )
 
 
@@ -118,7 +119,10 @@ class ClaimExtractor:
         markdown-cleaned before parsing, and the candidate triples are
         filtered by claim_admission.filter_claims (pronoun/fragment/
         heading/meta candidates are discarded, near-duplicates dropped).
-        ExtractionResult.metadata carries the admission histogram.
+        "Correction:"/"Actually," lines retract the preceding line: its
+        claims become source="quote" and only the correction is asserted.
+        ExtractionResult.metadata carries the admission histogram and
+        the number of correction pairs.
 
         Returns:
             ExtractionResult with list of Claim objects and timing info.
@@ -128,6 +132,7 @@ class ClaimExtractor:
         candidates = []
         num_sentences = 0
         discarded: dict = {}
+        correction_pairs = 0
 
         # Split bullet lines: after cleaning, each markdown line is its
         # own parse unit — bullets/headings/labels never merge into the
@@ -135,6 +140,7 @@ class ClaimExtractor:
         # produced heading-text subjects and quoted-claim fragments in
         # the exported run). A "Label:" prefix is split off; commentary
         # labels ("Why it's false:") gate the whole line as meta.
+        prev_line_claims = []
         for raw_line in cleaned.split('\n'):
             line = raw_line.strip()
             if not line:
@@ -144,11 +150,28 @@ class ClaimExtractor:
                 discarded['meta'] = discarded.get('meta', 0) + 1
                 continue
             parse_text = content if label is not None else line
+            is_correction = label is not None and is_correction_label(label)
+            if not is_correction:
+                parse_text, is_correction = split_correction_opener(parse_text)
+
+            # A correction retracts the preceding line: that statement is
+            # mentioned (source=quote), the correction is asserted. This
+            # keeps "false claim + Correction:" listicles from scoring
+            # their intentionally wrong statements as the writer's facts.
+            if is_correction and prev_line_claims:
+                for claim in prev_line_claims:
+                    if claim.source == 'spacy':
+                        claim.source = 'quote'
+                correction_pairs += 1
+
             doc = self._nlp(parse_text)
             sents = list(doc.sents)
             num_sentences += len(sents)
+            line_claims = []
             for sent in sents:
-                candidates.extend(self._extract_from_sentence(sent))
+                line_claims.extend(self._extract_from_sentence(sent))
+            candidates.extend(line_claims)
+            prev_line_claims = [] if is_correction else line_claims
 
         # ── Reported/mentioned claims (use-mention pass) ──────────────
         # Quoted propositions and "Claim: ..." lines are claims the text
@@ -166,11 +189,13 @@ class ClaimExtractor:
             discarded[reason] = discarded.get(reason, 0) + count
 
         elapsed_ms = (time.perf_counter() - start) * 1000.0
+        metadata = admission_metadata(len(claims), discarded)
+        metadata['correction_pairs'] = correction_pairs
         return ExtractionResult(
             claims=claims,
             extraction_time_ms=elapsed_ms,
             num_sentences=num_sentences,
-            metadata=admission_metadata(len(claims), discarded),
+            metadata=metadata,
         )
 
     def extract_from_sentence_text(self, text: str) -> List[Claim]:
