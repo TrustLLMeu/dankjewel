@@ -46,7 +46,9 @@ SYSTEM = (
 )
 
 JUDGES = [
-    {"name": "Qwen2.5-1.5B (incumbent)", "base": "http://127.0.0.1:18093/v1",
+    {"name": "Qwen2.5-0.5B (shipped default)", "base": "http://127.0.0.1:18092/v1",
+     "model": "Qwen/Qwen2.5-0.5B-Instruct", "no_think": False},
+    {"name": "Qwen2.5-1.5B (claims-size comparator)", "base": "http://127.0.0.1:18093/v1",
      "model": "Qwen/Qwen2.5-1.5B-Instruct", "no_think": False},
     {"name": "Qwen3-1.7B (candidate)", "base": "http://127.0.0.1:18096/v1",
      "model": "Qwen/Qwen3-1.7B", "no_think": True},
@@ -122,8 +124,19 @@ def spearman(xs, ys):
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--only", default=None,
+                        help="run only judges whose name contains this string")
+    args = parser.parse_args()
+    judges = [j for j in JUDGES if not args.only or args.only in j["name"]]
     data = json.loads(FIXTURE.read_text())
     report = {"fixture": str(FIXTURE), "judges": {}}
+    if OUT_JSON.exists():
+        try:
+            report["judges"] = json.loads(OUT_JSON.read_text()).get("judges", {})
+        except json.JSONDecodeError:
+            report["judges"] = {}
     md = ["# Multilingual judge agreement", "",
           "Authored fixture: 15 prompts per language, each with one relevant and "
           "one irrelevant response (30 judgments per language). Faroese omitted: "
@@ -133,7 +146,7 @@ def main():
               "irrelevant | rho |")
     md += [header, "|---|---|---|---|---|---|---|"]
     with httpx.Client() as client:
-        for judge in JUDGES:
+        for judge in judges:
             per_lang = {}
             for lang, items in data["languages"].items():
                 scores, expected, lat = [], [], []

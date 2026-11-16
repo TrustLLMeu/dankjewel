@@ -189,6 +189,69 @@
       "json_valid_mean": 1.0,
       "rho_mean": 0.996,
       "separation_mean": 0.99
+    },
+    "Qwen2.5-0.5B (shipped default)": {
+      "per_language": {
+        "nb": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.1,
+          "rho": 0.962,
+          "mean_latency_ms": 87.9
+        },
+        "nn": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.1,
+          "rho": 0.923,
+          "mean_latency_ms": 84.7
+        },
+        "da": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 82.2
+        },
+        "sv": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 80.5
+        },
+        "de": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 0.933,
+          "mean_irrelevant": 0.0,
+          "rho": 0.935,
+          "mean_latency_ms": 81.1
+        },
+        "nl": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 0.933,
+          "mean_irrelevant": 0.0,
+          "rho": 0.935,
+          "mean_latency_ms": 80.5
+        },
+        "is": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 0.8,
+          "mean_irrelevant": 0.533,
+          "rho": 0.3,
+          "mean_latency_ms": 89.0
+        }
+      },
+      "json_valid_mean": 1.0,
+      "rho_mean": 0.865,
+      "separation_mean": 0.848
     }
   }
 }

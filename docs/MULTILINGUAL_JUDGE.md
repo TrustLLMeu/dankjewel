@@ -17,7 +17,8 @@ small model covers it; the omission is reported, not hidden.
 
 | Role | Model | Endpoint | Notes |
 |---|---|---|---|
-| incumbent | `Qwen/Qwen2.5-1.5B-Instruct` | `http://127.0.0.1:18093/v1` | the runtime judge today |
+| shipped default | `Qwen/Qwen2.5-0.5B-Instruct` | `http://127.0.0.1:18092/v1` | the judge the product uses today |
+| claims-size comparator | `Qwen/Qwen2.5-1.5B-Instruct` | `http://127.0.0.1:18093/v1` | the claims server's model, run as a judge |
 | candidate | `Qwen/Qwen3-1.7B` | `http://127.0.0.1:18096/v1` | `/no_think` |
 | reference | `Qwen/Qwen3-8B` | `http://127.0.0.1:18095/v1` | `/no_think`, calibration only |
 
@@ -33,7 +34,8 @@ Per-judge means over the seven languages:
 
 | Judge | JSON valid | mean Spearman rho | separation |
 |---|---|---|---|
-| Qwen2.5-1.5B (incumbent) | 1.000 | 0.973 | 0.971 |
+| Qwen2.5-0.5B (shipped default) | 1.000 | 0.865 | 0.848 |
+| Qwen2.5-1.5B (claims-size comparator) | 1.000 | 0.973 | 0.971 |
 | Qwen3-1.7B (candidate) | 1.000 | 0.880 | 0.867 |
 | Qwen3-8B (reference) | 1.000 | 0.996 | 0.990 |
 
@@ -42,15 +44,16 @@ mean-irrelevant values are 0.000 for every judge.
 
 Lowest per-language cells (mean relevant / rho, same column order):
 
-| Language | incumbent | candidate | reference |
-|---|---|---|---|
-| Icelandic (is) | 0.867 / 0.874 | 0.533 / 0.603 | 0.933 / 0.972 |
-| Nynorsk (nn) | 0.933 / 0.935 | 0.800 / 0.816 | 1.000 / 1.000 |
-| Dutch (nl) | 1.000 / 1.000 | 0.867 / 0.874 | 1.000 / 1.000 |
+| Language | 0.5B shipped | 1.5B comparator | 1.7B candidate | 8B reference |
+|---|---|---|---|---|
+| Icelandic (is) | 0.800 / **0.300** | 0.867 / 0.874 | 0.533 / 0.603 | 0.933 / 0.972 |
+| Nynorsk (nn) | 1.000 / 0.923 | 0.933 / 0.935 | 0.800 / 0.816 | 1.000 / 1.000 |
+| Dutch (nl) | 0.933 / 0.935 | 1.000 / 1.000 | 0.867 / 0.874 | 1.000 / 1.000 |
 
-Pass checks from the test plan, both met: JSON validity ≥ 0.95 per language
-(all 21 cells are 1.000) and candidate Spearman rho ≥ 0.5 per language
-(lowest 0.603, Icelandic).
+Pass checks from the test plan: JSON validity ≥ 0.95 per language holds for
+every judge (all cells 1.000). The rho ≥ 0.5 per language check **fails for the
+shipped 0.5B judge on Icelandic (0.300)** and passes for the 1.5B (lowest 0.874),
+the 1.7B candidate (lowest 0.603) and the 8B reference (lowest 0.972).
 
 Per-call latency (mean ms, lowest to highest language): incumbent
 620.7–843.2 ms (~0.62–0.84 s, de … is), candidate 931.9–1096.1 ms
@@ -58,13 +61,16 @@ Per-call latency (mean ms, lowest to highest language): incumbent
 
 ## Decision
 
-Keep `Qwen/Qwen2.5-1.5B-Instruct` as the runtime judge. `Qwen/Qwen3-1.7B` is
-not adopted on this evidence: mean rho 0.880 against 0.973 (incumbent) and
-0.996 (reference), separation 0.867 against 0.971/0.990, and ~1.4× slower
-per call (mean 997 ms vs 701 ms). The cap increase to ≤ 1.7B for
-generative judges (raised from 1.5B on 2026-11-16, `.grok/HERDR.md`
-"Eval models") stands for future candidates; `Qwen/Qwen3-8B` remains calibration/reference only and is never
-a product judge.
+The shipped 0.5B judge is adequate for English but **fails the multilingual
+pass check on Icelandic (rho 0.300)**. The smallest model that passes all seven
+languages is `Qwen/Qwen2.5-1.5B-Instruct` (mean rho 0.973, lowest 0.874),
+already running locally as the claims server; it is the recommended judge
+configuration for non-English use (point the judge env at `:18093` with
+`Qwen/Qwen2.5-1.5B-Instruct`). `Qwen/Qwen3-1.7B` is not adopted: it passes the
+checks but is worse than the 1.5B (mean rho 0.880 vs 0.973, separation 0.867 vs
+0.971) and ~1.4x slower (mean 997 ms vs 701 ms). The cap increase to <= 1.7B
+stands for future candidates; `Qwen/Qwen3-8B` remains calibration/reference only
+and is never a product judge.
 
 Caveats: the items are easy, authored pointwise pairs, so a real deployment
 with graded, in-between relevance will be harder; language adherence was not
