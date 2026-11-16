@@ -129,5 +129,9 @@
   "timeline_title": "Iterations",
   "timeline_compare": "Compare",
   "timeline_compare_done": "Done",
-  "timeline_delta": "{{a}} → {{b}} · Δ {{d}}"
+  "timeline_delta": "{{a}} → {{b}} · Δ {{d}}",
+  "evidence_export_title": "Export evidence",
+  "export_bundle": "Bundle JSON",
+  "export_matrix": "Matrix CSV",
+  "export_claims": "Claims CSV"
 }

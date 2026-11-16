@@ -380,6 +380,12 @@ footer {
 .claim-chip .claim-src { opacity: 0.65; font-weight: 400; margin-left: 0.25rem; }
 .claim-row-highlight { background: #fef9c3 !important; }
 
+/* ── Evidence bundle export (dependency-free downloads) ──────────── */
+.evidence-export {
+  display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;
+  margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid var(--border);
+}
+
 /* ── Stage D: signal matrix (dimensions × evidence sources) ───────── */
 .signal-matrix { margin-top: 0.55rem; }
 .matrix-wrap { overflow-x: auto; margin-top: 0.25rem; }
@@ -764,6 +770,13 @@ footer {
           </div>
           <div class="claim-strip-groups" id="claim-strip-groups"></div>
         </div>
+
+        <div class="evidence-export" id="evidence-export" hidden>
+          <span class="evidence-subtitle" data-i18n="evidence_export_title">Export evidence</span>
+          <button class="timeline-compare" type="button" id="export-bundle" data-i18n="export_bundle">Bundle JSON</button>
+          <button class="timeline-compare" type="button" id="export-matrix" data-i18n="export_matrix">Matrix CSV</button>
+          <button class="timeline-compare" type="button" id="export-claims" data-i18n="export_claims">Claims CSV</button>
+        </div>
       </div>
 
       <div class="eval-spinner" id="eval-spinner" data-i18n="evaluating">⏳ Evaluating…</div>
@@ -832,6 +845,12 @@ document.addEventListener('DOMContentLoaded', () => {
   loadHistory();
   const compareBtn = document.getElementById('timeline-compare');
   if (compareBtn) compareBtn.addEventListener('click', toggleTimelineCompare);
+  for (const [id, fn] of [['export-bundle', exportEvidenceBundle],
+                          ['export-matrix', exportSignalMatrixCsv],
+                          ['export-claims', exportClaimsCsv]]) {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener('click', fn);
+  }
 
   // Slider value displays
   const sliders = [
@@ -2052,7 +2071,12 @@ function renderEvidence(evalData) {
   const note = document.getElementById('evidence-note');
   const prongs = evalData.prong_results || [];
   if (!card || !bar || !ribbon || !note) return;
-  if (!prongs.length) { card.hidden = true; return; }
+  if (!prongs.length) {
+    card.hidden = true;
+    const exportRow = document.getElementById('evidence-export');
+    if (exportRow) exportRow.hidden = true;
+    return;
+  }
 
   const coverage = evalData.coverage || null;
   bar.innerHTML = '';
@@ -2142,6 +2166,9 @@ function renderEvidence(evalData) {
   renderTrackOverlay(evalData);
   renderSignalMatrix(evalData);
   renderClaimStrip(evalData);
+
+  const exportRow = document.getElementById('evidence-export');
+  if (exportRow) exportRow.hidden = false;
 
   card.hidden = false;
 }
@@ -2395,6 +2422,90 @@ function focusClaimRow(subject, object) {
   document.querySelectorAll('#claims-body tbody tr').forEach(r => r.classList.remove('claim-row-highlight'));
   match.classList.add('claim-row-highlight');
   match.scrollIntoView({ block: 'center' });
+}
+
+// ── Evidence bundle export (dependency-free downloads) ────────────
+// Three artefacts for re-analysis or annotation: the full JSON bundle,
+// the signal-matrix cells, and the admitted claims.
+function downloadEvidence(name, text, mime) {
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function evidenceModel() {
+  const ev = lastResult && lastResult.evaluation;
+  if (!ev) return null;
+  const prongs = ev.prong_results || [];
+  const matrix = [];
+  prongs.forEach(p => (p.dimensions || []).forEach(dim => {
+    const sources = (dim.metadata && dim.metadata.evidence_sources) || {};
+    Object.entries(sources).forEach(([source, cell]) => {
+      matrix.push({ dimension: dim.name, source, value: cell.value,
+                    status: cell.status, n: cell.n });
+    });
+  }));
+  const p3 = prongs.find(p => p.prong_name.includes('Extraction'));
+  const fa = p3 && (p3.dimensions || []).find(d => d.name === 'Factual Accuracy');
+  const claims = (fa && fa.metadata && fa.metadata.claim_details) || [];
+  const history = getHistory().map(entry => {
+    const agg = entry.fullResult && entry.fullResult.evaluation
+      ? clientSideAggregate(entry.fullResult.evaluation, currentWeights) : null;
+    return { timestamp: entry.timestamp, total: entry.totalScore,
+             prongs: agg ? agg.prong_scores : null };
+  });
+  const promptEl = document.getElementById('prompt-input');
+  const modelEl = document.getElementById('model-select');
+  const generated = (lastResult.generation || {});
+  return { generated_at: new Date().toISOString(),
+           prompt: (promptEl && promptEl.value) || '',
+           model: generated.model || (modelEl && modelEl.value) || '',
+           coverage: ev.coverage || null, signal_matrix: matrix,
+           claims: claims, timeline: history };
+}
+
+function exportEvidenceBundle() {
+  const bundle = evidenceModel();
+  if (!bundle) return;
+  downloadEvidence('evidence_bundle.json',
+                   JSON.stringify(bundle, null, 1), 'application/json');
+}
+
+function csvCell(value) {
+  if (value === null || value === undefined) return '';
+  const text = String(value);
+  return /[",\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+}
+
+function exportSignalMatrixCsv() {
+  const bundle = evidenceModel();
+  if (!bundle) return;
+  const rows = [['dimension', 'source', 'value', 'status', 'n']];
+  bundle.signal_matrix.forEach(c => rows.push(
+    [c.dimension, c.source, c.value, c.status, c.n]));
+  downloadEvidence('signal_matrix.csv',
+                   rows.map(r => r.map(csvCell).join(',')).join('\n'), 'text/csv');
+}
+
+function exportClaimsCsv() {
+  const bundle = evidenceModel();
+  if (!bundle) return;
+  const rows = [['subject', 'predicate', 'object', 'source', 'relation',
+                 'verifier_score', 'atomic_text']];
+  bundle.claims.forEach(item => {
+    const c = item.claim || {};
+    rows.push([c.subject, c.predicate, c.object, c.source || 'spacy',
+               item.relation || item.effective_result, item.verifier_score,
+               c.atomic_text]);
+  });
+  downloadEvidence('claims.csv',
+                   rows.map(r => r.map(csvCell).join(',')).join('\n'), 'text/csv');
 }
 
 function claimSourceCounts(claimDetails) {
