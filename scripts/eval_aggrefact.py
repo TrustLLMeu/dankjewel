@@ -96,9 +96,20 @@ def group_summary(rows, scores, latencies):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--split", default="dev", choices=["dev", "test"])
+    parser.add_argument("--limit-per-dataset", type=int, default=150,
+                        help="sample at most N pairs per sub-dataset (0 = all)")
     args = parser.parse_args()
 
     rows = [r for r in (normalize(raw) for raw in load_rows(args.split)) if r]
+    if args.limit_per_dataset:
+        counts, sampled = {}, []
+        for row in rows:
+            name = row[0]
+            counts[name] = counts.get(name, 0)
+            if counts[name] < args.limit_per_dataset:
+                sampled.append(row)
+                counts[name] += 1
+        rows = sampled
     if not rows:
         raise SystemExit("no (document, claim, label) rows found")
 

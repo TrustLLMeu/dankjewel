@@ -200,13 +200,16 @@ Runtime LLM-as-judge / claim-extraction models for the PoC:
 |-----------------|-------|------|------|
 | Embeddings (Prong 1 baseline) | `sentence-transformers/all-MiniLM-L6-v2` | ~22M | local CPU |
 | Toxicity (Prong 1) | `unitary/toxic-bert` or DistilBERT-class | ~66–110M | local CPU |
-| Generative judge (Prong 1 option) | `Qwen/Qwen2.5-0.5B-Instruct` | 0.5B | local vLLM on Malvik |
-| Claim extraction (Prong 3 option) | `Qwen/Qwen2.5-0.5B-Instruct` (same instance) | 0.5B | local vLLM |
-| Readability LLM (Prong 2 option, later) | same 0.5B instance, task prefix | 0.5B | local vLLM |
+| Generative judge (Prong 1 option) | `Qwen/Qwen2.5-0.5B-Instruct` | 0.5B | local llama.cpp on Malvik (`:18092`) |
+| Multilingual judge (Prong 1 option, test) | `Qwen/Qwen3-1.7B` | 1.7B | local llama.cpp on Malvik (`:18096`) |
+| Claim extraction (Prong 3 option) | `Qwen/Qwen2.5-1.5B-Instruct` | 1.5B | local llama.cpp on Malvik (`:18093`) |
+| Readability LLM (Prong 2 option, later) | same 0.5B instance, task prefix | 0.5B | local llama.cpp |
 
-Hard cap for this PoC: **≤ 1.5B parameters** for any generative judge.
-If 0.5B is unusable, step to `Qwen/Qwen2.5-1.5B-Instruct`. Do not step
-to 7B+ until the user lifts the cap.
+Hard cap for this PoC: **≤ 1.7B parameters** for any generative judge
+(user raised it from 1.5B on 2026-11-16 to admit `Qwen/Qwen3-1.7B` as the
+multilingual judge candidate). Do not step to 7B+ until the user lifts the
+cap again. `Qwen/Qwen3-8B` runs for calibration/reference only, never as a
+product judge.
 
 Rule-based and intrinsic prongs stay model-free at runtime (lexicons,
 spaCy `en_core_web_sm`, generating-model logprobs).
