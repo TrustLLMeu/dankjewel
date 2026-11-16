@@ -5,7 +5,7 @@ import numpy as np
 from src.dimensions.base_dimension import ScorableDimension
 from src.base import DimensionScore
 from src.evidence import source
-from src.llm_judge_client import LLMJudgeClient, JudgeUnavailableError
+from src.llm_judge_client import LLMJudgeClient, JudgeUnavailableError, judge_route_for_lang
 from src.models.embeddings import Embeddings
 from src.models.toxicity_model import ToxicityModel
 
@@ -20,23 +20,29 @@ class Relevance(ScorableDimension):
         self.emb = embeddings or Embeddings()
 
     def evaluate(self, prompt: Optional[str], response: str,
-                 judge: Optional[LLMJudgeClient] = None) -> DimensionScore:
+                 judge: Optional[LLMJudgeClient] = None,
+                 lang: str = "en") -> DimensionScore:
         """Score response relevance, optionally with a tiny-LLM second opinion.
 
         The embedding baseline stays the default: `value` (and anything
         aggregated from it) is always the baseline score. When `judge` is
         given, the metadata additionally carries the dual output
         (baseline_value / llm_value, both processing times, judge model,
-        judge_status "scored"|"unknown"|"error", rationale). A failed or
-        slow judge call only downgrades the judge track — the baseline
-        score and the dimension's status are untouched.
+        judge_route "en"|"non-en", judge_status "scored"|"unknown"|"error",
+        rationale). A failed or slow judge call only downgrades the judge
+        track — the baseline score and the dimension's status are
+        untouched.
 
         Args:
             prompt: the original prompt; None/blank → unmeasurable (unknown).
             response: the text to score.
             judge: tiny-judge client (or any object with `model_name` and
                 `judge(prompt, response)` — tests inject a stub). None
-                (the default) keeps the existing single-track behavior.
+                (the default) keeps the existing single-track behavior;
+                the caller routes by language (Prong 1 uses
+                get_judge_for_lang).
+            lang: the evaluation language — recorded as the judge_route
+                metadata ("en" for English, "non-en" otherwise).
         """
         start = time.time()
         if prompt is None or not prompt.strip():
@@ -56,7 +62,8 @@ class Relevance(ScorableDimension):
             )
             if judge is not None:
                 score.metadata.update(self._judge_track(judge, None, response,
-                                                       score.value, time.time() - start))
+                                                       score.value, time.time() - start,
+                                                       lang=lang))
             return score
         try:
             p_emb = self.emb.embed_texts([prompt])[0]
@@ -79,7 +86,7 @@ class Relevance(ScorableDimension):
                                     evidence_sources={'embedding': source(None, 'error', None)})
             if judge is not None:
                 track = self._judge_track(judge, prompt, response,
-                                          err.value, time.time() - start)
+                                          err.value, time.time() - start, lang=lang)
                 err.metadata.update(track)
                 err.metadata['evidence_sources'].update(self._judge_evidence(track))
             return err
@@ -88,7 +95,7 @@ class Relevance(ScorableDimension):
                                    evidence_sources={'embedding': source(score, 'scored', len(sents))})
         if judge is not None:
             track = self._judge_track(judge, prompt, response,
-                                      result.value, time.time() - start)
+                                      result.value, time.time() - start, lang=lang)
             result.metadata.update(track)
             result.metadata['evidence_sources'].update(self._judge_evidence(track))
         return result
@@ -102,19 +109,22 @@ class Relevance(ScorableDimension):
                                     1 if scored else None)}
 
     def _judge_track(self, judge: LLMJudgeClient, prompt: Optional[str], response: str,
-                     baseline_value: float, baseline_elapsed_s: float) -> Dict[str, Any]:
+                     baseline_value: float, baseline_elapsed_s: float,
+                     lang: str = "en") -> Dict[str, Any]:
         """Run the tiny judge and return its half of the dual output. Never raises.
 
         judge_status follows the judge call itself: "scored" with an
         llm_value, "unknown" when the judge could not be reached or has
         nothing to judge (no prompt), "error" when it replied unusable
         JSON. The baseline half of the metadata mirrors what the
-        embedding path already produced.
+        embedding path already produced. judge_model/judge_route record
+        which judge the language router selected ("en" or "non-en").
         """
         track: Dict[str, Any] = {
             'baseline_value': baseline_value,
             'baseline_processing_time_ms': baseline_elapsed_s * 1000.0,
             'judge_model': judge.model_name,
+            'judge_route': judge_route_for_lang(lang),
             'judge_status': 'unknown',
             'llm_value': None,
             'llm_processing_time_ms': None,

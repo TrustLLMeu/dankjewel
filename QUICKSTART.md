@@ -167,6 +167,9 @@ print(f"Fluency: {score.value:.3f}  (raw Flesch: {score.raw_value})")
 | `sv` | Swedish |
 
 Pass `lang=` to `pipeline.evaluate()` or to prong-level `evaluate()` calls.
+The optional `tiny_judge` track is routed by `lang`: English → the 0.5B judge
+(`DANKJEWEL_JUDGE_BASE_URL`), other languages → the 1.5B
+(`DANKJEWEL_JUDGE_BASE_URL_NONEN`, `DANKJEWEL_JUDGE_MODEL_NONEN`).
 
 ---
 

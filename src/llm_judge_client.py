@@ -30,6 +30,16 @@ the 1.5B):
                                  (never hardcoded)
     DANKJEWEL_CLAIMS_TIMEOUT_S   default 30
 
+Language-routed [JUDGE] (see get_judge_for_lang; the 0.5B fails the
+Icelandic pass check — rho 0.30 — while the 1.5B passes all seven
+languages, mean rho 0.973; details in docs/MULTILINGUAL_JUDGE.md):
+    DANKJEWEL_JUDGE_BASE_URL_NONEN  default http://127.0.0.1:18093/v1
+                                     (non-English judge; explicitly set
+                                     empty → fall back to the default
+                                     client, never invent a model)
+    DANKJEWEL_JUDGE_MODEL_NONEN     default Qwen/Qwen2.5-1.5B-Instruct
+    (API key shared with DANKJEWEL_JUDGE_API_KEY)
+
 The client never fabricates a score or a claim: a connection/timeout
 failure raises JudgeUnavailableError, and an unparseable reply or a
 score outside [0,1] raises JudgeParseError (its ClaimsParseError
@@ -60,6 +70,13 @@ DEFAULT_TIMEOUT_S = 30.0
 CLAIMS_DEFAULT_BASE_URL = "http://127.0.0.1:18093/v1"
 CLAIMS_DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
 CLAIMS_DEFAULT_TIMEOUT_S = 30.0
+
+# Non-English [JUDGE] routing (get_judge_for_lang). Same server/model as
+# the [CLAIMS] task today — the 1.5B is the smallest model that passes
+# all seven languages in the multilingual judge test. Separate env vars
+# keep the judge routing configurable independently of the claims task.
+NONEN_DEFAULT_BASE_URL = "http://127.0.0.1:18093/v1"
+NONEN_DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
 
 # The few-shot prompt verified live against the 0.5B judge on
 # 2026-11-14 (relevant→1.0, irrelevant→0.0; the zero-shot variant did
@@ -445,6 +462,9 @@ class LLMJudgeClient:
 _shared_client: Optional[LLMJudgeClient] = None
 _shared_lock = threading.Lock()
 
+_shared_nonen_client: Optional[LLMJudgeClient] = None
+_nonen_lock = threading.Lock()
+
 
 def get_shared_judge_client() -> LLMJudgeClient:
     """Return the process-wide shared judge client, created lazily.
@@ -459,3 +479,52 @@ def get_shared_judge_client() -> LLMJudgeClient:
             if _shared_client is None:
                 _shared_client = LLMJudgeClient()
     return _shared_client
+
+
+def judge_route_for_lang(lang: Optional[str]) -> str:
+    """The route class for a language: "en" or "non-en".
+
+    Only 'en' is English; anything else (including None/blank, which
+    defaults to the pipeline's 'en') is routed per get_judge_for_lang.
+    """
+    return 'en' if (lang or 'en').strip().lower() == 'en' else 'non-en'
+
+
+def get_judge_for_lang(lang: Optional[str]) -> LLMJudgeClient:
+    """Return the judge client for an evaluation language.
+
+    English ('en') uses the shared default [JUDGE] client (the 0.5B on
+    :18092, adequate for English). Any other language routes to the
+    1.5B server: DANKJEWEL_JUDGE_BASE_URL_NONEN (default
+    http://127.0.0.1:18093/v1) and DANKJEWEL_JUDGE_MODEL_NONEN (default
+    Qwen/Qwen2.5-1.5B-Instruct), sharing the DANKJEWEL_JUDGE_API_KEY.
+    When either non-en env var is explicitly set to the empty string,
+    the default client is used instead — a model name is never
+    invented. The non-English client is created once and cached, like
+    the shared client; the chosen model is exposed on
+    client.model_name.
+
+    Args:
+        lang: the evaluation language code (e.g. 'en', 'nl', 'nb').
+
+    Returns:
+        LLMJudgeClient for that language's route.
+    """
+    if judge_route_for_lang(lang) == 'en':
+        return get_shared_judge_client()
+    base = os.environ.get("DANKJEWEL_JUDGE_BASE_URL_NONEN")
+    model = os.environ.get("DANKJEWEL_JUDGE_MODEL_NONEN")
+    # Explicitly empty non-en configuration → fall back to the default
+    # client (never guess a model or a URL).
+    if (base is not None and not base.strip()) or \
+            (model is not None and not model.strip()):
+        return get_shared_judge_client()
+    global _shared_nonen_client
+    if _shared_nonen_client is None:
+        with _nonen_lock:
+            if _shared_nonen_client is None:
+                _shared_nonen_client = LLMJudgeClient(
+                    base_url=base or NONEN_DEFAULT_BASE_URL,
+                    model=model or NONEN_DEFAULT_MODEL,
+                )
+    return _shared_nonen_client

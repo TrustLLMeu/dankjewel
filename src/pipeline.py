@@ -53,6 +53,8 @@ class EvaluationPipeline:
             lang: Language code for Prong 2 lexicon selection (default: "en").
             tiny_judge: Opt in to the tiny-LLM judge track on Prong 1
                 Relevance (dual output in that dimension's metadata).
+                The judge is routed by `lang`: the 0.5B for English,
+                the 1.5B for other languages (get_judge_for_lang).
                 Default False: embeddings baseline only, unchanged latency.
             llm_extract: Opt in to the LLM claim-extraction track on
                 Prong 3 (dual output: spaCy claims merged with
@@ -78,8 +80,10 @@ class EvaluationPipeline:
                 if prong_name == 'Prong 4':
                     result = prong.evaluate(text, intrinsic_data=intrinsic_data)
                 elif prong_name == 'Prong 1':
-                    # Prong 1 uses prompt for relevance scoring
-                    result = prong.evaluate(text, prompt=prompt, tiny_judge=tiny_judge)
+                    # Prong 1 uses prompt for relevance scoring; lang
+                    # routes the opt-in judge (0.5B en / 1.5B non-en).
+                    result = prong.evaluate(text, prompt=prompt,
+                                           tiny_judge=tiny_judge, lang=lang)
                 elif prong_name == 'Prong 2':
                     result = prong.evaluate(text, lang=lang)
                 elif prong_name == 'Prong 3':

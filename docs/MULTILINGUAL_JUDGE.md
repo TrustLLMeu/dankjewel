@@ -79,6 +79,21 @@ language-quality claim); the rubric is pointwise, so there is no pairwise
 position-bias test; and the Icelandic weakness is not specific to the
 candidate — it affects every small model, including the 8B reference.
 
+## Product routing
+
+The product judge routes by language (`get_judge_for_lang` in
+`src/llm_judge_client.py`): English (`en`) uses the 0.5B judge
+(`DANKJEWEL_JUDGE_BASE_URL`, default `http://127.0.0.1:18092/v1`), and
+every other language uses the 1.5B via `DANKJEWEL_JUDGE_BASE_URL_NONEN`
+(default `http://127.0.0.1:18093/v1`) and `DANKJEWEL_JUDGE_MODEL_NONEN`
+(default `Qwen/Qwen2.5-1.5B-Instruct`), sharing `DANKJEWEL_JUDGE_API_KEY`.
+Either `*_NONEN` env var set explicitly empty falls back to the default
+client — a model name is never invented. Recommended configuration: run
+the 0.5B judge on `:18092` and the 1.5B on `:18093` (the same server
+already serving `[CLAIMS]`), leave the `*_NONEN` vars unset, and let the
+router pick. The Relevance judge-track metadata discloses the choice as
+`judge_route` ("en" | "non-en") and `judge_model`.
+
 ## How to rerun
 
 From the repo root, with `DANKJEWEL_JUDGE_API_KEY` set (the same local key

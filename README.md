@@ -190,7 +190,12 @@ print(result["aggregated_scores"]["total_score"])
 Prong 1's default (and current) backend is `embeddings`: MiniLM cosine
 similarity plus toxic-bert classification. No generative LLM judge runs —
 the family name follows the D7.5 protocol. Evaluate results record the
-backend in `metadata.prong1_backend`.
+backend in `metadata.prong1_backend`. With `tiny_judge` on, the judge is
+routed by language (details in [docs/MULTILINGUAL_JUDGE.md](docs/MULTILINGUAL_JUDGE.md)):
+English uses the 0.5B (`DANKJEWEL_JUDGE_BASE_URL`), other languages use the
+1.5B (`DANKJEWEL_JUDGE_BASE_URL_NONEN`, model `DANKJEWEL_JUDGE_MODEL_NONEN`),
+and the Relevance metadata records `judge_route` ("en" | "non-en") plus the
+served `judge_model`.
 
 #### Prong 2 — Rule-Based (prototype language configuration)
 
