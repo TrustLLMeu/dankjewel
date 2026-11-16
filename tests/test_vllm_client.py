@@ -73,3 +73,32 @@ def test_generate_normalizes_chat_shaped_logprobs():
     assert result.tokens == ["Hello", " there"]
     assert result.token_logprobs == [-0.1, -0.2]
     assert result.top_logprobs == [{"Hello": -0.1}, {" there": -0.2}]
+
+
+def test_stream_chunk_normalizes_chat_shaped_logprobs():
+    """llama.cpp streams chat-shaped logprobs; Prong 4 needs the token value."""
+    from src.vllm_client import _stream_chunk
+
+    chunk = _stream_chunk({
+        "text": "Hello",
+        "finish_reason": None,
+        "logprobs": {"content": [{
+            "token": "Hello", "logprob": -0.25,
+            "top_logprobs": [{"token": "Hello", "logprob": -0.25},
+                             {"token": "Hi", "logprob": -1.6}]}]},
+    })
+    assert chunk["token_logprob"] == -0.25
+    assert chunk["top_logprobs"]["Hi"] == -1.6
+
+
+def test_stream_chunk_accepts_legacy_arrays():
+    from src.vllm_client import _stream_chunk
+
+    chunk = _stream_chunk({
+        "text": "Hello",
+        "finish_reason": "stop",
+        "logprobs": {"tokens": ["Hello"], "token_logprobs": [-0.3],
+                     "top_logprobs": [{"Hello": -0.3}]},
+    })
+    assert chunk["token_logprob"] == -0.3
+    assert chunk["done"] is True

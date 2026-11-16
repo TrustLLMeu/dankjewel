@@ -44,6 +44,36 @@ class GenerationResult:
         }
 
 
+def _stream_chunk(choice: dict) -> dict:
+    """Normalize one streaming choice into the client's chunk shape.
+
+    Accepts the legacy completions logprobs (parallel arrays) and the
+    chat-shaped ``content`` list that llama.cpp returns, so the streaming
+    path feeds Prong 4 the same way the non-streaming path does.
+    """
+    text = choice.get("text", "")
+    finish_reason = choice.get("finish_reason")
+    lp_data = choice.get("logprobs") or {}
+    content = lp_data.get("content")
+    if content:
+        last = content[-1] or {}
+        token_logprob = last.get("logprob")
+        top_logprobs = {alt.get("token", ""): alt.get("logprob")
+                        for alt in (last.get("top_logprobs") or [])}
+    else:
+        token_lps = lp_data.get("token_logprobs") or []
+        top_lps = lp_data.get("top_logprobs") or []
+        token_logprob = token_lps[-1] if token_lps else None
+        top_logprobs = top_lps[-1] if top_lps else None
+    return {
+        "token": text,
+        "finish_reason": finish_reason,
+        "token_logprob": token_logprob,
+        "top_logprobs": top_logprobs,
+        "done": finish_reason is not None,
+    }
+
+
 class VLLMClient:
     """Async client for vLLM's OpenAI-compatible API.
 
@@ -272,21 +302,7 @@ class VLLMClient:
                 except json.JSONDecodeError:
                     continue
                 choice = data.get("choices", [{}])[0]
-                text = choice.get("text", "")
-                finish_reason = choice.get("finish_reason")
-
-                lp_data = choice.get("logprobs") or {}
-                token_lps = lp_data.get("token_logprobs", [None])
-                top_lps = lp_data.get("top_logprobs", [None])
-
-                chunk = {
-                    "token": text,
-                    "finish_reason": finish_reason,
-                    "token_logprob": token_lps[-1] if token_lps else None,
-                    "top_logprobs": top_lps[-1] if top_lps else None,
-                    "done": finish_reason is not None,
-                }
-                yield chunk
+                yield _stream_chunk(choice)
 
     async def close(self):
         """Close the HTTP client connection."""
