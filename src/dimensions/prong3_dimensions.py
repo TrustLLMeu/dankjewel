@@ -23,13 +23,14 @@ the MiniCheck verifier path (PARTIALLY_SUPPORTED band) is opt-in via
 llm_verify and never changes the binary score.
 """
 
+import re
 import time
 from typing import List, Optional
 
 from src.dimensions.base_dimension import ScorableDimension
 from src.base import DimensionScore
 from src.evidence import source
-from src.extraction.claim_admission import is_referential_subject
+from src.extraction.claim_admission import STOPWORDS, is_referential_subject
 from src.extraction.claim_extractor import Claim
 from src.resources.nli_verifier import NliVerifier, VerifierUnavailableError
 from src.resources.wikidata_offline import (
@@ -41,8 +42,41 @@ from src.resources.wikidata_offline import (
 VERIFIER_CONFIRM_THRESHOLD = 0.8
 VERIFIER_DENY_THRESHOLD = 0.2
 
+# Minimum share of the claim's content words that must appear in the
+# subject's formatted KB facts before MiniCheck is consulted. MiniCheck
+# scores *support by this document*; a document that shares only a
+# subject name and a type cannot ground a claim about, say, a population
+# figure, and the model's low support score would otherwise be reported
+# as a factual denial. Below the threshold the claim stays UNKNOWN with
+# an explicit reason.
+VERIFIER_MIN_KB_COVERAGE = 0.75
+
+_WORD_RE = re.compile(r"[\w'’-]+", re.UNICODE)
+
 # Error strings kept short in metadata (full tracebacks are long).
 _MAX_ERROR_LEN = 120
+
+
+def _content_tokens(text: str) -> set:
+    """Lower-cased content words (stopwords and single characters out)."""
+    return {
+        word for word in _WORD_RE.findall((text or '').lower())
+        if word not in STOPWORDS and len(word) > 1
+    }
+
+
+def kb_coverage(claim_text: str, doc: str) -> float:
+    """Share of the claim's content words present in the grounding doc.
+
+    A coarse lexical relevance check, not a semantic one: it answers
+    "does the KB say anything about the things this claim talks about?"
+    A claim whose distinctive words (``inhabitants``, ``codified``) are
+    absent from the document cannot be confirmed or denied by it.
+    """
+    claim_tokens = _content_tokens(claim_text)
+    if not claim_tokens:
+        return 0.0
+    return len(claim_tokens & _content_tokens(doc)) / len(claim_tokens)
 
 
 def _invert_result(result: VerificationResult) -> VerificationResult:
@@ -167,6 +201,14 @@ class FactualAccuracy(ScorableDimension):
             if not claim.object and claim.predicate != 'exist':
                 unknown += 1
                 relation_counts['unknown'] += 1
+                claim_details.append({
+                    'claim': claim.to_dict(),
+                    'verification': {},
+                    'negated': claim.negated,
+                    'effective_result': VerificationResult.UNKNOWN.value,
+                    'relation': VerificationResult.UNKNOWN.value,
+                    'reason': 'no_object',
+                })
                 continue
 
             detail = self.wikidata.verify_triple(
@@ -181,10 +223,13 @@ class FactualAccuracy(ScorableDimension):
             # ── Five-way relation track (always-on) ─────────────────────
             relation = effective_result
             verifier_score = None
+            verifier_err = None
+            verifier_skip = None
             if llm_verify and relation == VerificationResult.UNKNOWN:
-                relation, verifier_score, err = self._verifier_relation(claim)
-                if err:
-                    verifier_errors.append(err)
+                (relation, verifier_score, verifier_err,
+                 verifier_skip) = self._verifier_relation(claim)
+                if verifier_err:
+                    verifier_errors.append(verifier_err)
                 if verifier_score is not None:
                     verifier_scored += 1
 
@@ -197,6 +242,10 @@ class FactualAccuracy(ScorableDimension):
                 'effective_result': effective_result.value,
                 'relation': relation.value,
             }
+            if relation == VerificationResult.UNKNOWN:
+                claim_detail['reason'] = self._unknown_reason(
+                    claim, verifier_err if llm_verify else None, llm_verify,
+                    verifier_skip)
             if verifier_score is not None:
                 claim_detail['verifier_score'] = round(verifier_score, 4)
             claim_details.append(claim_detail)
@@ -262,41 +311,75 @@ class FactualAccuracy(ScorableDimension):
             evidence_sources=evidence_sources,
         )
 
+    def _unknown_reason(self, claim: Claim, verifier_err: str = None,
+                        verifier_used: bool = False,
+                        verifier_skip: str = None) -> str:
+        """Classify why a claim stayed UNKNOWN, for the UI and the exports.
+
+        Returns one of: non_referential_subject, entity_not_in_kb,
+        no_kb_facts, verifier_unavailable, verifier_off,
+        insufficient_kb_coverage, property_not_matched.
+        """
+        if not is_referential_subject(claim.subject):
+            return 'non_referential_subject'
+        qid = self.wikidata.lookup_entity(claim.subject)
+        if not qid:
+            return 'entity_not_in_kb'
+        if not self.wikidata.format_entity_facts(qid):
+            return 'no_kb_facts'
+        if verifier_err:
+            return 'verifier_unavailable'
+        if verifier_skip == 'insufficient_kb_coverage':
+            return 'insufficient_kb_coverage'
+        if not verifier_used:
+            return 'verifier_off'
+        return 'property_not_matched'
+
     def _verifier_relation(self, claim: Claim) -> tuple:
         """Score one KB-unknown claim with the MiniCheck verifier.
 
         Formats the subject's KB facts as the grounding document and
         scores the claim text (the decontextualized atomic_text when
-        present, else "subject predicate object"). No facts or an
-        unresolved subject keep the relation UNKNOWN. Negated spaCy
-        triples (no atomic_text to carry the negation) get the verifier
-        verdict inverted, mirroring the triple-match negation rule.
+        present, else "subject predicate object"). No facts, an
+        unresolved subject, or a document that does not lexically cover
+        the claim keep the relation UNKNOWN. Negated spaCy triples (no
+        atomic_text to carry the negation) get the verifier verdict
+        inverted, mirroring the triple-match negation rule.
 
         Returns:
             (relation: VerificationResult, verifier_score: float or
-            None, error: str or None). The score is None and the
-            relation UNKNOWN on verifier failure — never fabricated.
+            None, error: str or None, skip_reason: str or None). The
+            score is None and the relation UNKNOWN on verifier failure
+            or when the grounding document is not relevant — never
+            fabricated.
         """
         # Referential gate (Slice 0): a pronoun/punctuation/stopword
         # subject is never an entity — even if a lookup once resolved
         # it through prefix matching, the verifier must not score the
         # claim against the wrong entity's facts.
         if not is_referential_subject(claim.subject):
-            return VerificationResult.UNKNOWN, None, None
+            return VerificationResult.UNKNOWN, None, None, None
 
         subj_qid = self.wikidata.lookup_entity(claim.subject)
         doc = self.wikidata.format_entity_facts(subj_qid) if subj_qid else None
         if not doc:
             # No facts / entity unresolved -> UNKNOWN (never invented).
-            return VerificationResult.UNKNOWN, None, None
+            return VerificationResult.UNKNOWN, None, None, None
 
         claim_text = claim.atomic_text or f"{claim.subject} {claim.predicate} {claim.object}"
+        if kb_coverage(claim_text, doc) < VERIFIER_MIN_KB_COVERAGE:
+            # The document names the subject but not what the claim says
+            # about it (population, a codified constitution, a term's
+            # origin). MiniCheck would report low support for missing
+            # evidence; that is not a denial.
+            return (VerificationResult.UNKNOWN, None, None,
+                    'insufficient_kb_coverage')
         try:
             p = self._get_verifier().score(claim_text, doc)
         except VerifierUnavailableError as e:
-            return VerificationResult.UNKNOWN, None, f"{type(e).__name__}: {e}"[:_MAX_ERROR_LEN]
+            return VerificationResult.UNKNOWN, None, f"{type(e).__name__}: {e}"[:_MAX_ERROR_LEN], None
         except Exception as e:  # defensive: a verifier bug must not kill the prong
-            return VerificationResult.UNKNOWN, None, f"{type(e).__name__}: {e}"[:_MAX_ERROR_LEN]
+            return VerificationResult.UNKNOWN, None, f"{type(e).__name__}: {e}"[:_MAX_ERROR_LEN], None
 
         if p >= VERIFIER_CONFIRM_THRESHOLD:
             relation = VerificationResult.CONFIRMED
@@ -309,7 +392,7 @@ class FactualAccuracy(ScorableDimension):
         # verdict for negated spaCy claims; atomic_text is self-contained.
         if claim.negated and not claim.atomic_text:
             relation = _invert_result(relation)
-        return relation, p, None
+        return relation, p, None, None
 
 
 class FactualConsistency(ScorableDimension):

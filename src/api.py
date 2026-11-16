@@ -106,6 +106,7 @@ class GenerateRequest(BaseModel):
     repetition_penalty: float = Field(1.0, ge=1.0, le=2.0)
     frequency_penalty: float = Field(0.0, ge=0.0, le=2.0)
     language: str = Field("en", description="Language code for Prong 2 lexicons (e.g. en, nl, da)")
+    logprobs_k: int = Field(20, ge=0, le=20, description="Top-k logprobs per token; 0 disables them (Prong 4 then stays unknown). Defaults to VLLM_LOGPROBS_K.")
     backend_type: str = Field("local", description="'local' (vLLM) or 'remote' (OpenAI-compatible, bring-your-own-key)")
     base_url: Optional[str] = Field(None, description="Base URL for a remote backend (required if backend_type='remote')")
     api_key: Optional[str] = Field(None, description="API key for a remote backend. Never stored server-side.")
@@ -131,6 +132,7 @@ class GenerateAndEvaluateRequest(BaseModel):
     repetition_penalty: float = Field(1.0, ge=1.0, le=2.0)
     frequency_penalty: float = Field(0.0, ge=0.0, le=2.0)
     language: str = Field("en", description="Language code for Prong 2 lexicons (e.g. en, nl, da)")
+    logprobs_k: int = Field(20, ge=0, le=20, description="Top-k logprobs per token; 0 disables them (Prong 4 then stays unknown). Defaults to VLLM_LOGPROBS_K.")
     backend_type: str = Field("local", description="'local' (vLLM) or 'remote' (OpenAI-compatible, bring-your-own-key)")
     base_url: Optional[str] = Field(None, description="Base URL for a remote backend (required if backend_type='remote')")
     api_key: Optional[str] = Field(None, description="API key for a remote backend. Never stored server-side.")
@@ -229,7 +231,7 @@ async def generate(req: GenerateRequest):
             top_p=req.top_p,
             repetition_penalty=req.repetition_penalty,
             frequency_penalty=req.frequency_penalty,
-            logprobs=VLLM_LOGPROBS_K,
+            logprobs=(req.logprobs_k or None),
         )
         return {
             "text": result.text,
@@ -272,7 +274,7 @@ async def generate_stream(req: GenerateRequest):
                 top_p=req.top_p,
                 repetition_penalty=req.repetition_penalty,
                 frequency_penalty=req.frequency_penalty,
-                logprobs=VLLM_LOGPROBS_K,
+                logprobs=(req.logprobs_k or None),
             ):
                 # Some hosted "reasoning" models (gpt-oss, DeepSeek-R1 style,
                 # etc.) stream hidden chain-of-thought via a separate field
@@ -335,6 +337,10 @@ async def generate_stream(req: GenerateRequest):
         # Send generation metadata
         gen_dict = gen_result.to_dict()
         gen_dict["reasoning_chars"] = reasoning_chars
+        gen_dict["logprobs_k"] = req.logprobs_k
+        gen_dict["logprobs_reason"] = (
+            "ok" if gen_result.token_logprobs else
+            ("disabled" if req.logprobs_k == 0 else "backend_returned_none"))
         gen_data = json.dumps({"type": "generation", "data": gen_dict})
         yield f"data: {gen_data}\n\n"
 
@@ -399,7 +405,7 @@ async def generate_and_evaluate(req: GenerateAndEvaluateRequest):
             top_p=req.top_p,
             repetition_penalty=req.repetition_penalty,
             frequency_penalty=req.frequency_penalty,
-            logprobs=VLLM_LOGPROBS_K,
+            logprobs=(req.logprobs_k or None),
         )
     except Exception as e:
         target = req.base_url if req.backend_type == "remote" else VLLM_BASE_URL
@@ -420,8 +426,13 @@ async def generate_and_evaluate(req: GenerateAndEvaluateRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Evaluation failed: {e}")
 
+    gen_dict = gen_result.to_dict()
+    gen_dict["logprobs_k"] = req.logprobs_k
+    gen_dict["logprobs_reason"] = (
+        "ok" if gen_result.token_logprobs else
+        ("disabled" if req.logprobs_k == 0 else "backend_returned_none"))
     return {
-        "generation": gen_result.to_dict(),
+        "generation": gen_dict,
         "evaluation": eval_result,
     }
 

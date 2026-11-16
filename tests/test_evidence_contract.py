@@ -284,8 +284,10 @@ class TestProng3Evidence:
         score = FactualAccuracy(wikidata=wikidata).evaluate("Hello.", claims=[])
         assert score.metadata['evidence_sources'] == {}
 
-    def test_fa_minicheck_listed_when_scored(self, wikidata):
+    def test_fa_minicheck_listed_when_scored(self, wikidata, monkeypatch):
         """llm_verify with a working verifier: minicheck scored, n = claims."""
+        import src.dimensions.prong3_dimensions as p3
+        monkeypatch.setattr(p3, "VERIFIER_MIN_KB_COVERAGE", 0.0)
         stub = StubVerifier(0.5)
         score = FactualAccuracy(wikidata=wikidata, verifier=stub).evaluate(
             "", claims=[UNKNOWN_WHARVES_CLAIM], llm_verify=True)
@@ -293,7 +295,9 @@ class TestProng3Evidence:
         assert ev['minicheck'] == {'value': None, 'status': 'scored', 'n': 1}
         assert ev['kb_exact']['status'] == 'unknown'  # KB left it unknown
 
-    def test_fa_minicheck_error_when_all_attempts_fail(self, wikidata):
+    def test_fa_minicheck_error_when_all_attempts_fail(self, wikidata, monkeypatch):
+        import src.dimensions.prong3_dimensions as p3
+        monkeypatch.setattr(p3, "VERIFIER_MIN_KB_COVERAGE", 0.0)
         stub = UnavailableVerifier()
         score = FactualAccuracy(wikidata=wikidata, verifier=stub).evaluate(
             "", claims=[UNKNOWN_WHARVES_CLAIM], llm_verify=True)
@@ -412,8 +416,10 @@ class TestCoverageSummary:
         )
         assert result['coverage']['judge_scored'] is True
 
-    def test_coverage_partial_counts_come_from_relation_counts(self):
+    def test_coverage_partial_counts_come_from_relation_counts(self, monkeypatch):
         """Verifier partial band feeds claims_partial; counts still sum."""
+        import src.dimensions.prong3_dimensions as p3
+        monkeypatch.setattr(p3, "VERIFIER_MIN_KB_COVERAGE", 0.0)
         stub = StubVerifier(0.5)  # 0.2 < 0.5 < 0.8 -> partially_supported
         dim = FactualAccuracy(wikidata=OfflineWikidata(), verifier=stub)
         score = dim.evaluate("", claims=[UNKNOWN_WHARVES_CLAIM], llm_verify=True)

@@ -91,6 +91,7 @@
   "claim_source_spacy": "Triple extracted directly from the input text by spaCy dependency parsing.",
   "claim_source_llm": "Decontextualized atomic claim from the local 1.5B model, then parsed into a spaCy triple.",
   "claim_source_both": "Same fact from both tracks: spaCy on the input text and the local 1.5B atomic claim.",
+  "claim_source_quote": "Mentioned or retracted claim: a quoted proposition, a Claim:-labelled line, or a statement a Correction: line retracts.",
   "radar_plot": "Radar Plot",
   "active_preset": "Active: {{preset}}",
   "weights_must_sum_to_1": "Weights must sum to 1.0",
@@ -133,5 +134,17 @@
   "evidence_export_title": "Export evidence",
   "export_bundle": "Bundle JSON",
   "export_matrix": "Matrix CSV",
-  "export_claims": "Claims CSV"
+  "export_claims": "Claims CSV",
+  "intrinsic_subtitle_no_generation": "requires generation",
+  "intrinsic_subtitle_logprobs_off": "logprobs off",
+  "intrinsic_subtitle_logprobs_on": "logprobs on",
+  "verify_now": "Verify now",
+  "claim_reason_non_referential_subject": "subject is not a referential noun phrase",
+  "claim_reason_entity_not_in_kb": "entity not in the seed knowledge base",
+  "claim_reason_no_kb_facts": "entity has no facts in the seed KB",
+  "claim_reason_verifier_off": "NLI verifier not run",
+  "claim_reason_verifier_unavailable": "verifier unavailable",
+  "claim_reason_insufficient_kb_coverage": "seed KB does not cover this claim",
+  "claim_reason_property_not_matched": "no matching property/fact in the KB",
+  "claim_reason_no_object": "no object extracted"
 }

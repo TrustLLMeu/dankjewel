@@ -540,7 +540,7 @@ footer {
             </div>
             <div class="field">
               <label data-i18n="logprobs_k">Logprobs k</label>
-              <input type="number" id="logprobs-k" value="20" disabled title="Configured server-side via VLLM_LOGPROBS_K">
+              <input type="number" id="logprobs-k" value="20" min="0" max="20" title="Top-k logprobs per token; 0 disables them (Prong 4 then stays unknown).">
             </div>
           </div>
           <p style="font-size:0.68rem;color:var(--text3);margin:-0.4rem 0 0.6rem;" data-i18n="max_tokens_reasoning_hint">
@@ -766,6 +766,7 @@ footer {
         <div class="claim-strip" id="claim-strip" hidden>
           <div class="claim-strip-head">
             <span class="evidence-subtitle" data-i18n="claim_strip_title">Claim evidence</span>
+            <button class="timeline-compare" type="button" id="verify-now" hidden data-i18n="verify_now">Verify now</button>
             <span class="claim-strip-meter" id="claim-strip-meter"></span>
           </div>
           <div class="claim-strip-groups" id="claim-strip-groups"></div>
@@ -794,6 +795,8 @@ footer {
 <script>
 const API = '';  // same origin
 let lastResult = null;
+let lastEvalText = '';
+let lastEvalPrompt = '';
 let isGenerating = false;
 
 // ── i18n ──────────────────────────────────────────────────────────
@@ -845,6 +848,8 @@ document.addEventListener('DOMContentLoaded', () => {
   loadHistory();
   const compareBtn = document.getElementById('timeline-compare');
   if (compareBtn) compareBtn.addEventListener('click', toggleTimelineCompare);
+  const verifyBtn = document.getElementById('verify-now');
+  if (verifyBtn) verifyBtn.addEventListener('click', verifyNow);
   for (const [id, fn] of [['export-bundle', exportEvidenceBundle],
                           ['export-matrix', exportSignalMatrixCsv],
                           ['export-claims', exportClaimsCsv]]) {
@@ -999,6 +1004,7 @@ function getParams() {
     top_p: parseFloat(document.getElementById('top-p').value),
     repetition_penalty: parseFloat(document.getElementById('repetition-penalty').value),
     frequency_penalty: parseFloat(document.getElementById('frequency-penalty').value),
+    logprobs_k: Math.max(0, Math.min(20, parseInt(document.getElementById('logprobs-k').value) || 0)),
   };
 }
 
@@ -1100,6 +1106,8 @@ async function generateStream() {
         if (event.type === 'evaluation') {
           document.getElementById('eval-spinner').classList.remove('active');
           lastResult = { generation: lastGenerationData, evaluation: event.data };
+          lastEvalText = (lastGenerationData && lastGenerationData.text) || '';
+          lastEvalPrompt = params.prompt || '';
           reaggregateAndRender();
           document.getElementById('btn-export').style.display = '';
 
@@ -1154,6 +1162,7 @@ async function evaluateOnly() {
     const d = await r.json();
     document.getElementById('eval-spinner').classList.remove('active');
     lastResult = { generation: null, evaluation: d };
+    lastEvalText = text; lastEvalPrompt = prompt;
     reaggregateAndRender();
     document.getElementById('btn-export').style.display = '';
     saveToHistory(prompt || '(evaluate only)', d);
@@ -1816,6 +1825,16 @@ function renderScores(evalData) {
       const subtitleKey = hasJudge ? 'prong1_subtitle_embeddings_tinyllm' : 'prong1_subtitle_embeddings';
       prongNameHtml = `<span class="prong-name">${esc(prong.prong_name)}<span class="prong-subtitle">${t(subtitleKey)}</span></span>`;
     }
+    if (prong.prong_name.includes('Intrinsic')) {
+      // Disclose why the prong is (not) scored: generation is required, and
+      // logprobs can be disabled or absent from the backend.
+      const gen = (lastResult && lastResult.generation) || null;
+      let subtitleKey = 'intrinsic_subtitle_no_generation';
+      if (gen) {
+        subtitleKey = gen.has_logprobs ? 'intrinsic_subtitle_logprobs_on' : 'intrinsic_subtitle_logprobs_off';
+      }
+      prongNameHtml = `<span class="prong-name">${esc(prong.prong_name)}<span class="prong-subtitle">${t(subtitleKey)}</span></span>`;
+    }
     
     summary.innerHTML = `
       ${prongNameHtml}
@@ -2170,6 +2189,22 @@ function renderEvidence(evalData) {
   const exportRow = document.getElementById('evidence-export');
   if (exportRow) exportRow.hidden = false;
 
+  // "Verify now" appears when claims exist and the verifier did not run.
+  const verifyBtn = document.getElementById('verify-now');
+  if (verifyBtn) {
+    let faSources = null;
+    for (const prong of prongs) {
+      for (const dim of (prong.dimensions || [])) {
+        if (dim.name === 'Factual Accuracy') {
+          faSources = (dim.metadata && dim.metadata.evidence_sources) || {};
+        }
+      }
+    }
+    const hasClaims = (faSources !== null);
+    const verifierRan = faSources && !!faSources.minicheck;
+    verifyBtn.hidden = !(hasClaims && !verifierRan && lastEvalText);
+  }
+
   card.hidden = false;
 }
 
@@ -2331,7 +2366,7 @@ function renderClaimStrip(evalData) {
   if (!details.length) { strip.hidden = true; return; }
 
   const relationOf = c => c.relation || c.effective_result || 'unknown';
-  const srcLetter = s => (s === 'llm' ? 'L' : s === 'both' ? 'B' : 'S');
+  const srcLetter = s => (s === 'llm' ? 'L' : s === 'both' ? 'B' : s === 'quote' ? 'Q' : 'S');
 
   // Coverage meter: verified / partial / unverified
   const cov = evalData.coverage;
@@ -2395,6 +2430,7 @@ function renderClaimStrip(evalData) {
 
       const bits = [`${cl.subject || ''} ${cl.predicate || ''} ${cl.object || ''}`.trim(),
                     relation];
+      if (c.reason) bits.push(t('claim_reason_' + c.reason));
       if (c.verifier_score != null) bits.push('p=' + Number(c.verifier_score).toFixed(2));
       if (c.verification?.rationale) bits.push(c.verification.rationale);
       chip.title = bits.join(' · ');
@@ -2508,6 +2544,31 @@ function exportClaimsCsv() {
                    rows.map(r => r.map(csvCell).join(',')).join('\n'), 'text/csv');
 }
 
+async function verifyNow() {
+  if (!lastEvalText) return;
+  const btn = document.getElementById('verify-now');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch(`${API}/evaluate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: lastEvalText,
+        prompt: lastEvalPrompt,
+        tiny_judge: document.getElementById('tiny-judge-toggle').checked,
+        llm_extract: document.getElementById('llm-extract-toggle').checked,
+        llm_verify: true,
+      }),
+    });
+    const d = await r.json();
+    lastResult = { generation: lastResult ? lastResult.generation : null, evaluation: d };
+    reaggregateAndRender();
+  } catch (err) {
+    alert(t('evaluation_failed') + ': ' + err.message);
+  }
+  if (btn) btn.disabled = false;
+}
+
 function claimSourceCounts(claimDetails) {
   // Per-source claim counts for the dual-track summary. Claims from
   // older responses without a source field count as spaCy.
@@ -2535,8 +2596,16 @@ function renderClaims(claims) {
       : v === 'partially_supported' ? 'verdict-partially_supported'
       : v === 'conflated' ? 'verdict-conflated'
       : 'verdict-unknown';
-    const vTitle = v === 'partially_supported' ? ` title="${esc(t('claim_relation_partially_supported'))}"`
+    let vTitle = v === 'partially_supported' ? ` title="${esc(t('claim_relation_partially_supported'))}"`
       : v === 'conflated' ? ` title="${esc(t('claim_relation_conflated'))}"` : '';
+    const tips = [];
+    if (c.reason) tips.push(t('claim_reason_' + c.reason));
+    if (c.verifier_score != null) tips.push('p=' + Number(c.verifier_score).toFixed(2));
+    if (tips.length) {
+      const tipText = esc(tips.join(' · '));
+      vTitle = vTitle ? vTitle.replace('title="', 'title="' + tipText + ' — ')
+                      : ` title="${tipText}"`;
+    }
     const negated = c.negated || cl.negated;
     const predicate = negated ? `¬ ${esc(cl.predicate||'')}` : esc(cl.predicate||'');
     const title = negated
@@ -2548,6 +2617,7 @@ function renderClaims(claims) {
       spacy: { cls: 'dim-method', key: 'claim_source_spacy' },
       llm: { cls: 'dim-method dim-tag-exact', key: 'claim_source_llm' },
       both: { cls: 'dim-method dim-tag-approx', key: 'claim_source_both' },
+      quote: { cls: 'dim-method dim-tag-approx', key: 'claim_source_quote' },
     };
     const meta = SRC_META[src] || SRC_META.spacy;
     const srcChip = `<span class="${meta.cls}" title="${esc(t(meta.key))}">${esc(src)}</span>`;
