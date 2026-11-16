@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `7ad2c88` — Align throughput figures with the robustness artifact
+- **Latest commit:** `cda4755` — Include the shipped 0.5B judge in the multilingual judge test
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
 - **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); LLM-AggreFact auto-gated — harness ready, one account click needed; seed coverage still 0.3% on FEVER; AVeriTeC (future work); Nordic seed expansion and native lexicon validation; human-annotation and user studies
 
@@ -14,7 +14,12 @@ Newest first. `git log` remains the source of truth for hashes.
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-16 | `PENDING` | chore / index | Record documentation update in commit index | chore |
+| 2026-11-16 | `PENDING` | chore / index | Record multilingual judge test in commit index | chore |
+| 2026-11-16 | `cda4755` | prong 1 / judge | Include the shipped 0.5B judge in the multilingual judge test | wXze multilingual validation |
+| 2026-11-16 | `13127ce` | docs / judge | Document the multilingual judge-agreement test and decision | wXze multilingual validation |
+| 2026-11-16 | `f8b36ea` | chore / models | Raise the judge cap to 1.7B and add AggreFact sampling | V55p model cap / wXze benchmark |
+| 2026-11-16 | `80067a8` | eval / judge | Add the multilingual judge-agreement test | wXze multilingual validation |
+| 2026-11-16 | `fc8abd3` | chore / index | Record documentation update in commit index | chore |
 | 2026-11-16 | `7ad2c88` | docs / robustness | Align throughput figures with the robustness artifact | YE7H latency/throughput reporting |
 | 2026-11-16 | `897eab1` | docs / claim admission | Update documentation for claim admission, robustness and external work | wXze claim precision / V55p transparency |
 | 2026-11-16 | `c08c35a` | chore / index | Record external-work status in commit index | chore |
@@ -87,9 +92,49 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record documentation update in commit index (2026-11-16)
+### `PENDING` — Record multilingual judge test in commit index (2026-11-16)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the multilingual judge-agreement test, the 0.5B correction, the cap raise and the method note; backfill the documentation index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `cda4755` — Include the shipped 0.5B judge in the multilingual judge test (2026-11-16)
+
+- **Hash:** `cda4755661d9f4b1cbccc5cb5a5c0a9cb878c3f2`
+- **Why:** the test initially used the 1.5B claims model as the "incumbent", but the shipped judge is the 0.5B. Rerun with the shipped model: 0.5B mean rho 0.865, separation 0.848, **Icelandic rho 0.300 (fails the >=0.5 pass check)**; the 1.5B passes all seven languages (mean 0.973, lowest 0.874) and is the recommended non-English configuration; 1.7B passes (0.880) but trails and is not adopted; 8B reference 0.996. Doc, artifact and harness updated; doc committed earlier as `13127ce`.
+- **Files:** `docs/MULTILINGUAL_JUDGE.md`, `scripts/eval_multilingual_judge.py`, `evaluation_results/multilingual_judge.json`, `evaluation_results/multilingual_judge.md`
+- **Closes:** wXze multilingual validation (evidence side); the shipped 0.5B's Icelandic failure is now documented
+- **Verify:** the four-judge table matches the artifact; 630+210 calls; reviewer verified all ten paper numbers against the JSON.
+
+### `13127ce` — Document the multilingual judge-agreement test and decision (2026-11-16)
+
+- **Hash:** `13127cea8d2f550dabb3444b0cf73f8802815f22`
+- **Why:** `docs/MULTILINGUAL_JUDGE.md`: fixture, judges/setup, results, decision and caveats, rerun recipe. (Its judge table was corrected by `cda4755` after the shipped 0.5B was added.)
+- **Files:** `docs/MULTILINGUAL_JUDGE.md`
+- **Closes:** the documentation half of the multilingual judge work
+- **Verify:** numbers cross-checked against the artifact.
+
+### `f8b36ea` — Raise the judge cap to 1.7B and add AggreFact sampling (2026-11-16)
+
+- **Hash:** `f8b36eaa88ef23e1be2db25f6a37e059b12a3807`
+- **Why:** the user raised the generative-judge cap to 1.7B to admit Qwen3-1.7B as a multilingual candidate (charter updated with the model/port table). `scripts/eval_aggrefact.py` gained `--limit-per-dataset` (default 150 per sub-dataset).
+- **Files:** `.grok/HERDR.md`, `scripts/eval_aggrefact.py`
+- **Closes:** the cap decision; AggreFact runtime control
+- **Verify:** charter values match the running containers; script compiles.
+
+### `80067a8` — Add the multilingual judge-agreement test (2026-11-16)
+
+- **Hash:** `80067a82e10f972669aac15c23de1872f1aac4e6`
+- **Why:** authored 210-item fixture (7 languages x 30), harness for three judges, results artifacts. Superseded in part by `cda4755` (the shipped 0.5B added).
+- **Files:** `data/multilingual_judge_items.json`, `scripts/eval_multilingual_judge.py`, `evaluation_results/multilingual_judge.{json,md}`
+- **Closes:** the multilingual judge-agreement test (first run)
+- **Verify:** full run completed in ~16 min; artifacts regenerated.
+
+### `fc8abd3` — Record documentation update in commit index (2026-11-16)
+
+- **Hash:** `fc8abd34337ddc2f9169d151e97c60a5117e92ff`
 - **Why:** Record the documentation refresh and the throughput correction; backfill the external-work index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
