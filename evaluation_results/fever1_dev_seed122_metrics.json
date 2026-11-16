@@ -1,0 +1,56 @@
+{
+  "counts": {
+    "SUPPORTS": 6666,
+    "REFUTES": 6666,
+    "NOT ENOUGH INFO": 6666,
+    "total": 19998
+  },
+  "by_class": {
+    "SUPPORTS": {
+      "n": 6666,
+      "mean_factual_accuracy": 0.5001500150015001
+    },
+    "REFUTES": {
+      "n": 6666,
+      "mean_factual_accuracy": 0.5
+    },
+    "NOT ENOUGH INFO": {
+      "n": 6666,
+      "mean_factual_accuracy": 0.4996999699969997
+    }
+  },
+  "coverage": {
+    "covered": 50,
+    "total": 19998,
+    "fraction": 0.0025002500250025004,
+    "SUPPORTS": {
+      "covered": 20,
+      "total": 6666,
+      "fraction": 0.003000300030003
+    },
+    "REFUTES": {
+      "covered": 16,
+      "total": 6666,
+      "fraction": 0.0024002400240024004
+    },
+    "NOT ENOUGH INFO": {
+      "covered": 14,
+      "total": 6666,
+      "fraction": 0.0021002100210021
+    }
+  },
+  "binary_auc": {
+    "n_pos": 6666,
+    "n_neg": 6666,
+    "auc": 0.5001498574699954,
+    "note": "SUPPORTS vs REFUTES, NEI excluded (standard binary FEVER metric). Includes 0.5 fallback scores for uncovered claims."
+  },
+  "conditional_auc": {
+    "n_pos": 20,
+    "n_neg": 16,
+    "auc": 0.528125,
+    "note": "CONDITIONAL on coverage (selection bias \u2014 diagnostic only, not operational performance)."
+  },
+  "db_source": "/tmp/seed_122.db",
+  "extractor": "spacy"
+}

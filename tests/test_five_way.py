@@ -79,6 +79,13 @@ class TestVerifierThresholds:
     def wikidata(self):
         return OfflineWikidata()
 
+    @pytest.fixture(autouse=True)
+    def _threshold_tests_ignore_coverage(self, monkeypatch):
+        """These tests exercise the probability mapping; the relevance
+        gate has its own tests (TestVerifierCoverageGate)."""
+        import src.dimensions.prong3_dimensions as p3
+        monkeypatch.setattr(p3, "VERIFIER_MIN_KB_COVERAGE", 0.0)
+
     def test_threshold_constants(self):
         """The five-way thresholds are 0.8 (confirm) and 0.2 (deny)."""
         assert VERIFIER_CONFIRM_THRESHOLD == 0.8
@@ -239,6 +246,36 @@ class TestVerifierThresholds:
         assert score.metadata['verifiable'] == 1
 
 
+# ── Verifier relevance gate ─────────────────────────────────────────────────
+
+class TestVerifierCoverageGate:
+    """MiniCheck only scores claims the KB facts can actually ground.
+
+    Its score is a *support* probability for a specific document; a
+    document that names the subject but not the claimed property
+    (population, a constitution, a term's origin) cannot confirm or
+    deny the claim. Low lexical coverage therefore stays UNKNOWN with
+    an explicit reason instead of becoming a fabricated denial.
+    """
+
+    def test_low_coverage_claim_stays_unknown_not_denied(self):
+        wikidata = OfflineWikidata()
+        stub = StubVerifier(0.01)
+        dim = FactualAccuracy(wikidata=wikidata, verifier=stub)
+        score = dim.evaluate("", claims=[UNKNOWN_CLAIM], llm_verify=True)
+        detail = score.metadata['claim_details'][0]
+        assert detail['relation'] == 'unknown'
+        assert detail['reason'] == 'insufficient_kb_coverage'
+        assert 'verifier_score' not in detail
+        assert stub.calls == []  # the model is never consulted
+
+    def test_kb_coverage_counts_content_words(self):
+        from src.dimensions.prong3_dimensions import kb_coverage
+        doc = "Oslo instance of city. Oslo capital of Norway."
+        assert kb_coverage("Oslo is a city.", doc) == 1.0
+        assert kb_coverage("Oslo has 700,000 inhabitants.", doc) < 0.75
+
+
 # ── Rule-based conflation (always-on, no model) ──────────────────────────────
 
 class TestConflationRule:
@@ -339,6 +376,11 @@ def _strip_timing(dim_score_dict):
 
 class TestFlagsOffParity:
 
+    @pytest.fixture(autouse=True)
+    def _ignore_coverage(self, monkeypatch):
+        import src.dimensions.prong3_dimensions as p3
+        monkeypatch.setattr(p3, "VERIFIER_MIN_KB_COVERAGE", 0.0)
+
     def test_flag_off_never_loads_or_calls_verifier(self):
         """Default and explicit-False never touch the verifier."""
         stub = StubVerifier(0.9)
@@ -393,6 +435,11 @@ API_TEXT = "Trondheim is famous for its wharves."
 
 
 class TestEvaluateLLMVerifyAPI:
+
+    @pytest.fixture(autouse=True)
+    def _ignore_coverage(self, monkeypatch):
+        import src.dimensions.prong3_dimensions as p3
+        monkeypatch.setattr(p3, "VERIFIER_MIN_KB_COVERAGE", 0.0)
 
     @pytest.fixture
     def client(self, monkeypatch):
@@ -449,10 +496,11 @@ class TestEvaluateLLMVerifyAPI:
 
 # ── Expanded seed DB ─────────────────────────────────────────────────────────
 
-# The committed seed DB after the slice-6b expansion (see
-# scripts/extend_wikidata_db.py --entities; still a seed, not Wikidata).
-EXPECTED_SEED_ENTITIES = 122
-EXPECTED_SEED_CLAIMS = 531
+# The committed seed DB after the slice-6b Nordic expansion and the
+# civic-domain expansion (see scripts/extend_wikidata_db.py --entities;
+# still a seed, not Wikidata).
+EXPECTED_SEED_ENTITIES = 144
+EXPECTED_SEED_CLAIMS = 788
 
 
 class TestSeedDBExpansion:
@@ -532,6 +580,31 @@ class TestSeedDBExpansion:
                      "SINTEF", "European Union"):
             qid = db.lookup_entity(name)
             assert db.get_claims(qid), name
+
+    def test_civic_entities_present(self, db):
+        """The civic-domain expansion resolves the tested political names."""
+        expected = {
+            "The United States Constitution": "Q11698",
+            "The U.S. Constitution": "Q11698",
+            "The United Kingdom": "Q145",
+            "Nixon": "Q9588",
+            "The President": "Q11696",
+            "only Congress": "Q11268",
+            "The Silent Majority": "Q2555361",
+            "lobbying": "Q187117",
+            "The U.S. Senate": "Q66096",
+            "United States Electoral College": "Q47586",
+        }
+        for name, qid in expected.items():
+            assert db.lookup_entity(name) == qid, name
+
+    def test_civic_role_claim_verifies(self, db):
+        """'The President is Commander-in-Chief' verifies through P279."""
+        detail = db.verify_triple(
+            "The President", "be",
+            "the Commander in Chief of the armed forces")
+        assert detail.result == VerificationResult.CONFIRMED
+        assert detail.property_id == 'P279'
 
     def test_reverse_phrase_map(self):
         """PROPERTY_TO_PHRASE is the deterministic reverse of

@@ -30,9 +30,11 @@ this repository. None of them is silently claimed as done.
 
 ## Seed knowledge-base scale
 
-- **Status: known limitation, Phase 2.** The seed has 122 entities; FEVER
-  coverage is 4/1,174 claims (0.3%) with AUC 0.497. The verifier is validated as
-  a component (SciFact AUC 0.835); the KB path is reported as a lower bound.
+- **Status: known limitation, Phase 2.** The seed has 144 entities (122
+  geographic + 22 civic); FEVER 1.0 dev coverage is 60/19,998 claims (0.3%) with
+  AUC 0.500. The 22-entity civic expansion adds 10 covered claims (50 → 60)
+  without moving the binary AUC. The verifier is validated as a component
+  (SciFact AUC 0.835); the KB path is reported as a lower bound.
 - **What it needs:** an at-scale Wikidata mirror (dump ingestion plus a property
   whitelist), which is the Phase-2 plan. No shortcut is available that would
   keep the honest semantics.

@@ -994,6 +994,13 @@ class OfflineWikidata:
         """
         obj_lower = obj.lower()
 
+        # "The President is the Commander-in-Chief of the armed forces":
+        # Wikidata models the office as a subclass (P279) of
+        # commander-in-chief. Hyphen/space variants both occur in parsed
+        # text.
+        if 'commander in chief' in obj_lower.replace('-', ' '):
+            return 'P279'
+
         if 'capital' in obj_lower:
             return 'P1376'
 
@@ -1124,10 +1131,14 @@ class OfflineWikidata:
         # wd_lower` check matched "cat" in "category", "us" in "house" —
         # false positives that inflated REFUTES scores. Word boundaries
         # allow "united states" in "united states of america" while
-        # blocking "cat" in "category".
-        if len(ext_lower) >= 3 and len(wd_lower) >= 3:
-            if re.search(r'\b' + re.escape(ext_lower) + r'\b', wd_lower) or \
-               re.search(r'\b' + re.escape(wd_lower) + r'\b', ext_lower):
+        # blocking "cat" in "category". Hyphens are normalised to spaces
+        # first so "commander-in-chief" (Wikidata) matches "Commander in
+        # Chief of the armed forces" (parsed claim).
+        ext_norm = ext_lower.replace('-', ' ')
+        wd_norm = wd_lower.replace('-', ' ')
+        if len(ext_norm) >= 3 and len(wd_norm) >= 3:
+            if re.search(r'\b' + re.escape(ext_norm) + r'\b', wd_norm) or \
+               re.search(r'\b' + re.escape(wd_norm) + r'\b', ext_norm):
                 return True
 
         if value_qid:

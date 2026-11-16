@@ -21,7 +21,7 @@ different dimension family of generated text:
 |-------|------|--------|--------|
 | **1** | LLM-as-Judge | Sentence embeddings (MiniLM) + toxicity classifier (toxic-bert); default backend `embeddings`, with an optional 0.5B local LLM judge as a dual-output track (`tiny_judge`) | ✅ Complete |
 | **2** | Rule-Based | Lexicon/heuristic scoring (validated for English; 8 further Germanic lexicons are unvalidated translations) | ✅ Complete |
-| **3** | Extraction-Based | spaCy triple extraction + offline Wikidata fact-checking (122-entity seed KB, labeled as a seed) + deterministic claim admission + optional 1.5B atomic-claim track, MiniCheck verifier and LLM admission (`llm_extract`, `llm_verify`, `llm_admit`) | ✅ Complete |
+| **3** | Extraction-Based | spaCy triple extraction + offline Wikidata fact-checking (144-entity seed KB: 122 geographic + 22 civic; labeled as a seed) + deterministic claim admission + optional 1.5B atomic-claim track, MiniCheck verifier and LLM admission (`llm_extract`, `llm_verify`, `llm_admit`) | ✅ Complete |
 | **4** | Intrinsic | Model log-probabilities from vLLM (perplexity, uncertainty, entropy) | ⚠️ Requires logprobs — without them all Prong 4 dimensions are `unknown` |
 
 A FastAPI server (`src/api.py`) with a single-page HTML5 frontend
@@ -227,17 +227,34 @@ shown, counted and verified. Two tracks feed it: deterministic spaCy triples and
 the optional 1.5B atomic-claim track. Markdown is cleaned first, then sentence
 gates drop headings, questions, imperatives and meta-discourse, and triple gates
 drop pronouns without a resolved referent, malformed triples, encyclopedic
-definitions, text-deictic subjects and duplicates. Quoted propositions and
-`Claim:`-labelled sentences are extracted as mentioned claims (`source="quote"`)
-so teaching prose does not turn its examples into commentary. The ablation on the
-exported teaching-prose fixture: 76 raw candidates → 28 after markdown → 17 after
-sentence gates → 8 after triple gates → 9 with the use-mention pass, while the
-hand-labelled junk falls from 46 to 2 and all five intended false-claim examples
-survive. The optional LLM admission classifier (`llm_admit`, off by default) drops
-two genuine claims on the same fixture, so it is documented as an experiment
-rather than a default. See [docs/CLAIM_ADMISSION.md](docs/CLAIM_ADMISSION.md),
+definitions, text-deictic subjects and duplicates. Adverbial fragments
+("by default"), placeholder objects ("unknown"), anaphoric objects ("the term")
+and unbalanced parenthetical fragments are gated as well. Quoted propositions
+and `Claim:`-labelled sentences are extracted as mentioned claims
+(`source="quote"`) so teaching prose does not turn its examples into
+commentary; a `Correction:`/line-initial `Actually,` line retracts the
+preceding statement, which becomes `quote` while the correction is asserted.
+The ablation on the exported teaching-prose fixture: 76 raw candidates → 28
+after markdown → 17 after sentence gates → 8 after triple gates → 9 with the
+use-mention pass, while the hand-labelled junk falls from 46 to 2 and all five
+intended false-claim examples survive. The optional LLM admission classifier
+(`llm_admit`, off by default) drops two genuine claims on the same fixture, so
+it is documented as an experiment rather than a default. See
+[docs/CLAIM_ADMISSION.md](docs/CLAIM_ADMISSION.md),
 [docs/LEXICON_VALIDATION.md](docs/LEXICON_VALIDATION.md) and
 [docs/EXTERNAL_EVALS.md](docs/EXTERNAL_EVALS.md).
+
+**Political-list case study (2026-11-16).** The export
+`dj_result_2026-11-16T17-04-14.json` ("Tell ten untrue things about politics")
+produced 23 claims, 0 verified. Re-run through the current pipeline: 7 false
+statement/correction pairs separated (16 claims: 7 `quote`, 9 asserted), the
+new object gates removed 8 junk candidates, the 144-entity civic seed resolved
+13/16 subjects (was 4/16), and one claim verified ("The President is the
+Commander-in-Chief of the armed forces" → P279 `commander-in-chief`). The
+other 15 stay UNKNOWN with per-claim reasons; the tooltip and claims table
+show why. A true claim the KB cannot ground ("Oslo is a city with about
+700,000 inhabitants") stays UNKNOWN/`insufficient_kb_coverage` instead of
+being falsely denied by the verifier.
 
 #### Prong 4 — Intrinsic (requires vLLM logprobs)
 
@@ -343,24 +360,25 @@ is not measured.
 
 ---
 
-### Benchmarking (FEVER 2.0)
+### Benchmarking (FEVER 1.0 dev)
 
-Prong 3 has been benchmarked on the FEVER 2.0 *fixers* development set
-(1,174 claims). Key results:
+Prong 3 has been benchmarked on the full FEVER 1.0 shared-task development set
+(19,998 claims; the gated FEVER 2.0 fixers file is no longer retrievable). Key
+results:
 
 | Condition | Coverage | Binary AUC | Conditional AUC |
 |-----------|----------|------------|-----------------|
-| Seed DB (~122 entities — a small seed, not Wikidata) | 0.3% | 0.497 | n/a (0 covered REFUTES) |
-| Oracle DB (FEVER-targeted) | 8.7% | 0.538 | 0.682 |
+| Seed DB (122 geographic entities) | 50/19,998 (0.3%) | 0.500 | 0.528 |
+| Seed DB + civic expansion (144 entities) | 60/19,998 (0.3%) | 0.500 | 0.477 |
+| Oracle DB (FEVER-targeted, earlier 1,174-claim sample) | 8.7% | 0.538 | 0.682 |
 
 Coverage (fraction of claims where Wikidata returned CONFIRMED or DENIED) is
 the primary bottleneck — uncovered claims are reported as `unknown`
-(excluded from scoring, not treated as a neutral 0.5).
-The seed row is re-measured on the current pipeline (2026-11-14, expanded
-seed DB): the earlier 9.0% / 0.494 figures predate the qualifier gates that
-now abstain on unverifiable embedded details, and the modest Nordic/TrustLLM
-seed expansion does not cover any additional FEVER fixers entities (identical
-4/1174 covered on the old and new seed).
+(excluded from scoring, not treated as a neutral 0.5). The 22-entity civic
+expansion (US Constitution, Congress, President, Nixon, lobbying, ...) adds 10
+covered claims without moving the binary AUC; conditional AUC on 60 claims is
+unstable. The earlier 1,174-claim FEVER 2.0 dev run (4/1,174 = 0.3%, AUC 0.497)
+is consistent with the full-set run and is superseded by it.
 See [DB_EXTENSION_GUIDE.md](DB_EXTENSION_GUIDE.md) and `scripts/eval_fever2.py`
 for details.
 

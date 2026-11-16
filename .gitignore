@@ -35,6 +35,7 @@ __pycache__/
 data/wikidata_cache/
 data/wikidata_fever.db
 data/fever2_*.jsonl
+data/fever1_*.jsonl
 evaluation_results/fever2_*.json
 evaluation_results/fever2_*.md
 evaluation_results/verifier_eval.json
