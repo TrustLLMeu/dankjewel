@@ -6,15 +6,20 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `7cc17c2` — Land the LLM-AggreFact dev benchmark and README table
-- **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); LLM-AggreFact auto-gated — harness ready, one account click needed; seed coverage still 0.3% on FEVER; AVeriTeC (future work); Nordic seed expansion and native lexicon validation; human-annotation and user studies
+- **Latest commit:** `359276c` — Expand the seed KB with civic entities and re-measure FEVER
+- **Tree:** clean (user exports, scouting briefs and `omniprov.txt` stay unstaged)
+- **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); seed-KB coverage still 0.3% on FEVER 1.0 dev (60/19,998); AVeriTeC (future work); native lexicon validation; human-annotation and user studies; paper cycle 10 review/push
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-16 | `PENDING` | chore / index | Record AggreFact benchmark in commit index | chore |
+| 2026-11-16 | `PENDING` | chore / index | Record Stage 1-4 in commit index | chore |
+| 2026-11-16 | `359276c` | prong 3 / seed | Expand the seed KB with civic entities and re-measure FEVER | wXze coverage (seed) |
+| 2026-11-16 | `7aac3bf` | prong 3 / admission | Gate malformed objects and separate corrections in claim admission | wXze claim precision |
+| 2026-11-16 | `457e204` | prong 3+4 / transparency | Wire logprobs_k and per-claim reasons through the evaluator | wXze transparency / YE7H reproducibility |
+| 2026-11-16 | `e60a177` | generator / logprobs | Normalize chat-shaped logprobs in the streaming path | YE7H reproducibility |
+| 2026-11-16 | `c93e616` | chore / index | Record AggreFact benchmark in commit index | chore |
 | 2026-11-16 | `7cc17c2` | eval / verifier | Land the LLM-AggreFact dev benchmark and README table | wXze single-benchmark content |
 | 2026-11-16 | `56c2a54` | chore / index | Record judge routing in commit index | chore |
 | 2026-11-16 | `4442afb` | prong 1 / judge | Route the judge by language: 0.5B for English, 1.5B otherwise | wXze multilingual validation |
@@ -100,9 +105,49 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record AggreFact benchmark in commit index (2026-11-16)
+### `PENDING` — Record Stage 1-4 in commit index (2026-11-16)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Index the Stage 1-3 transparency/extraction commits, the Stage 4 civic-seed and FEVER re-measurement commit, the streaming-logprobs fix, and backfill the AggreFact index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `359276c` — Expand the seed KB with civic entities and re-measure FEVER (2026-11-16)
+
+- **Hash:** `359276cdfc232957cde93d803079bccc79ac99a7`
+- **Why:** Stage 4 of the claim-meaningfulness plan. `data/wikidata_seed.db` gains 22 civic entities (fetched with `scripts/extend_wikidata_db.py --entities ... --prune-label-only`): US Constitution, Congress, Senate, President of the United States, Nixon, Johnson, Silent Majority, the Nineteenth and Seventeenth Amendments, the Electoral College, Great Fire of London, lobbying, US Armed Forces, Articles One/Two, the federal government and the House. The DB is 144 entities / 788 claim rows. `_values_match` normalizes hyphens so "commander-in-chief" matches "Commander in Chief of the armed forces", and copula inference maps commander-in-chief to P279. On the political export the subject resolution rises 4/16 -> 13/16 and one claim verifies (President -> P279 commander-in-chief); the rest stay UNKNOWN with reasons. FEVER is re-measured on the full 19,998-claim FEVER 1.0 dev set (the gated FEVER 2.0 fixers file is unavailable): 122 seed 50/19,998 (0.25%), AUC 0.500, conditional 0.528; 144 seed 60/19,998 (0.30%), AUC 0.500, conditional 0.477. The civic entities add 10 covered claims without moving the binary AUC.
+- **Files:** `src/resources/wikidata_offline.py`, `data/wikidata_seed.db`, `tests/test_five_way.py`, `README.md`, `docs/EXTERNAL_EVALS.md`, `evaluation_results/fever1_dev_{civic144,seed122}_{metrics.json,report.md}`, `.gitignore`
+- **Closes:** the KB-coverage half of the meaningless-claims complaint
+- **Verify:** full suite 448 passed + 2 skipped; API `/evaluate` on the political text: 16 claims, 1 confirmed, 15 unknown with reasons; Selenium Stage 3/4 script ALL PASS (16 rows, 7 Q / 9 S chips, one confirmed, no denied, coverage-gate reason after Verify now).
+
+### `7aac3bf` — Gate malformed objects and separate corrections in claim admission (2026-11-16)
+
+- **Hash:** `7aac3bf112172c31878f1e82d4f52c9aedc0df73`
+- **Why:** Stage 3. New triple gates reject adverbial/prepositional object fragments ("by default", "In most states", "as slates"), placeholder objects ("unknown", "unclear"), anaphoric objects ("the term", "the latter"), and unbalanced parentheses/brackets ("Article I Section 8)"). A `Correction:` label or a line-initial "Actually,"/"In fact,"/"In reality,"/"To be precise,"/"Clarification:" retracts the preceding content line: its claims become `source="quote"`, the correction is asserted, and `metadata.correction_pairs` counts the pairs. The UI source chip shows Q for quote provenance. On the political export: 23 original claims -> 16 admitted, 7 correction pairs, 7 new-gate discards in the rerun.
+- **Files:** `src/extraction/claim_admission.py`, `src/extraction/claim_extractor.py`, `tests/test_claim_admission.py`, `docs/CLAIM_ADMISSION.md`
+- **Closes:** the malformed-triple and false-claim/correction half of the meaningless-claims complaint
+- **Verify:** `tests/test_claim_admission.py` 56 passed; full suite 448 passed + 2 skipped.
+
+### `457e204` — Wire logprobs_k and per-claim reasons through the evaluator (2026-11-16)
+
+- **Hash:** `457e2044b9277640c867cd8f4bf2e145d6157bab`
+- **Why:** Stages 1 and 2. `logprobs_k` (0-20; 0 disables) is accepted by both generate request models, passed to the backend, and recorded as `logprobs_k`/`logprobs_reason` in generation metadata; the UI control is enabled and the Prong 4 subtitle distinguishes "requires generation" / "logprobs on" / "logprobs off". Every UNKNOWN Prong 3 claim now carries a reason (non_referential_subject, entity_not_in_kb, no_kb_facts, verifier_off, verifier_unavailable, insufficient_kb_coverage, property_not_matched, no_object) shown in chip/table tooltips, and Verify now re-runs the last text with `llm_verify`. The verifier is gated by `kb_coverage >= 0.75`, so a sparse KB document keeps a claim UNKNOWN with `insufficient_kb_coverage` instead of producing a false denial (the Oslo-population case).
+- **Files:** `src/api.py`, `src/dimensions/prong3_dimensions.py`, `frontend/index.html`, `frontend/locales/en.json`, `tests/test_evidence_contract.py`
+- **Closes:** the Intrinsic-visibility and claim-explanation complaints
+- **Verify:** Selenium Stage 1 ALL PASS (k=5 four dims scored; k=0 unknown; paste-only "requires generation"); Selenium Stage 2 ALL PASS; Stage 3/4 script re-verified after the coverage gate.
+
+### `e60a177` — Normalize chat-shaped logprobs in the streaming path (2026-11-16)
+
+- **Hash:** `e60a1779aefa4db351ca21bf62b97dc3a95975aa`
+- **Why:** llama.cpp returns chat-shaped `logprobs.content` entries while the streaming parser only read the legacy `token_logprobs`/`top_logprobs` arrays, so streamed generations produced no intrinsic data. `_stream_chunk` normalizes both shapes and is covered by the vLLM client tests.
+- **Files:** `src/vllm_client.py`, `tests/test_vllm_client.py`
+- **Closes:** the streaming Intrinsic gap
+- **Verify:** `tests/test_vllm_client.py` 7 passed; live k=5 stream -> 4 scored dims.
+
+### `c93e616` — Record AggreFact benchmark in commit index (2026-11-16)
+
+- **Hash:** `c93e6162cef02444dc17e395c84b3f23fa96c96a`
 - **Why:** Record the LLM-AggreFact dev benchmark and backfill the judge-routing index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
