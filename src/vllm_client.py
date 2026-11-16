@@ -60,17 +60,31 @@ class VLLMClient:
     """
 
     def __init__(self, base_url: str = "http://localhost:8000",
-                 timeout: float = 120.0):
+                 timeout: float = 120.0,
+                 api_key: Optional[str] = None,
+                 transport: Optional[httpx.AsyncBaseTransport] = None):
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
+        self.api_key = api_key
+        self._transport = transport
         self._client: Optional[httpx.AsyncClient] = None
 
     async def _get_client(self) -> httpx.AsyncClient:
-        """Lazy-init the async HTTP client."""
+        """Lazy-init the async HTTP client.
+
+        When an API key is configured it is sent as a Bearer token on
+        every request — llama.cpp servers started with ``--api-key``
+        reject ``/v1/*`` without it (their ``/health`` stays open).
+        """
         if self._client is None or self._client.is_closed:
+            headers = {}
+            if self.api_key:
+                headers["Authorization"] = f"Bearer {self.api_key}"
             self._client = httpx.AsyncClient(
                 base_url=self.base_url,
                 timeout=self.timeout,
+                headers=headers,
+                transport=self._transport,
             )
         return self._client
 
@@ -84,12 +98,22 @@ class VLLMClient:
             return False
 
     async def list_models(self) -> List[str]:
-        """List available models on the vLLM server."""
+        """List available model ids on the generator endpoint.
+
+        Accepts both the OpenAI/vLLM shape (``{"data": [{"id": ...}]}``)
+        and the llama.cpp shape (``{"models": [{"name": ...}]}``).
+        """
         client = await self._get_client()
         resp = await client.get("/v1/models")
         resp.raise_for_status()
         data = resp.json()
-        return [m["id"] for m in data.get("data", [])]
+        entries = data.get("data") or data.get("models") or []
+        models = []
+        for entry in entries:
+            model_id = entry.get("id") or entry.get("model") or entry.get("name")
+            if model_id:
+                models.append(model_id)
+        return models
 
     def _build_request_body(
         self,
@@ -173,6 +197,18 @@ class VLLMClient:
         token_logprobs = lp_data.get("token_logprobs")
         tokens = lp_data.get("tokens")
         top_logprobs = lp_data.get("top_logprobs")
+        # llama.cpp (and newer OpenAI-style servers) return a chat-shaped
+        # ``content`` list of per-token dicts instead of the legacy
+        # parallel arrays. Normalize it to the parallel-array form.
+        content = lp_data.get("content")
+        if content:
+            tokens = [entry.get("token") for entry in content]
+            token_logprobs = [entry.get("logprob") for entry in content]
+            top_logprobs = [
+                {alt.get("token", ""): alt.get("logprob")
+                 for alt in (entry.get("top_logprobs") or [])}
+                for entry in content
+            ]
 
         result = GenerationResult(
             text=choice["text"].strip(),

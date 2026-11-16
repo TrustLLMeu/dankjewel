@@ -70,6 +70,9 @@ BATCH_SIZE = 32
 
 # Model configurations
 VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://localhost:8000")
+# Bearer token for the generator endpoint. Needed when the OpenAI-compatible
+# server requires auth (e.g. llama.cpp started with --api-key).
+VLLM_API_KEY = os.environ.get("VLLM_API_KEY")
 VLLM_MODEL_NAME = os.environ.get("VLLM_MODEL_NAME", None)  # Set at runtime or via env
 VLLM_TENSOR_PARALLEL_SIZE = int(os.environ.get("VLLM_TENSOR_PARALLEL_SIZE", "1"))
 

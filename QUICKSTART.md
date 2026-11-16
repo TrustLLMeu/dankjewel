@@ -52,6 +52,18 @@ python -m vllm.entrypoints.openai.api_server \
 #     --port 8000 --tensor-parallel-size 2
 ```
 
+Any OpenAI-compatible server works, including llama.cpp on CPU. Point the app
+at it and pass its key when it requires one:
+
+```bash
+VLLM_BASE_URL=http://127.0.0.1:18091 VLLM_API_KEY=<server key> \
+    uvicorn src.api:app --host 127.0.0.1 --port 8080
+```
+
+The client accepts both the vLLM `data` shape and the llama.cpp `models` shape
+for `/v1/models`, and both the legacy and chat-shaped `logprobs`, so Prong 4
+still scores from a llama.cpp generator.
+
 **Terminal 2 — Start the IE API server:**
 
 ```bash

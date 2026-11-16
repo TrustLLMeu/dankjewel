@@ -114,7 +114,8 @@ Open **http://localhost:8080**. All four prongs are available:
 
 > **Local vLLM server** (`requirements.txt`, CUDA GPU required) is only needed
 > if you want to run generation *on your own machine* rather than via a remote
-> API key.
+> API key. Any OpenAI-compatible server works, including llama.cpp on CPU —
+> set `VLLM_BASE_URL` (and `VLLM_API_KEY` when the server requires a key).
 
 **Python 3.12+ required.**
 

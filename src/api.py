@@ -50,6 +50,7 @@ logger = logging.getLogger(__name__)
 # ── Configuration ───────────────────────────────────────────────────────────
 
 VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://localhost:8000")
+VLLM_API_KEY = os.environ.get("VLLM_API_KEY")
 API_HOST = os.environ.get("IE_API_HOST", "0.0.0.0")
 API_PORT = int(os.environ.get("IE_API_PORT", "8080"))
 
@@ -65,7 +66,7 @@ evaluator: Optional[EvaluationPipeline] = None
 async def lifespan(application: FastAPI):
     """Startup/shutdown lifecycle for the API server."""
     global vllm_client, evaluator
-    vllm_client = VLLMClient(base_url=VLLM_BASE_URL)
+    vllm_client = VLLMClient(base_url=VLLM_BASE_URL, api_key=VLLM_API_KEY)
     evaluator = EvaluationPipeline(enable_prongs=[1, 2, 3, 4])
     logger.info("IE API started — vLLM at %s", VLLM_BASE_URL)
     yield
