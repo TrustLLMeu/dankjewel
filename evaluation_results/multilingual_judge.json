@@ -1,0 +1,194 @@
+{
+  "fixture": "data/multilingual_judge_items.json",
+  "judges": {
+    "Qwen2.5-1.5B (incumbent)": {
+      "per_language": {
+        "nb": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 708.0
+        },
+        "nn": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 0.933,
+          "mean_irrelevant": 0.0,
+          "rho": 0.935,
+          "mean_latency_ms": 701.9
+        },
+        "da": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 687.8
+        },
+        "sv": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 676.5
+        },
+        "de": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 620.7
+        },
+        "nl": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 666.7
+        },
+        "is": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 0.867,
+          "mean_irrelevant": 0.0,
+          "rho": 0.874,
+          "mean_latency_ms": 843.2
+        }
+      },
+      "json_valid_mean": 1.0,
+      "rho_mean": 0.973,
+      "separation_mean": 0.971
+    },
+    "Qwen3-1.7B (candidate)": {
+      "per_language": {
+        "nb": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 977.3
+        },
+        "nn": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 0.8,
+          "mean_irrelevant": 0.0,
+          "rho": 0.816,
+          "mean_latency_ms": 966.5
+        },
+        "da": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 0.933,
+          "mean_irrelevant": 0.0,
+          "rho": 0.935,
+          "mean_latency_ms": 931.9
+        },
+        "sv": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 0.933,
+          "mean_irrelevant": 0.0,
+          "rho": 0.935,
+          "mean_latency_ms": 1023.6
+        },
+        "de": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 942.3
+        },
+        "nl": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 0.867,
+          "mean_irrelevant": 0.0,
+          "rho": 0.874,
+          "mean_latency_ms": 1041.3
+        },
+        "is": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 0.533,
+          "mean_irrelevant": 0.0,
+          "rho": 0.603,
+          "mean_latency_ms": 1096.1
+        }
+      },
+      "json_valid_mean": 1.0,
+      "rho_mean": 0.88,
+      "separation_mean": 0.867
+    },
+    "Qwen3-8B (reference)": {
+      "per_language": {
+        "nb": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 2909.6
+        },
+        "nn": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 2769.0
+        },
+        "da": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 2753.4
+        },
+        "sv": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 2640.1
+        },
+        "de": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 3127.7
+        },
+        "nl": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 1.0,
+          "mean_irrelevant": 0.0,
+          "rho": 1.0,
+          "mean_latency_ms": 2611.2
+        },
+        "is": {
+          "n": 30,
+          "json_valid": 1.0,
+          "mean_relevant": 0.933,
+          "mean_irrelevant": 0.0,
+          "rho": 0.972,
+          "mean_latency_ms": 3150.7
+        }
+      },
+      "json_valid_mean": 1.0,
+      "rho_mean": 0.996,
+      "separation_mean": 0.99
+    }
+  }
+}

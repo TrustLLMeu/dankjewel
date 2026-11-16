@@ -1,0 +1,1069 @@
+{
+ "note": "Authored for the multilingual judge-agreement test (2026-11-16). 15 prompts per language, each with one relevant and one irrelevant response; Faroese omitted: no aligned small model covers it (documented in the report).",
+ "languages": {
+  "nb": [
+   {
+    "prompt": "Hva er hovedstaden i Norge?",
+    "response": "Oslo er hovedstaden i Norge.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hva er hovedstaden i Norge?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hva er kokepunktet til vann?",
+    "response": "Vann koker ved 100 grader celsius.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hva er kokepunktet til vann?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvor mange dager er det i en uke?",
+    "response": "Det er sju dager i en uke.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvor mange dager er det i en uke?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvilken planet er størst?",
+    "response": "Jupiter er den største planeten.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvilken planet er størst?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hva er valutaen i Sverige?",
+    "response": "Valutaen i Sverige er svenske kroner.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hva er valutaen i Sverige?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvor ligger Eiffeltårnet?",
+    "response": "Eiffeltårnet ligger i Paris.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvor ligger Eiffeltårnet?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvem skrev Hamlet?",
+    "response": "William Shakespeare skrev Hamlet.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvem skrev Hamlet?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvor mange timer er det i et døgn?",
+    "response": "Det er 24 timer i et døgn.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvor mange timer er det i et døgn?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hva er hovedstaden i Danmark?",
+    "response": "København er hovedstaden i Danmark.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hva er hovedstaden i Danmark?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hva er det største landet i Norden?",
+    "response": "Sverige er det største landet i Norden.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hva er det største landet i Norden?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Når ble Norge selvstendig?",
+    "response": "Norge ble selvstendig i 1905.",
+    "expected": 1
+   },
+   {
+    "prompt": "Når ble Norge selvstendig?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hva er fargen på gress?",
+    "response": "Gress er grønt.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hva er fargen på gress?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hva er frysepunktet til vann?",
+    "response": "Vann fryser ved 0 grader celsius.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hva er frysepunktet til vann?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvilket språk snakkes på Island?",
+    "response": "På Island snakkes det islandsk.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvilket språk snakkes på Island?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hva er nasjonaldagen til Norge?",
+    "response": "Norges nasjonaldag er 17. mai.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hva er nasjonaldagen til Norge?",
+    "response": "Bananer inneholder mye kalium.",
+    "expected": 0
+   }
+  ],
+  "nn": [
+   {
+    "prompt": "Kva er hovudstaden i Noreg?",
+    "response": "Oslo er hovudstaden i Noreg.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kva er hovudstaden i Noreg?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Kva er kokepunktet til vatn?",
+    "response": "Vatn koker ved 100 grader celsius.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kva er kokepunktet til vatn?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Kor mange dagar er det i ei veke?",
+    "response": "Det er sju dagar i ei veke.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kor mange dagar er det i ei veke?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Kva planet er størst?",
+    "response": "Jupiter er den største planeten.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kva planet er størst?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Kva er valutaen i Sverige?",
+    "response": "Valutaen i Sverige er svenske kroner.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kva er valutaen i Sverige?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Kvar ligg Eiffeltårnet?",
+    "response": "Eiffeltårnet ligg i Paris.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kvar ligg Eiffeltårnet?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Kven skreiv Hamlet?",
+    "response": "William Shakespeare skreiv Hamlet.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kven skreiv Hamlet?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Kor mange timar er det i eit døgn?",
+    "response": "Det er 24 timar i eit døgn.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kor mange timar er det i eit døgn?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Kva er hovudstaden i Danmark?",
+    "response": "København er hovudstaden i Danmark.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kva er hovudstaden i Danmark?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Kva er det største landet i Norden?",
+    "response": "Sverige er det største landet i Norden.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kva er det største landet i Norden?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Når vart Noreg sjølvstendig?",
+    "response": "Noreg vart sjølvstendig i 1905.",
+    "expected": 1
+   },
+   {
+    "prompt": "Når vart Noreg sjølvstendig?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Kva farge har gras?",
+    "response": "Gras er grønt.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kva farge har gras?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Kva er frysepunktet til vatn?",
+    "response": "Vatn frys ved 0 grader celsius.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kva er frysepunktet til vatn?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Kva språk blir snakka på Island?",
+    "response": "På Island blir det snakka islandsk.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kva språk blir snakka på Island?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Kva er nasjonaldagen til Noreg?",
+    "response": "Nasjonaldagen til Noreg er 17. mai.",
+    "expected": 1
+   },
+   {
+    "prompt": "Kva er nasjonaldagen til Noreg?",
+    "response": "Bananer inneheld mykje kalium.",
+    "expected": 0
+   }
+  ],
+  "da": [
+   {
+    "prompt": "Hvad er hovedstaden i Norge?",
+    "response": "Oslo er hovedstaden i Norge.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvad er hovedstaden i Norge?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvad er vands kogepunkt?",
+    "response": "Vand koger ved 100 grader celsius.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvad er vands kogepunkt?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvor mange dage er der i en uge?",
+    "response": "Der er syv dage i en uge.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvor mange dage er der i en uge?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvilken planet er størst?",
+    "response": "Jupiter er den største planet.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvilken planet er størst?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvad er valutaen i Sverige?",
+    "response": "Valutaen i Sverige er svenske kroner.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvad er valutaen i Sverige?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvor ligger Eiffeltårnet?",
+    "response": "Eiffeltårnet ligger i Paris.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvor ligger Eiffeltårnet?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvem skrev Hamlet?",
+    "response": "William Shakespeare skrev Hamlet.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvem skrev Hamlet?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvor mange timer er der i et døgn?",
+    "response": "Der er 24 timer i et døgn.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvor mange timer er der i et døgn?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvad er hovedstaden i Danmark?",
+    "response": "København er hovedstaden i Danmark.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvad er hovedstaden i Danmark?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvad er det største land i Norden?",
+    "response": "Sverige er det største land i Norden.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvad er det største land i Norden?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvornår blev Norge selvstændigt?",
+    "response": "Norge blev selvstændigt i 1905.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvornår blev Norge selvstændigt?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvilken farve har græs?",
+    "response": "Græs er grønt.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvilken farve har græs?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvad er vands frysepunkt?",
+    "response": "Vand fryser ved 0 grader celsius.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvad er vands frysepunkt?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvilket sprog tales der på Island?",
+    "response": "På Island tales der islandsk.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvilket sprog tales der på Island?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvad er Norges nationaldag?",
+    "response": "Norges nationaldag er 17. maj.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvad er Norges nationaldag?",
+    "response": "Bananer indeholder meget kalium.",
+    "expected": 0
+   }
+  ],
+  "sv": [
+   {
+    "prompt": "Vad är huvudstaden i Norge?",
+    "response": "Oslo är huvudstaden i Norge.",
+    "expected": 1
+   },
+   {
+    "prompt": "Vad är huvudstaden i Norge?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Vad är vattnets kokpunkt?",
+    "response": "Vatten kokar vid 100 grader celsius.",
+    "expected": 1
+   },
+   {
+    "prompt": "Vad är vattnets kokpunkt?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hur många dagar är det i en vecka?",
+    "response": "Det är sju dagar i en vecka.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hur många dagar är det i en vecka?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Vilken planet är störst?",
+    "response": "Jupiter är den största planeten.",
+    "expected": 1
+   },
+   {
+    "prompt": "Vilken planet är störst?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Vad är valutan i Sverige?",
+    "response": "Valutan i Sverige är svenska kronor.",
+    "expected": 1
+   },
+   {
+    "prompt": "Vad är valutan i Sverige?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Var ligger Eiffeltornet?",
+    "response": "Eiffeltornet ligger i Paris.",
+    "expected": 1
+   },
+   {
+    "prompt": "Var ligger Eiffeltornet?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Vem skrev Hamlet?",
+    "response": "William Shakespeare skrev Hamlet.",
+    "expected": 1
+   },
+   {
+    "prompt": "Vem skrev Hamlet?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hur många timmar är det på ett dygn?",
+    "response": "Det är 24 timmar på ett dygn.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hur många timmar är det på ett dygn?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Vad är huvudstaden i Danmark?",
+    "response": "Köpenhamn är huvudstaden i Danmark.",
+    "expected": 1
+   },
+   {
+    "prompt": "Vad är huvudstaden i Danmark?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Vilket är det största landet i Norden?",
+    "response": "Sverige är det största landet i Norden.",
+    "expected": 1
+   },
+   {
+    "prompt": "Vilket är det största landet i Norden?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "När blev Norge självständigt?",
+    "response": "Norge blev självständigt 1905.",
+    "expected": 1
+   },
+   {
+    "prompt": "När blev Norge självständigt?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Vilken färg har gräs?",
+    "response": "Gräs är grönt.",
+    "expected": 1
+   },
+   {
+    "prompt": "Vilken färg har gräs?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Vad är vattnets fryspunkt?",
+    "response": "Vatten fryser vid 0 grader celsius.",
+    "expected": 1
+   },
+   {
+    "prompt": "Vad är vattnets fryspunkt?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Vilket språk talas på Island?",
+    "response": "På Island talas isländska.",
+    "expected": 1
+   },
+   {
+    "prompt": "Vilket språk talas på Island?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Vad är Norges nationaldag?",
+    "response": "Norges nationaldag är 17 maj.",
+    "expected": 1
+   },
+   {
+    "prompt": "Vad är Norges nationaldag?",
+    "response": "Bananer innehåller mycket kalium.",
+    "expected": 0
+   }
+  ],
+  "de": [
+   {
+    "prompt": "Was ist die Hauptstadt von Norwegen?",
+    "response": "Oslo ist die Hauptstadt von Norwegen.",
+    "expected": 1
+   },
+   {
+    "prompt": "Was ist die Hauptstadt von Norwegen?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Was ist der Siedepunkt von Wasser?",
+    "response": "Wasser siedet bei 100 Grad Celsius.",
+    "expected": 1
+   },
+   {
+    "prompt": "Was ist der Siedepunkt von Wasser?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Wie viele Tage hat eine Woche?",
+    "response": "Eine Woche hat sieben Tage.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wie viele Tage hat eine Woche?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Welcher Planet ist der größte?",
+    "response": "Jupiter ist der größte Planet.",
+    "expected": 1
+   },
+   {
+    "prompt": "Welcher Planet ist der größte?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Was ist die Währung von Schweden?",
+    "response": "Die Währung von Schweden ist die schwedische Krone.",
+    "expected": 1
+   },
+   {
+    "prompt": "Was ist die Währung von Schweden?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Wo steht der Eiffelturm?",
+    "response": "Der Eiffelturm steht in Paris.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wo steht der Eiffelturm?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Wer schrieb Hamlet?",
+    "response": "William Shakespeare schrieb Hamlet.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wer schrieb Hamlet?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Wie viele Stunden hat ein Tag?",
+    "response": "Ein Tag hat 24 Stunden.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wie viele Stunden hat ein Tag?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Was ist die Hauptstadt von Dänemark?",
+    "response": "Kopenhagen ist die Hauptstadt von Dänemark.",
+    "expected": 1
+   },
+   {
+    "prompt": "Was ist die Hauptstadt von Dänemark?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Welches ist das größte Land in Nordeuropa?",
+    "response": "Schweden ist das größte Land in Nordeuropa.",
+    "expected": 1
+   },
+   {
+    "prompt": "Welches ist das größte Land in Nordeuropa?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Wann wurde Norwegen unabhängig?",
+    "response": "Norwegen wurde 1905 unabhängig.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wann wurde Norwegen unabhängig?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Welche Farbe hat Gras?",
+    "response": "Gras ist grün.",
+    "expected": 1
+   },
+   {
+    "prompt": "Welche Farbe hat Gras?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Was ist der Gefrierpunkt von Wasser?",
+    "response": "Wasser gefriert bei 0 Grad Celsius.",
+    "expected": 1
+   },
+   {
+    "prompt": "Was ist der Gefrierpunkt von Wasser?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Welche Sprache wird in Island gesprochen?",
+    "response": "In Island wird Isländisch gesprochen.",
+    "expected": 1
+   },
+   {
+    "prompt": "Welche Sprache wird in Island gesprochen?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Wann ist der Nationalfeiertag von Norwegen?",
+    "response": "Der Nationalfeiertag von Norwegen ist der 17. Mai.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wann ist der Nationalfeiertag von Norwegen?",
+    "response": "Bananen enthalten viel Kalium.",
+    "expected": 0
+   }
+  ],
+  "nl": [
+   {
+    "prompt": "Wat is de hoofdstad van Noorwegen?",
+    "response": "Oslo is de hoofdstad van Noorwegen.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wat is de hoofdstad van Noorwegen?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Wat is het kookpunt van water?",
+    "response": "Water kookt bij 100 graden Celsius.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wat is het kookpunt van water?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hoeveel dagen heeft een week?",
+    "response": "Een week heeft zeven dagen.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hoeveel dagen heeft een week?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Welke planeet is het grootst?",
+    "response": "Jupiter is de grootste planeet.",
+    "expected": 1
+   },
+   {
+    "prompt": "Welke planeet is het grootst?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Wat is de munteenheid van Zweden?",
+    "response": "De munteenheid van Zweden is de Zweedse kroon.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wat is de munteenheid van Zweden?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Waar staat de Eiffeltoren?",
+    "response": "De Eiffeltoren staat in Parijs.",
+    "expected": 1
+   },
+   {
+    "prompt": "Waar staat de Eiffeltoren?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Wie schreef Hamlet?",
+    "response": "William Shakespeare schreef Hamlet.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wie schreef Hamlet?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hoeveel uur heeft een dag?",
+    "response": "Een dag heeft 24 uur.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hoeveel uur heeft een dag?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Wat is de hoofdstad van Denemarken?",
+    "response": "Kopenhagen is de hoofdstad van Denemarken.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wat is de hoofdstad van Denemarken?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Welk land is het grootst in Scandinavië?",
+    "response": "Zweden is het grootste land in Scandinavië.",
+    "expected": 1
+   },
+   {
+    "prompt": "Welk land is het grootst in Scandinavië?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Wanneer werd Noorwegen onafhankelijk?",
+    "response": "Noorwegen werd onafhankelijk in 1905.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wanneer werd Noorwegen onafhankelijk?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Welke kleur heeft gras?",
+    "response": "Gras is groen.",
+    "expected": 1
+   },
+   {
+    "prompt": "Welke kleur heeft gras?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Wat is het vriespunt van water?",
+    "response": "Water bevriest bij 0 graden Celsius.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wat is het vriespunt van water?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Welke taal wordt er op IJsland gesproken?",
+    "response": "Op IJsland wordt IJslands gesproken.",
+    "expected": 1
+   },
+   {
+    "prompt": "Welke taal wordt er op IJsland gesproken?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   },
+   {
+    "prompt": "Wat is de nationale feestdag van Noorwegen?",
+    "response": "De nationale feestdag van Noorwegen is 17 mei.",
+    "expected": 1
+   },
+   {
+    "prompt": "Wat is de nationale feestdag van Noorwegen?",
+    "response": "Bananen bevatten veel kalium.",
+    "expected": 0
+   }
+  ],
+  "is": [
+   {
+    "prompt": "Hver er höfuðborg Noregs?",
+    "response": "Ósló er höfuðborg Noregs.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hver er höfuðborg Noregs?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hver er suðumark vatns?",
+    "response": "Vatn sýður við 100 gráður á Celsíus.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hver er suðumark vatns?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hversu margir dagar eru í viku?",
+    "response": "Það eru sjö dagar í viku.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hversu margir dagar eru í viku?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvaða reikistjarna er stærst?",
+    "response": "Júpíter er stærsta reikistjarnan.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvaða reikistjarna er stærst?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvað er gjaldmiðill Svíþjóðar?",
+    "response": "Gjaldmiðill Svíþjóðar er sænsk króna.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvað er gjaldmiðill Svíþjóðar?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvar er Eiffelturninn?",
+    "response": "Eiffelturninn er í París.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvar er Eiffelturninn?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hver skrifaði Hamlet?",
+    "response": "William Shakespeare skrifaði Hamlet.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hver skrifaði Hamlet?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hversu margar klukkustundir eru í sólarhring?",
+    "response": "Það eru 24 klukkustundir í sólarhring.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hversu margar klukkustundir eru í sólarhring?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hver er höfuðborg Danmerkur?",
+    "response": "Kaupmannahöfn er höfuðborg Danmerkur.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hver er höfuðborg Danmerkur?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvað er stærsta land Norðurlanda?",
+    "response": "Svíþjóð er stærsta land Norðurlanda.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvað er stærsta land Norðurlanda?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvenær varð Noregur sjálfstætt?",
+    "response": "Noregur varð sjálfstætt árið 1905.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvenær varð Noregur sjálfstætt?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvaða lit hefur gras?",
+    "response": "Gras er grænt.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvaða lit hefur gras?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hver er frostmark vatns?",
+    "response": "Vatn frýs við 0 gráður á Celsíus.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hver er frostmark vatns?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvaða tungumál er talað á Íslandi?",
+    "response": "Á Íslandi er talað íslensku.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvaða tungumál er talað á Íslandi?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   },
+   {
+    "prompt": "Hvenær er þjóðhátíðardagur Noregs?",
+    "response": "Þjóðhátíðardagur Noregs er 17. maí.",
+    "expected": 1
+   },
+   {
+    "prompt": "Hvenær er þjóðhátíðardagur Noregs?",
+    "response": "Bananir innihalda mikið kalíum.",
+    "expected": 0
+   }
+  ]
+ }
+}
