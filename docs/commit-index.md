@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `b022109` — Support authenticated OpenAI-compatible generators in the vLLM client
+- **Latest commit:** `0a13ffe` — Pre-register the prong ablation and add its analysis script
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
 - **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); LLM-AggreFact auto-gated — harness ready, one account click needed; seed coverage still 0.3% on FEVER; AVeriTeC (future work); Nordic seed expansion and native lexicon validation; human-annotation and user studies
 
@@ -14,7 +14,10 @@ Newest first. `git log` remains the source of truth for hashes.
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-16 | `PENDING` | chore / index | Record generator auth fix in commit index | chore |
+| 2026-11-16 | `PENDING` | chore / index | Record evidence export and ablation protocol in commit index | chore |
+| 2026-11-16 | `0a13ffe` | eval / ablation | Pre-register the prong ablation and add its analysis script | wXze/V55p research claim |
+| 2026-11-16 | `2eceac5` | dashboard / evidence | Export evidence bundles, signal matrix and claims from the UI | wXze reproducibility; human study |
+| 2026-11-16 | `cb64802` | chore / index | Record generator auth fix in commit index | chore |
 | 2026-11-16 | `b022109` | generator / client | Support authenticated OpenAI-compatible generators in the vLLM client | YE7H reproducibility / demo path |
 | 2026-11-16 | `cda4755` | prong 1 / judge | Include the shipped 0.5B judge in the multilingual judge test | wXze multilingual validation |
 | 2026-11-16 | `13127ce` | docs / judge | Document the multilingual judge-agreement test and decision | wXze multilingual validation |
@@ -93,10 +96,34 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record generator auth fix in commit index (2026-11-16)
+### `PENDING` — Record evidence export and ablation protocol in commit index (2026-11-16)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
-- **Why:** Record the generator-client auth/serving fix and backfill the multilingual index hash.
+- **Why:** Record the evidence export and the ablation pre-registration; backfill the generator-fix index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `0a13ffe` — Pre-register the prong ablation and add its analysis script (2026-11-16)
+
+- **Hash:** `0a13ffe591a4237a43584647b54c05aaac177a81`
+- **Why:** the senior review's only remaining finding needs a human-rated study. `docs/PRONG_ABLATION_PROTOCOL.md` freezes the design (150 English texts, 3 generators, 2 annotators, 1-5 scales, adjudication, Krippendorff alpha, pre-specified H1-H3, paired bootstrap CIs, stopping rule). `scripts/analyze_prong_ablation.py` computes the frozen analysis and passes a synthetic self-test.
+- **Files:** `docs/PRONG_ABLATION_PROTOCOL.md`, `scripts/analyze_prong_ablation.py`
+- **Closes:** the pre-registration half of the senior review's durable-finding item; running it still needs annotators
+- **Verify:** `--selftest` runs end to end and writes the report; correlation/H1/H2 code paths exercised on synthetic data.
+
+### `2eceac5` — Export evidence bundles, signal matrix and claims from the UI (2026-11-16)
+
+- **Hash:** `2eceac58469e7d6bf8f1e18b5ea22e65a65184c9`
+- **Why:** dependency-free downloads from the Evidence card: `evidence_bundle.json` (coverage, signal matrix, claims, timeline), `signal_matrix.csv`, `claims.csv`. This unblocks re-analysis and the annotation study; the control hides before an evaluation.
+- **Files:** `frontend/index.html`, `frontend/locales/en.json`
+- **Closes:** ideation #5 (shareable evidence bundle)
+- **Verify:** Selenium with a download directory: control hidden before evaluation, visible after; all three files downloaded; the JSON has the expected seven keys; the CSVs carry the expected headers and rows.
+
+### `cb64802` — Record generator auth fix in commit index (2026-11-16)
+
+- **Hash:** `cb64802a40fceba341cc8b087df76352f60c36da`
+- **Why:** Record the generator-client fix and backfill the multilingual index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
 - **Verify:** untested (docs only)
