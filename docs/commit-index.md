@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `0a13ffe` — Pre-register the prong ablation and add its analysis script
+- **Latest commit:** `4442afb` — Route the judge by language: 0.5B for English, 1.5B otherwise
 - **Tree:** dirty (scouting briefs and `omniprov.txt` stay unstaged)
 - **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); LLM-AggreFact auto-gated — harness ready, one account click needed; seed coverage still 0.3% on FEVER; AVeriTeC (future work); Nordic seed expansion and native lexicon validation; human-annotation and user studies
 
@@ -14,7 +14,9 @@ Newest first. `git log` remains the source of truth for hashes.
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-16 | `PENDING` | chore / index | Record evidence export and ablation protocol in commit index | chore |
+| 2026-11-16 | `PENDING` | chore / index | Record judge routing in commit index | chore |
+| 2026-11-16 | `4442afb` | prong 1 / judge | Route the judge by language: 0.5B for English, 1.5B otherwise | wXze multilingual validation |
+| 2026-11-16 | `d849d0d` | chore / index | Record evidence export and ablation protocol in commit index | chore |
 | 2026-11-16 | `0a13ffe` | eval / ablation | Pre-register the prong ablation and add its analysis script | wXze/V55p research claim |
 | 2026-11-16 | `2eceac5` | dashboard / evidence | Export evidence bundles, signal matrix and claims from the UI | wXze reproducibility; human study |
 | 2026-11-16 | `cb64802` | chore / index | Record generator auth fix in commit index | chore |
@@ -96,9 +98,25 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record evidence export and ablation protocol in commit index (2026-11-16)
+### `PENDING` — Record judge routing in commit index (2026-11-16)
 
 - **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Why:** Record the language-routed judge and backfill the export/protocol index hash.
+- **Files:** `docs/commit-index.md`
+- **Closes:** chore
+- **Verify:** untested (docs only)
+
+### `4442afb` — Route the judge by language: 0.5B for English, 1.5B otherwise (2026-11-16)
+
+- **Hash:** `4442afb3ef4fa0509a63cee0041f9e577aec746b`
+- **Why:** the 210-item judge test shows the shipped 0.5B fails the Icelandic pass check (rho 0.30) while the 1.5B passes all seven languages (mean 0.973). `get_judge_for_lang` routes English to the 0.5B and every other language to the 1.5B (env `DANKJEWEL_JUDGE_BASE_URL_NONEN`, default `:18093`); `metadata.judge_model` reports the served model and `metadata.judge_route` the branch. Explicit-empty non-English config falls back to the default and the metadata discloses it. README/QUICKSTART/MULTILINGUAL_JUDGE.md updated.
+- **Files:** `src/llm_judge_client.py`, `src/prongs/prong1_dimensions.py`, `src/prongs/prong1_llm_as_judge.py`, `src/pipeline.py`, `src/api.py`, `tests/test_judge_routing.py`, `README.md`, `QUICKSTART.md`, `docs/MULTILINGUAL_JUDGE.md`
+- **Closes:** the product side of the multilingual judge gap (non-English routing)
+- **Verify:** full suite 434 passed + 2 skipped; live check: English -> route `en`, model `Qwen/Qwen2.5-0.5B-Instruct`, score 1.0; Dutch -> route `non-en`, model `Qwen/Qwen2.5-1.5B-Instruct`, score 1.0.
+
+### `d849d0d` — Record evidence export and ablation protocol in commit index (2026-11-16)
+
+- **Hash:** `d849d0d142baa87cdf405adc5385a361e9e84096`
 - **Why:** Record the evidence export and the ablation pre-registration; backfill the generator-fix index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
