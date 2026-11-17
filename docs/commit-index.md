@@ -6,15 +6,16 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `359276c` — Expand the seed KB with civic entities and re-measure FEVER
+- **Latest commit:** `b7fd350` — Abstain on insufficient evidence and add an evaluation-language control
 - **Tree:** clean (user exports, scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); seed-KB coverage still 0.3% on FEVER 1.0 dev (60/19,998); AVeriTeC (future work); native lexicon validation; human-annotation and user studies; paper cycle 10 review/push
+- **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); seed-KB coverage still 0.3% on FEVER 1.0 dev (60/19,998); AVeriTeC (future work); native lexicon validation; human-annotation and user studies; paper cycle 11 after Stage 1/2
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-16 | `PENDING` | chore / index | Record Stage 1-4 in commit index | chore |
+| 2026-11-17 | `b7fd350` | prong 1+3 / scoring + UI | Abstain on insufficient evidence and add an evaluation-language control | wXze honesty / YE7H reproducibility |
+| 2026-11-16 | `b4f3725` | chore / index | Record Stage 1-4 in commit index | chore |
 | 2026-11-16 | `359276c` | prong 3 / seed | Expand the seed KB with civic entities and re-measure FEVER | wXze coverage (seed) |
 | 2026-11-16 | `7aac3bf` | prong 3 / admission | Gate malformed objects and separate corrections in claim admission | wXze claim precision |
 | 2026-11-16 | `457e204` | prong 3+4 / transparency | Wire logprobs_k and per-claim reasons through the evaluator | wXze transparency / YE7H reproducibility |
@@ -105,9 +106,17 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### `PENDING` — Record Stage 1-4 in commit index (2026-11-16)
+### `b7fd350` — Abstain on insufficient evidence and add an evaluation-language control (2026-11-17)
 
-- **Hash:** `PENDING` — a commit cannot record its own hash; backfill in the next index land
+- **Hash:** `b7fd3505175976df6b1a12d932f405d3825d7a73`
+- **Why:** Stage 1 of the review fix plan. `FactualConsistency` now reports `unknown` with fewer than two claims, `SemanticCoherence`/`Reliability` report `unknown` for one-sentence text, and `Relevance` reports `unknown` for a blank answer; the old scored defaults let an unverifiable claim reach Prong 3 1.0 and a single false claim reach 0.5. Blank text returns no prongs and total `None`; `/evaluate` rejects blank text with 422; generation endpoints skip evaluation on empty output. Hatching now counts scored dimensions with a scored evidence source, and labels say "claims checked". Stage 2 adds a separate Evaluation language selector, sends `language` through all evaluation/generation/Verify-now paths, records it in pipeline metadata and history, validates it against the nine supported codes, and documents that Prong 1 embeddings/toxicity and Prong 3 spaCy remain English-only.
+- **Files:** `src/dimensions/prong3_dimensions.py`, `src/prongs/prong1_dimensions.py`, `src/pipeline.py`, `src/api.py`, `frontend/index.html`, `frontend/locales/en.json`, `tests/test_prong1.py`, `tests/test_prong3.py`, `tests/test_honesty_status.py`, `tests/test_evidence_contract.py`, `tests/test_api.py`, `tests/test_scoring_abstention.py`, `tests/evidence_flags_off_snapshot.json`, `README.md`, `QUICKSTART.md`, `ASSUMPTIONS.md`
+- **Closes:** the vacuous-text and language-selector findings from the whole-system review
+- **Verify:** full suite 460 passed + 2 skipped; Selenium Stage 1/2 ALL PASS; Intrinsic regression ALL PASS; paper builds 9 pages with 0 margin violations.
+
+### `b4f3725` — Record Stage 1-4 in commit index (2026-11-16)
+
+- **Hash:** `b4f372542e5944074b9c2c5b4ea59e1f2a79ef6f`
 - **Why:** Index the Stage 1-3 transparency/extraction commits, the Stage 4 civic-seed and FEVER re-measurement commit, the streaming-logprobs fix, and backfill the AggreFact index hash.
 - **Files:** `docs/commit-index.md`
 - **Closes:** chore
