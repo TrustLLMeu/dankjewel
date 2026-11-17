@@ -1196,6 +1196,12 @@ class OfflineWikidata:
 
         return obj1_matches != obj2_matches
 
+    def entity_count(self) -> int:
+        """Number of entity rows in the loaded KB."""
+        self._ensure_loaded()
+        return int(self._conn.execute(
+            "SELECT COUNT(*) FROM entities").fetchone()[0])
+
     def close(self):
         """Close database connection."""
         if self._conn:

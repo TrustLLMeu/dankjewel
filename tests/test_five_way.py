@@ -398,6 +398,9 @@ class TestFlagsOffParity:
         b['dimensions'] = [_strip_timing(d) for d in b['dimensions']]
         a.pop('processing_time')
         b.pop('processing_time')
+        for result in (a, b):
+            result.get('metadata', {}).pop('extraction_time_ms', None)
+            result.get('metadata', {}).pop('verification_time_ms', None)
         assert a == b
 
     def test_flag_on_keeps_binary_math_identical(self):

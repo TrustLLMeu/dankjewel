@@ -241,11 +241,19 @@ async def serve_frontend():
 async def health():
     """Health check — also checks if vLLM is reachable."""
     vllm_ok = await vllm_client.health_check() if vllm_client else False
+    p3 = evaluator.prongs.get("Prong 3") if evaluator else None
+    wd = getattr(p3, "_wikidata", None) if p3 else None
+    kb = {
+        "db_path": getattr(wd, "db_path", None),
+        "entities": getattr(p3, "_kb_entities", None) if p3 else None,
+    }
     return {
         "status": "ok",
         "vllm_connected": vllm_ok,
         "vllm_url": VLLM_BASE_URL,
         "logprobs_k": VLLM_LOGPROBS_K,
+        "wikidata_db": kb["db_path"],
+        "wikidata_entities": kb["entities"],
     }
 
 

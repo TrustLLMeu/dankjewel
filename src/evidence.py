@@ -112,6 +112,7 @@ def compute_coverage(results: List, prong_scores: Dict[str, float],
     aggregated_scores.prong_scores).
     """
     claims_total = claims_verified = claims_partial = 0
+    claims_confirmed = claims_denied = 0
     judge_scored = rules_scored = False
     fa_seen = False
 
@@ -124,7 +125,9 @@ def compute_coverage(results: List, prong_scores: Dict[str, float],
                 fa_seen = True
                 counts = dim.metadata.get('relation_counts') or {}
                 claims_total = int(dim.metadata.get('num_claims', 0) or 0)
-                claims_verified = counts.get('confirmed', 0) + counts.get('denied', 0)
+                claims_confirmed = counts.get('confirmed', 0)
+                claims_denied = counts.get('denied', 0)
+                claims_verified = claims_confirmed + claims_denied
                 claims_partial = counts.get('partially_supported', 0)
             if evidence.get('llm_judge', {}).get('status') == 'scored':
                 judge_scored = True
@@ -135,6 +138,8 @@ def compute_coverage(results: List, prong_scores: Dict[str, float],
     return {
         'claims_total': claims_total,
         'claims_verified': claims_verified,
+        'claims_confirmed': claims_confirmed,
+        'claims_denied': claims_denied,
         'claims_partial': claims_partial,
         'claims_unverified': claims_unverified,
         'judge_scored': judge_scored,

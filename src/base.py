@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 import json
 
 
@@ -80,6 +80,7 @@ class ProngResult:
     dimensions: List[DimensionScore]
     processing_time: float
     error: str = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -87,7 +88,8 @@ class ProngResult:
             'prong_name': self.prong_name,
             'dimensions': [d.to_dict() for d in self.dimensions],
             'processing_time': self.processing_time,
-            'error': self.error
+            'error': self.error,
+            'metadata': self.metadata,
         }
 
     def to_json(self) -> str:

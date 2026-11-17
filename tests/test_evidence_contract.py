@@ -398,9 +398,10 @@ class TestCoverageSummary:
             prompt="What is the capital of France?",
         )
         cov = result['coverage']
-        assert set(cov) == {'claims_total', 'claims_verified', 'claims_partial',
-                             'claims_unverified', 'judge_scored', 'rules_scored',
-                             'prongs_scored', 'prongs_total'}
+        assert set(cov) == {'claims_total', 'claims_verified', 'claims_confirmed',
+                             'claims_denied', 'claims_partial', 'claims_unverified',
+                             'judge_scored', 'rules_scored', 'prongs_scored',
+                             'prongs_total'}
         assert cov['claims_total'] >= 1
         assert (cov['claims_verified'] + cov['claims_partial']
                 + cov['claims_unverified']) == cov['claims_total']
@@ -432,6 +433,8 @@ class TestCoverageSummary:
         assert cov['claims_total'] == 1
         assert cov['claims_partial'] == 1
         assert cov['claims_verified'] == 0
+        assert cov['claims_confirmed'] == 0
+        assert cov['claims_denied'] == 0
         assert cov['claims_unverified'] == 0
         assert (cov['claims_verified'] + cov['claims_partial']
                 + cov['claims_unverified']) == cov['claims_total']
@@ -487,8 +490,10 @@ class TestAdditiveGuarantee:
         coverage key and per-dimension metadata.evidence_sources, the
         claim-admission slice added Factual Accuracy's
         metadata.claim_admission (the admitted claim set itself is
-        unchanged on this input). The snapshot was captured from the
-        pre-Stage-A pipeline on this exact input.
+        unchanged on this input), Stage 6 added per-prong metadata and
+        top-level metadata.kb. The snapshot was captured from the
+        pre-Stage-A pipeline on this exact input and updated for those
+        additive provenance fields.
         """
         with open(self.SNAPSHOT_PATH) as f:
             expected = self._strip_volatile(json.load(f))

@@ -8,7 +8,7 @@ from src.prongs.prong4_intrinsic import (
     Uncertainty,
     Perplexity,
     TokenEntropy,
-    SemanticEntropy
+    TopKEntropy
 )
 
 
@@ -203,11 +203,11 @@ class TestTokenEntropy:
 
 
 
-class TestSemanticEntropy:
-    """Test Semantic Entropy dimension."""
+class TestTopKEntropy:
+    """Test Top-k Entropy dimension."""
 
     def test_high_confidence_lower_semantic_entropy(self):
-        """High confidence should have lower semantic entropy."""
+        """High confidence should have lower top-k entropy."""
         # High confidence
         logits_high = np.zeros((20, 50000))
         for i in range(20):
@@ -218,7 +218,7 @@ class TestSemanticEntropy:
             logits=logits_high,
             vocab_size=50000
         )
-        score_high = SemanticEntropy().evaluate(data_high).value
+        score_high = TopKEntropy().evaluate(data_high).value
 
         # Low confidence
         logits_low = create_low_confidence_logits(seq_len=20)
@@ -227,24 +227,24 @@ class TestSemanticEntropy:
             logits=logits_low,
             vocab_size=logits_low.shape[1]
         )
-        score_low = SemanticEntropy().evaluate(data_low).value
+        score_low = TopKEntropy().evaluate(data_low).value
 
         assert 0.0 <= score_high <= 1.0
         assert 0.0 <= score_low <= 1.0
-        assert score_low > score_high, f"Low confidence should have higher semantic entropy: {score_low} > {score_high}"
+        assert score_low > score_high, f"Low confidence should have higher top-k entropy: {score_low} > {score_high}"
 
     def test_low_confidence_high_semantic_entropy(self):
-        """Low confidence should have high semantic entropy."""
+        """Low confidence should have high top-k entropy."""
         logits = create_low_confidence_logits()
         data = IntrinsicData(
             token_ids=list(range(len(logits))),
             logits=logits,
             vocab_size=logits.shape[1]
         )
-        dim = SemanticEntropy()
+        dim = TopKEntropy()
         score = dim.evaluate(data)
         assert 0.0 <= score.value <= 1.0
-        assert score.value > 0.5, f"Expected high semantic entropy, got {score.value}"
+        assert score.value > 0.5, f"Expected high top-k entropy, got {score.value}"
 
 
 
@@ -272,7 +272,7 @@ class TestProng4Integration:
 
         # Check all dimension names
         dim_names = {d.name for d in result.dimensions}
-        expected = {'Uncertainty', 'Perplexity', 'Token Entropy', 'Semantic Entropy'}
+        expected = {'Uncertainty', 'Perplexity', 'Token Entropy', 'Top-k Entropy'}
         assert dim_names == expected, f"Expected {expected}, got {dim_names}"
 
     def test_prong4_all_scores_valid_ranges(self):
@@ -547,23 +547,23 @@ class TestTopKTokenEntropy:
         assert score.metadata['method'] == 'logits'
 
 
-class TestTopKSemanticEntropy:
-    """Test Semantic Entropy with top-k logprobs from vLLM HTTP API."""
+class TestTopKTopKEntropy:
+    """Test Top-k Entropy with top-k logprobs from vLLM HTTP API."""
 
     def test_high_confidence_low_semantic_entropy(self):
-        """Peaked top-k → low semantic entropy."""
+        """Peaked top-k → low top-k entropy."""
         top_k = create_top_k_high_confidence(seq_len=20, k=20)
         data = IntrinsicData(token_ids=list(range(20)), top_k_logprobs=top_k, top_k=20)
-        score = SemanticEntropy().evaluate(data)
+        score = TopKEntropy().evaluate(data)
         assert 0.0 <= score.value <= 1.0
         assert score.value < 0.3
         assert score.metadata['method'] == 'top_k_approximation'
 
     def test_low_confidence_high_semantic_entropy(self):
-        """Spread top-k → high semantic entropy."""
+        """Spread top-k → high top-k entropy."""
         top_k = create_top_k_low_confidence(seq_len=20, k=20)
         data = IntrinsicData(token_ids=list(range(20)), top_k_logprobs=top_k, top_k=20)
-        score = SemanticEntropy().evaluate(data)
+        score = TopKEntropy().evaluate(data)
         assert score.value > 0.5
 
 

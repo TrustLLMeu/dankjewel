@@ -43,7 +43,7 @@
    "Semantic Coherence": [
     0.948013
    ],
-   "Semantic Entropy": [
+   "Top-k Entropy": [
     0.5
    ],
    "Temporal Accuracy": [
@@ -72,7 +72,11 @@
  },
  "metadata": {
   "language": "en",
-  "prong1_backend": "embeddings"
+  "prong1_backend": "embeddings",
+  "kb": {
+   "db_path": "/work/larsbun/git-projects/dankjewel/data/wikidata_seed.db",
+   "entities": 144
+  }
  },
  "prong_results": [
   {
@@ -135,7 +139,8 @@
     }
    ],
    "error": null,
-   "prong_name": "LLM-as-Judge (Prong 1)"
+   "prong_name": "LLM-as-Judge (Prong 1)",
+   "metadata": {}
   },
   {
    "dimensions": [
@@ -225,7 +230,8 @@
     }
    ],
    "error": null,
-   "prong_name": "Rule-Based (Prong 2)"
+   "prong_name": "Rule-Based (Prong 2)",
+   "metadata": {}
   },
   {
    "dimensions": [
@@ -371,7 +377,15 @@
     }
    ],
    "error": null,
-   "prong_name": "Extraction-Based (Prong 3)"
+   "prong_name": "Extraction-Based (Prong 3)",
+   "metadata": {
+    "num_claims": 2,
+    "extraction": {
+     "admitted_claims": 2,
+     "discarded_candidates": {},
+     "correction_pairs": 0
+    }
+   }
   },
   {
    "dimensions": [
@@ -414,14 +428,15 @@
      "metadata": {
       "note": "No intrinsic data available (vLLM required)"
      },
-     "name": "Semantic Entropy",
+     "name": "Top-k Entropy",
      "raw_value": null,
      "status": "unknown",
      "value": 0.5
     }
    ],
    "error": null,
-   "prong_name": "Intrinsic (Prong 4)"
+   "prong_name": "Intrinsic (Prong 4)",
+   "metadata": {}
   }
  ],
  "text_length": 58

@@ -116,7 +116,7 @@
   "evidence_label_no_logprobs": "no logprobs",
   "claim_strip_title": "Claim evidence",
   "claim_strip_untitled": "—",
-  "claim_meter_title": "{{v}} checked · {{p}} partial · {{u}} unverified",
+  "claim_meter_title": "{{v}} checked ({{c}} confirmed / {{d}} denied) · {{p}} partial · {{u}} unverified",
   "evidence_matrix_title": "Signal matrix",
   "evidence_matrix_dimension": "Dimension",
   "evidence_matrix_legend": "value in cell · ? unknown · ! error · · counted, no single score · blank = source did not inform",
@@ -150,5 +150,17 @@
   "eval_language": "Evaluation language",
   "eval_language_hint": "Prong 2 lexicons and the non-English judge use this language. Prong 1 embeddings/toxicity and Prong 3 spaCy are English-only.",
   "ui_language": "Interface language",
-  "prong_error": "Prong failed"
+  "prong_error": "Prong failed",
+  "relation_confirmed": "confirmed",
+  "relation_denied": "denied",
+  "relation_partially_supported": "partially supported",
+  "relation_conflated": "conflated",
+  "relation_unknown": "unknown",
+  "claim_table_subject": "Subject",
+  "claim_table_predicate": "Predicate",
+  "claim_table_object": "Object",
+  "claim_table_verdict": "Verdict",
+  "claim_table_source": "Source",
+  "history_full": "Browser storage is full; this evaluation could not be saved. Export it before clearing history.",
+  "history_trimmed": "History was full; older entries were trimmed (claim details or oldest runs)."
 }

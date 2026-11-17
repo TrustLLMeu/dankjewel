@@ -3,8 +3,9 @@
 #
 # Prong 4 intrinsic metrics work with any remote OpenAI-compatible backend
 # that returns per-token logprobs (e.g. OpenAI, Groq, Fireworks).
-# If the remote provider does not return logprobs, Prong 4 shows neutral
-# placeholder scores — all other prongs are unaffected.
+# If the remote provider does not return logprobs, Prong 4 dimensions report
+# unknown (display-only placeholders, excluded from the score) — all other
+# prongs are unaffected.
 #
 # The only reason to install the full requirements.txt is to run a LOCAL
 # vLLM generation server on-machine (requires CUDA GPU).

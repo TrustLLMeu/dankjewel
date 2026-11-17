@@ -38,6 +38,7 @@ online-eval-base/
 │   ├── base.py                     # Base classes (DimensionScore, Evaluator, ProngResult)
 │   ├── config.py                   # Language codes, Flesch coefficients, constants
 │   ├── pipeline.py                 # EvaluationPipeline — orchestrates all prongs
+│   ├── evidence.py                 # Evidence-source contract and coverage summary
 │   ├── api.py                      # FastAPI server (generation, evaluation, streaming)
 │   ├── vllm_client.py              # Async vLLM/OpenAI-compatible HTTP client
 │   ├── vllm_adapter.py             # GenerationResult → Prong 4 IntrinsicData
@@ -52,15 +53,19 @@ online-eval-base/
 │   │   ├── prong2_dimensions.py    # Fluency, Politeness, Emotional Intensity, Formality, Hedging
 │   │   └── prong3_dimensions.py    # Factual Accuracy, Consistency, Temporal, Comparative, Modality
 │   ├── extraction/
-│   │   └── claim_extractor.py      # spaCy dependency-parsing claim extractor
+│   │   ├── claim_extractor.py      # spaCy dependency-parsing claim extractor
+│   │   ├── claim_admission.py      # Deterministic gates and corrections
+│   │   └── llm_claim_extractor.py  # Optional 1.5B atomic-claim track
 │   ├── aggregation/
 │   │   └── aggregator.py           # Weighted prong/dimension aggregation
 │   ├── models/
 │   │   ├── embeddings.py           # sentence-transformers wrapper (LRU cached)
 │   │   └── toxicity_model.py       # unitary/toxic-bert wrapper
+│   ├── llm_judge_client.py         # Tiny judge / claims / admission client
 │   ├── llm_backends/               # Pluggable backend abstraction (local vLLM / remote)
 │   └── resources/
 │       ├── wikidata_offline.py     # Offline Wikidata interface (SQLite)
+│       ├── nli_verifier.py         # MiniCheck verifier wrapper
 │       ├── lexicon_manager.py      # Per-language YAML lexicon loader
 │       └── lexicons/               # da, de, en, fo, is, nb, nn, nl, sv
 ├── scripts/
@@ -79,6 +84,7 @@ online-eval-base/
 │   └── test_llm_backends.py
 ├── frontend/
 │   ├── index.html                  # Single-page control panel
+│   ├── commits.html                # Browsable commit history
 │   └── locales/                    # UI translations (9 languages)
 ├── data/
 │   └── wikidata_seed.db            # Pre-built offline Wikidata seed
@@ -150,7 +156,9 @@ Open **http://localhost:8080** in your browser. From there you can:
 - Generate text with real-time SSE token streaming; the optional evaluation
   tracks and the Evaluation language apply to generated text too
 - View all 4 prong scores with expandable per-dimension breakdowns
-- Export results as JSON / browse evaluation history (localStorage)
+- Export results as JSON / browse evaluation history (localStorage); when
+  storage is full, older claim details or oldest entries are trimmed with a
+  visible notice
 
 #### Evaluate-only (no generation, no vLLM)
 
@@ -212,6 +220,8 @@ served `judge_model`.
 Language support: English is the validated prototype. Lexicons exist for
 eight further Germanic languages (da, de, fo, is, nb, nn, nl, sv) as
 unvalidated translations — treat scores in those languages as experimental.
+Newer interface keys use English fallback values in the non-English locales;
+translations are pending.
 The header language selector changes the interface language; the separate
 **Evaluation language** selector sends `language` to the pipeline. Prong 2
 lexicons and the non-English judge (1.5B) use it; Prong 1 embeddings/toxicity
@@ -268,8 +278,10 @@ being falsely denied by the verifier.
 | **Uncertainty** | 1 − mean token confidence | `agg_value = confidence` |
 | **Perplexity** | exp(mean NLL) | `agg_value = 1/(1+ppl)`, displayed raw |
 | **Token Entropy** | Shannon entropy of token distributions (normalized) | `aggregate=False` |
-| **Semantic Entropy** | Entropy of top-k cluster (normalized) | `aggregate=False` |
+| **Top-k Entropy** | Entropy of the five-token head (normalized) | `aggregate=False` |
 
+When the backend returns only five alternatives, Top-k Entropy coincides with
+Token Entropy; the two diverge when more top-k logprobs are available.
 Without per-token logprobs, Prong 4's dimensions are reported with
 `status="unknown"` — placeholder values for display only, excluded from
 the prong and total scores.
@@ -280,7 +292,7 @@ the prong and total scores.
 
 Each enabled prong produces a score in [0, 1] as the mean of its `aggregate=True`
 dimensions. Dimensions marked `aggregate=False` (Emotional Intensity, Hedging,
-Token Entropy, Semantic Entropy, Modality Awareness) are reported but excluded
+Token Entropy, Top-k Entropy, Modality Awareness) are reported but excluded
 from the score — they have no universal "better" direction.
 
 For dimensions whose raw scale is not [0, 1] / higher-is-better (Toxicity,
@@ -298,6 +310,11 @@ dimensions is omitted from the total, and if nothing was scored at all,
 
 The total score is a weighted average of prong scores (default: 0.25 each),
 renormalized if any prong is missing or errors out.
+
+`GET /health` reports the active Wikidata database path and entity count;
+each evaluation's `metadata.kb` repeats the same provenance. Prong 3 timing
+metadata (`extraction_time_ms`, `verification_time_ms`, `num_claims`) is in
+the prong result.
 
 #### Choosing weights
 

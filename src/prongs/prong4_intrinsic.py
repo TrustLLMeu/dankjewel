@@ -257,27 +257,31 @@ class TokenEntropy(ScorableDimension):
                                      evidence_sources={'logprob': source(None, 'error', None)})
 
 
-class SemanticEntropy(ScorableDimension):
-    """Semantic entropy: entropy across clustered similar tokens (normalized to [0,1]).
+class TopKEntropy(ScorableDimension):
+    """Entropy of the head of each token distribution (normalized to [0,1]).
 
-    Descriptive/diagnostic axis — same rationale as Token Entropy: no
-    universal "better" direction. Excluded from aggregation
-    (aggregate=False) and reported for information only.
+    This is a sparse-distribution diagnostic: it keeps the five most
+    probable alternatives per token, renormalizes them, and measures
+    their entropy. It is **not** Kuhn-style semantic clustering (which
+    groups sampled sequences by meaning); the earlier "Semantic Entropy"
+    label was removed because top-k token logprobs cannot support that
+    claim. Token Entropy uses the full vocabulary when logits are
+    available, or every available top-k logprob when they are not, so
+    the two diagnostics differ on the HTTP path too.
+
+    Descriptive/diagnostic axis — no universal "better" direction.
+    Excluded from aggregation (aggregate=False) and reported for
+    information only.
     """
 
     def __init__(self):
-        super().__init__(name="Semantic Entropy")
+        super().__init__(name="Top-k Entropy")
 
     def evaluate(self, intrinsic_data: IntrinsicData):
-        """Compute semantic entropy by clustering top-k tokens.
-
-        Groups tokens by top-k probable alternatives and computes entropy
-        across clusters. Uses full logits if available, otherwise top-k
-        logprobs from the HTTP API (natural fit — see ASSUMPTIONS.md A1).
-        """
+        """Compute entropy over the five most probable alternatives."""
         try:
             if intrinsic_data.has_logits():
-                # Full logits: extract top-k ourselves
+                # Full logits: extract the top-5 head ourselves
                 logits = intrinsic_data.logits
                 logits_stable = logits - np.max(logits, axis=1, keepdims=True)
                 exp_logits = np.exp(logits_stable)
@@ -289,9 +293,10 @@ class SemanticEntropy(ScorableDimension):
                 method = 'logits'
 
             elif intrinsic_data.has_top_k_logprobs():
-                # Sparse top-k from HTTP API
+                # Sparse top-k from the HTTP API: keep the top-5 head.
                 top_k_lp = intrinsic_data.top_k_logprobs
-                k = top_k_lp.shape[1]
+                k = min(5, top_k_lp.shape[1])
+                top_k_lp = top_k_lp[:, :k]
                 top_k_probs = np.exp(np.clip(top_k_lp, -100, 0))
                 method = 'top_k_approximation'
 
@@ -305,16 +310,16 @@ class SemanticEntropy(ScorableDimension):
             # Renormalize top-k probabilities to sum to 1
             top_k_probs_norm = top_k_probs / np.sum(top_k_probs, axis=1, keepdims=True)
 
-            # Compute entropy on top-k distribution
-            semantic_entropy_nats = -np.sum(
+            # Compute entropy on the top-k head
+            topk_entropy_nats = -np.sum(
                 top_k_probs_norm * np.log(np.clip(top_k_probs_norm, 1e-10, 1.0)),
                 axis=1
             )
-            semantic_entropy_bits = semantic_entropy_nats / np.log(2.0)
+            topk_entropy_bits = topk_entropy_nats / np.log(2.0)
 
-            mean_semantic_entropy = float(np.mean(semantic_entropy_bits))
+            mean_topk_entropy = float(np.mean(topk_entropy_bits))
             max_entropy = float(np.log2(k)) if k > 1 else 1.0
-            normalized_entropy = min(1.0, mean_semantic_entropy / max_entropy) if max_entropy > 0 else 0.5
+            normalized_entropy = min(1.0, mean_topk_entropy / max_entropy) if max_entropy > 0 else 0.5
 
             metadata = {
                 'method': method,
@@ -326,7 +331,7 @@ class SemanticEntropy(ScorableDimension):
 
             return self.create_score(
                 value=normalized_entropy,
-                raw_value={'mean_semantic_entropy_bits': mean_semantic_entropy, 'max_entropy_bits': max_entropy},
+                raw_value={'mean_topk_entropy_bits': mean_topk_entropy, 'max_entropy_bits': max_entropy},
                 metadata=metadata,
                 aggregate=False,
                 evidence_sources={'logprob': source(normalized_entropy, 'scored', len(top_k_probs))},
@@ -334,6 +339,11 @@ class SemanticEntropy(ScorableDimension):
         except Exception as e:
             return self.create_score(0.5, metadata={'error': str(e)}, aggregate=False, status='error',
                                      evidence_sources={'logprob': source(None, 'error', None)})
+
+
+# Deprecated alias: older imports used SemanticEntropy. The class now
+# reports Top-k Entropy and no longer claims semantic clustering.
+SemanticEntropy = TopKEntropy
 
 
 class Prong4Intrinsic(Evaluator):
@@ -348,7 +358,7 @@ class Prong4Intrinsic(Evaluator):
         self.register_dimension(Uncertainty())
         self.register_dimension(Perplexity())
         self.register_dimension(TokenEntropy())
-        self.register_dimension(SemanticEntropy())
+        self.register_dimension(TopKEntropy())
 
     def evaluate(self, text: str, intrinsic_data: Optional[IntrinsicData] = None) -> ProngResult:
         """
@@ -364,7 +374,7 @@ class Prong4Intrinsic(Evaluator):
         - Uncertainty (mean token confidence, inverted)
         - Perplexity (exponential of avg negative log-likelihood, raw)
         - Token Entropy (Shannon entropy of token distributions)
-        - Semantic Entropy (entropy of top-k clustered tokens)
+        - Top-k Entropy (entropy of the five-token head)
         """
         start_time = time.time()
         dimensions = []
@@ -404,7 +414,7 @@ class Prong4Intrinsic(Evaluator):
                     status='unknown',
                 ),
                 DimensionScore(
-                    name='Semantic Entropy',
+                    name='Top-k Entropy',
                     value=0.5,
                     raw_value=None,
                     metadata={'note': 'No intrinsic data available (vLLM required)',

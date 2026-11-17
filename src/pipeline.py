@@ -153,6 +153,14 @@ class EvaluationPipeline:
         output['metadata'] = {'language': lang}
         if 'Prong 1' in self.prongs:
             output['metadata']['prong1_backend'] = 'embeddings'
+        if 'Prong 3' in self.prongs:
+            p3 = self.prongs['Prong 3']
+            wd = getattr(p3, '_wikidata', None)
+            if wd is not None:
+                output['metadata']['kb'] = {
+                    'db_path': getattr(wd, 'db_path', None),
+                    'entities': getattr(p3, '_kb_entities', None),
+                }
 
         return output
 

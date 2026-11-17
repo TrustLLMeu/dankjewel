@@ -57,8 +57,13 @@ class Prong3Extraction(Evaluator):
         self._llm_extractor = llm_extractor
         try:
             self._wikidata = OfflineWikidata(db_path=wikidata_db_path)
+            # Cache the row count at construction so /health and response
+            # metadata never touch the shared SQLite connection while the
+            # evaluation worker uses it.
+            self._kb_entities = self._wikidata.entity_count()
         except Exception:
             self._wikidata = None
+            self._kb_entities = None
         self._init_dimensions(verifier=verifier)
 
     def _init_dimensions(self, verifier: Optional[NliVerifier] = None) -> None:
@@ -174,12 +179,12 @@ class Prong3Extraction(Evaluator):
         # Attach timing metadata to the result for efficiency tracking
         # (accessible via result.to_dict() in the JSON output)
         if not error:
-            # Store timing in the last dimension's metadata as a workaround
-            # (ProngResult doesn't have a metadata field — this is tracked in JSON output)
-            result._extraction_time_ms = extraction_time_ms
-            result._verification_time_ms = verification_time_ms
-            result._num_claims = len(claims) if 'claims' in dir() else 0
-            result._extraction_metadata = extraction_result.metadata
+            result.metadata = {
+                'extraction_time_ms': extraction_time_ms,
+                'verification_time_ms': verification_time_ms,
+                'num_claims': len(claims) if 'claims' in dir() else 0,
+                'extraction': extraction_result.metadata,
+            }
 
         return result
 
