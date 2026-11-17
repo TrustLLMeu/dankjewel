@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `b7fd350` — Abstain on insufficient evidence and add an evaluation-language control
+- **Latest commit:** `2f0dc18` — Harden error rendering, exports and generation; run evaluation on a worker
 - **Tree:** clean (user exports, scouting briefs and `omniprov.txt` stay unstaged)
 - **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); seed-KB coverage still 0.3% on FEVER 1.0 dev (60/19,998); AVeriTeC (future work); native lexicon validation; human-annotation and user studies; paper cycle 11 after Stage 1/2
 
@@ -14,6 +14,7 @@ Newest first. `git log` remains the source of truth for hashes.
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
+| 2026-11-17 | `2f0dc18` | API / frontend / security | Harden error rendering, exports and generation; run evaluation on a worker | wXze transparency / robustness |
 | 2026-11-17 | `b7fd350` | prong 1+3 / scoring + UI | Abstain on insufficient evidence and add an evaluation-language control | wXze honesty / YE7H reproducibility |
 | 2026-11-16 | `b4f3725` | chore / index | Record Stage 1-4 in commit index | chore |
 | 2026-11-16 | `359276c` | prong 3 / seed | Expand the seed KB with civic entities and re-measure FEVER | wXze coverage (seed) |
@@ -105,6 +106,14 @@ Newest first. `git log` remains the source of truth for hashes.
 | 2026-11-14 | `df3f47a` | chore / ignore | Ignore local agentic inspiration files | chore |
 
 ## Commits
+
+### `2f0dc18` — Harden error rendering, exports and generation; run evaluation on a worker (2026-11-17)
+
+- **Hash:** `2f0dc18a2293d3f00c64af48aff75a5ba9e9b365`
+- **Why:** Stage 3 of the review fix plan: stream errors render as text (XSS), CSP/nosniff/frame headers, Verify now uses restored history text, generation requests carry the optional evaluation tracks, prong failures return error results and render as cards, claims CSV includes `reason` and neutralizes formula prefixes, the 390px claims table scrolls inside its card, and evaluation text is capped at 100,000 characters. Stage 4 moves the synchronous pipeline to a dedicated single evaluation worker so `/health` stays responsive; SQLite is opened with `check_same_thread=False` for the hand-off.
+- **Files:** `src/api.py`, `src/pipeline.py`, `src/resources/wikidata_offline.py`, `frontend/index.html`, `frontend/locales/en.json`, `tests/test_api.py`, `tests/test_scoring_abstention.py`, `README.md`
+- **Closes:** the Stage 3 security/state and Stage 4 concurrency findings
+- **Verify:** 465 passed + 2 skipped; Selenium Stage 3/4 ALL PASS; long evaluation 16.6s with health 0.01-0.03s; two concurrent evaluations both 200; paper 9 pages, 0 margin violations.
 
 ### `b7fd350` — Abstain on insufficient evidence and add an evaluation-language control (2026-11-17)
 
