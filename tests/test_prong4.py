@@ -547,7 +547,7 @@ class TestTopKTokenEntropy:
         assert score.metadata['method'] == 'logits'
 
 
-class TestTopKTopKEntropy:
+class TestTopKEntropySparse:
     """Test Top-k Entropy with top-k logprobs from vLLM HTTP API."""
 
     def test_high_confidence_low_semantic_entropy(self):
