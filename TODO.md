@@ -1,8 +1,9 @@
 # TODO — LLM-Based Dimension Upgrades
 
 **Created:** 2026-03-12
-**Status:** Planning
+**Status:** §2 landed (see below); §1 and §3 open.
 **Language scope:** English first; multilingual deferred until LLM dimensions are functional.
+**Last verified:** 2026-11-17 — `7df43d2` lands §2 as opt-in dual-output; scouting brief `docs/scouting/2026-11-17-readability.md` records verification.
 
 ---
 
@@ -62,16 +63,17 @@ baseline score and the LLM score, at the **dimension level**.
 - Already marked for replacement in docstring and `src/config.py`
 
 ### LLM replacement
-- [ ] Create `src/dimensions/llm_fluidity.py`
-- [ ] Prompt-based readability assessment via `VLLMClient.generate()`
-- [ ] Evaluates: coherence, audience level, structural flow, vocabulary complexity
-- [ ] Structured output: score (0–1), reading level, explanation
-- [ ] Use task prefix `[READABILITY]` for multi-task model routing
+- [x] Create `src/dimensions/llm_fluidity.py` — landed `7df43d2` (2026-11-17) as `LLMFluidityDimension`
+- [x] Prompt-based readability assessment via `LLMJudgeClient.readability()`
+- [x] Evaluates: coherence, audience level, structural flow, vocabulary complexity
+- [x] Structured output: score (0–1), reading level, explanation (`llm_value`/`llm_level`/`llm_rationale`)
+- [x] Use task prefix `[READABILITY]` for multi-task model routing
+- Live note: the local 1.5B (Qwen2.5-1.5B at `:18093`) discriminates (easy 1.0 / jargon 0.2 / garbled 0.0); the 0.5B did not and was discarded. Scouting `2026-11-17-readability.md`.
 
 ### Dual output
-- `DimensionScore.metadata` carries `baseline_value` (Flesch raw score) and
-  `llm_value`
-- Flesch raw score and formula name always included for interpretability
+- [x] `DimensionScore.metadata` carries `baseline_value`/`baseline_raw_value` (Flesch) and `llm_value`/`llm_level`/`llm_rationale` plus `judge_status`/`judge_error`/`judge_model` and both `baseline_processing_time_ms` / `llm_processing_time_ms`
+- [x] Flesch raw score and formula name always included for interpretability (baseline is always `value`)
+- [x] Tests: `tests/test_llm_readability.py` (client, dimension, Prong 2 and Pipeline flags, live smoke)
 
 ---
 
@@ -126,26 +128,25 @@ one base model (e.g., Mistral-7B-Instruct), keeping VRAM at ~14–16 GB.
 
 ---
 
-## 5. Pipeline Integration (Deferred)
+## 5. Pipeline Integration
 
-> Deferred until individual LLM dimensions are working in English.
+> §1 (claim extraction) is already dual-output on `llm_extract`; §2 is now dual-output on `llm_readability` (`7df43d2`). §1 of this TODO (the FActScore-style claim-extraction TODO) remains planned work distinct from the already-landed `llm_extract`/`llm_verify`/`llm_admit` flags.
 
 ### Current state
 - `src/pipeline.py` → `EvaluationPipeline.__init__()` instantiates each prong
-  independently with no shared resources
-- No `VLLMClient` is passed between prongs
+  independently but accepts an optional `LLMJudgeClient` shared between Prongs 1
+  (`tiny_judge`) and 2 (`llm_readability`), plus `llm_extract`/`llm_verify`/`llm_admit` for Prong 3
 - Prong 4 already receives `intrinsic_data` from an external vLLM generation
 
 ### Required changes (when ready)
-- [ ] `EvaluationPipeline.__init__()` accepts an optional `VLLMClient` instance
-- [ ] Shared client is passed to Prongs 1, 2, and 3 for their LLM dimensions
-- [ ] Each prong's `evaluate()` returns dual scores (baseline + LLM) in
-      `DimensionScore.metadata`
-- [ ] Fallback: if vLLM is unreachable, dimensions return baseline scores only
-      (matching existing error-handling pattern)
+- [x] `EvaluationPipeline.__init__()` accepts an optional `LLMJudgeClient` instance (shared for `tiny_judge` and `llm_readability`)
+- [x] Shared client is passed to Prongs 1 and 2 for their LLM dimensions (`tiny_judge` / `llm_readability`)
+- [x] Each prong's `evaluate()` returns dual scores (baseline + LLM) in `DimensionScore.metadata`
+- [x] Fallback: if vLLM is unreachable, dimensions return baseline scores only (matching existing error-handling pattern: `judge_status: unknown|error`)
+- [ ] Extend to TODO §1 claim-extraction LLM track (`llm_claim_extractor.py`)
 
 ### Multilingual (deferred further)
-- English first until all three LLM dimensions are functional and benchmarked
+- English first until LLM dimensions are functional and benchmarked
 - Multilingual follows: the nine languages in `src/config.py`
   (da, de, en, fo, is, nb, nn, nl, sv)
 - LLM-based approach natively supports multilingual — eliminates per-language

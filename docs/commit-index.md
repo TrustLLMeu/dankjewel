@@ -6,15 +6,16 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `1b6e02a` — docs(scouting): exhaustive number-vs-artefact review for Lane A (B1/B2 closed)
-- **Tree:** clean (user exports, scouting briefs and `omniprov.txt` stay unstaged)
-- **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); seed-KB coverage still 0.3% on FEVER 1.0 dev (60/19,998); AVeriTeC (future work); native lexicon validation; human-annotation and user studies; paper cycle 11 after Stage 1/2
+- **Latest commit:** `7df43d2` — prong 2: add opt-in LLM readability judge (dual-output Fluency) + scouting briefs
+- **Tree:** clean (user exports and `omniprov.txt` stay unstaged; scouting briefs since 2026-11-14 now tracked)
+- **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); seed-KB 60/19,998 FEVER 1.0 dev; AVeriTeC (future); native lexicon validation; human/user studies; TODO.md §3 readability benchmarking (annotated English set for Flesch vs LLM); paper cycle 11
 
 ## Table
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
-| 2026-11-17 | PENDING | chore / index | Record Lane A paper review and Top-k test rename in commit index | chore |
+| 2026-11-17 | `7df43d2` | prong 2 / scouting | prong 2: add opt-in LLM readability judge (dual-output Fluency) + scouting briefs | TODO.md §2 |
+| 2026-11-17 | `7f9f398` | chore / index | Record Lane A paper review and Top-k test rename in commit index | chore |
 | 2026-11-17 | `1b6e02a` | docs / scouting | docs(scouting): exhaustive number-vs-artefact review for Lane A (B1/B2 closed) | Lane A B1/B2 |
 | 2026-11-17 | `1a35633` | prong 4 / test | Rename the sparse Top-k entropy test class | — |
 | 2026-11-17 | `c2f777b` | prong 4 / provenance / UI | Rename the duplicated intrinsic axis and complete provenance/i18n polish | wXze honesty / V55p transparency |
@@ -111,9 +112,17 @@ Newest first. `git log` remains the source of truth for hashes.
 
 ## Commits
 
-### PENDING — Record Lane A paper review and Top-k test rename in commit index (2026-11-17)
+### `7df43d2` — prong 2: add opt-in LLM readability judge (dual-output Fluency) + scouting briefs (2026-11-17)
 
-- **Hash:** PENDING
+- **Hash:** `7df43d2860725ff6323b2e4bdb4d953b9288517d`
+- **Why:** TODO.md §2 LLM readability (§2): the Flesch baseline (`FluidityDimension`) stays the dimension's `value`; the new `LLMFluidityDimension` adds an opt-in `[READABILITY]` track on the shared 1.5B local server (`Qwen2.5-1.5B-Instruct`, `DANKJEWEL_READABILITY_*` env — the 0.5B was verified live to collapse to a single mid score on every text). English only (non-English abstains with `unknown` and a disclosure), degenerate/empty/unreachable handling keeps the baseline scored. API `llm_readability` flag threads through `pipeline` → `Prong2RuleBased`. Bundles the four pending scouting briefs tracked since 2026-11-14 (claim-extraction, competitive-landscape, senior-paper-review, whole-project-ideas) plus the new readability verification brief; `ASSUMPTIONS.md` A10 now describes the dual-output and live prompt discrimination (easy 1.0, jargon 0.2, garbled 0.0).
+- **Files:** `ASSUMPTIONS.md`, `docs/scouting/2026-11-14-claim-extraction.md`, `docs/scouting/2026-11-16-competitive-landscape.md`, `docs/scouting/2026-11-16-senior-paper-review.md`, `docs/scouting/2026-11-16-whole-project-ideas.md`, `docs/scouting/2026-11-17-readability.md`, `docs/scouting/README.md`, `src/dimensions/llm_fluidity.py` (new), `tests/test_llm_readability.py` (new), `src/llm_judge_client.py`, `src/prongs/prong2_rule_based.py`, `src/pipeline.py`, `src/api.py`
+- **Closes:** TODO.md §2 (LLM readability track) at the opt-in PoC; TODO.md §3 remains (benchmarking needs the annotated English readability set)
+- **Verify:** `tests/test_llm_readability.py` + `tests/test_prong2.py` 51 passed 1 skipped (live 1.5B smoke skipped without key).
+
+### `7f9f398` — Record Lane A paper review and Top-k test rename in commit index (2026-11-17)
+
+- **Hash:** `7f9f398d5da5c9a059385ffd4ab9daf752091f23`
 - **Why:** Index the Lane A paper review landing and the sparse Top-k entropy test class rename that the previous index missed.
 - **Files:** `docs/commit-index.md`
 - **Closes:** the index gap after `c2f777b`
