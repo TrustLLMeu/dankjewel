@@ -468,7 +468,7 @@ footer {
   <span class="status-label" id="status-label" data-i18n="connecting">connecting…</span>
   <div class="header-spacer"></div>
   <a class="header-link" href="/commits">Commits</a>
-  <select id="lang-select" onchange="setLocale(this.value)">
+  <select id="lang-select" onchange="setLocale(this.value)" title="Interface language" aria-label="Interface language">
     <option value="en">English</option>
     <option value="da">Dansk</option>
     <option value="nl">Nederlands</option>
@@ -526,6 +526,27 @@ footer {
           <label for="model-select" data-i18n="model">Model</label>
           <select id="model-select"><option data-i18n="loading">Loading…</option></select>
         </div>
+
+        <div class="field">
+          <label for="eval-language" data-i18n="eval_language">Evaluation language</label>
+          <select id="eval-language" onchange="onEvalLanguageChange()">
+            <option value="en">English</option>
+            <option value="da">Dansk</option>
+            <option value="nl">Nederlands</option>
+            <option value="fo">Føroyskt</option>
+            <option value="de">Deutsch</option>
+            <option value="is">Íslenska</option>
+            <option value="nb">Norsk bokmål</option>
+            <option value="nn">Norsk nynorsk</option>
+            <option value="sv">Svenska</option>
+          </select>
+          <p style="font-size:0.68rem;color:var(--text3);margin:-0.35rem 0 0.6rem;"
+             data-i18n="eval_language_hint">
+            Prong 2 lexicons and the non-English judge use this language.
+            Prong 1 embeddings/toxicity and Prong 3 spaCy are English-only.
+          </p>
+        </div>
+
         <div class="field">
           <label for="prompt-input" data-i18n="prompt">Prompt</label>
           <textarea id="prompt-input" rows="4" data-i18n-placeholder="enter_prompt_placeholder" placeholder="Enter your prompt…"></textarea>
@@ -700,6 +721,7 @@ footer {
         <span id="meta-tokens">—</span>
         <span id="meta-time">—</span>
         <span id="meta-finish">—</span>
+        <span id="meta-language">—</span>
       </div>
     </div>
 
@@ -797,6 +819,25 @@ const API = '';  // same origin
 let lastResult = null;
 let lastEvalText = '';
 let lastEvalPrompt = '';
+let lastEvalLang = 'en';
+const EVAL_LANG_KEY = 'dj_eval_lang';
+
+function getEvalLanguage() {
+  const el = document.getElementById('eval-language');
+  return (el && el.value) || localStorage.getItem(EVAL_LANG_KEY) || 'en';
+}
+
+function onEvalLanguageChange() {
+  const el = document.getElementById('eval-language');
+  if (!el) return;
+  localStorage.setItem(EVAL_LANG_KEY, el.value);
+}
+
+function restoreEvalLanguage() {
+  const saved = localStorage.getItem(EVAL_LANG_KEY) || 'en';
+  const el = document.getElementById('eval-language');
+  if (el) el.value = saved;
+}
 let isGenerating = false;
 
 // ── i18n ──────────────────────────────────────────────────────────
@@ -841,6 +882,7 @@ function translatePage() {
 // ── Init ──────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   setLocale(currentLang);
+  restoreEvalLanguage();
   restoreBackendPrefs();
   fetchModels();
   checkHealth();
@@ -1004,6 +1046,7 @@ function getParams() {
     top_p: parseFloat(document.getElementById('top-p').value),
     repetition_penalty: parseFloat(document.getElementById('repetition-penalty').value),
     frequency_penalty: parseFloat(document.getElementById('frequency-penalty').value),
+    language: getEvalLanguage(),
     logprobs_k: Math.max(0, Math.min(20, parseInt(document.getElementById('logprobs-k').value) || 0)),
   };
 }
@@ -1108,11 +1151,17 @@ async function generateStream() {
           lastResult = { generation: lastGenerationData, evaluation: event.data };
           lastEvalText = (lastGenerationData && lastGenerationData.text) || '';
           lastEvalPrompt = params.prompt || '';
+          lastEvalLang = params.language || 'en';
           reaggregateAndRender();
           document.getElementById('btn-export').style.display = '';
 
           // Save to history
-          saveToHistory(params.prompt, event.data);
+          saveToHistory(params.prompt, event.data, params.language);
+        }
+
+        if (event.type === 'empty_output') {
+          document.getElementById('eval-spinner').classList.remove('active');
+          document.getElementById('empty-output-warning').style.display = '';
         }
 
         if (event.type === 'error') {
@@ -1157,15 +1206,16 @@ async function evaluateOnly() {
     const r = await fetch(`${API}/evaluate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, prompt, tiny_judge: document.getElementById('tiny-judge-toggle').checked, llm_extract: document.getElementById('llm-extract-toggle').checked, llm_verify: document.getElementById('llm-verify-toggle').checked }),
+      body: JSON.stringify({ text, prompt, language: getEvalLanguage(), tiny_judge: document.getElementById('tiny-judge-toggle').checked, llm_extract: document.getElementById('llm-extract-toggle').checked, llm_verify: document.getElementById('llm-verify-toggle').checked }),
     });
     const d = await r.json();
     document.getElementById('eval-spinner').classList.remove('active');
     lastResult = { generation: null, evaluation: d };
     lastEvalText = text; lastEvalPrompt = prompt;
+    lastEvalLang = getEvalLanguage();
     reaggregateAndRender();
     document.getElementById('btn-export').style.display = '';
-    saveToHistory(prompt || '(evaluate only)', d);
+    saveToHistory(prompt || '(evaluate only)', d, lastEvalLang);
   } catch (err) {
     document.getElementById('eval-spinner').classList.remove('active');
     alert(t('evaluation_failed') + ': ' + err.message);
@@ -1181,12 +1231,13 @@ function getHistory() {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
 }
 
-function saveToHistory(prompt, evalData) {
+function saveToHistory(prompt, evalData, language) {
   const history = getHistory();
   const entry = {
     id: Date.now(),
     timestamp: new Date().toISOString(),
     prompt: prompt.slice(0, 200),
+    language: language || (evalData.metadata && evalData.metadata.language) || 'en',
     totalScore: evalData.aggregated_scores?.total_score,
     prongScores: evalData.aggregated_scores?.prong_scores,
     fullResult: lastResult,
@@ -1362,8 +1413,16 @@ function restoreHistory(entry) {
       document.getElementById('meta-finish').textContent = '';
     }
 
-    // Restore prompt
+    // Restore prompt and evaluation language
     document.getElementById('prompt-input').value = entry.prompt || '';
+    const restoredLang = entry.language || (evalData.metadata && evalData.metadata.language) || 'en';
+    lastEvalLang = restoredLang;
+    const evalLangSel = document.getElementById('eval-language');
+    if (evalLangSel) evalLangSel.value = restoredLang;
+
+    // Keep Verify now tied to the restored entry's text, not the prior run.
+    lastEvalText = (genData && genData.text) || '';
+    lastEvalPrompt = entry.prompt || '';
 
     // Render scores
     lastResult = entry.fullResult;
@@ -1726,6 +1785,10 @@ function renderScores(evalData) {
   const coverage = customAgg.coverage || agg.metadata?.coverage || 'none';
   const prongScores = agg.prong_scores || {};
   const prong1Backend = evalData.metadata?.prong1_backend;
+  const metaLang = document.getElementById('meta-language');
+  if (metaLang) {
+    metaLang.textContent = '🌐 ' + ((evalData.metadata && evalData.metadata.language) || 'en');
+  }
 
   // Coverage meter
   const coverageMeter = document.getElementById('coverage-meter');
@@ -2059,6 +2122,11 @@ const PRONG_COLORS = {
   'Intrinsic (Prong 4)': '#8b5cf6'
 };
 
+function dimHasScoredEvidence(dim) {
+  const ev = (dim.metadata && dim.metadata.evidence_sources) || {};
+  return Object.values(ev).some(cell => cell && cell.status === 'scored');
+}
+
 function prongEvidenceFraction(prong, coverage) {
   if (prong.prong_name.includes('Extraction')) {
     if (!coverage || !coverage.claims_total) return 0;
@@ -2066,7 +2134,7 @@ function prongEvidenceFraction(prong, coverage) {
   }
   const dims = (prong.dimensions || []).filter(d => d.aggregate !== false);
   if (!dims.length) return 0;
-  return dims.filter(d => d.status === 'scored').length / dims.length;
+  return dims.filter(d => d.status === 'scored' && dimHasScoredEvidence(d)).length / dims.length;
 }
 
 function prongEvidenceLabel(prong, coverage) {
@@ -2077,9 +2145,9 @@ function prongEvidenceLabel(prong, coverage) {
       .replace('{{m}}', coverage.claims_total);
   }
   const dims = (prong.dimensions || []).filter(d => d.aggregate !== false);
-  const scored = dims.filter(d => d.status === 'scored').length;
-  let label = t('evidence_label_dimensions').replace('{{n}}', scored).replace('{{m}}', dims.length);
-  if (prong.prong_name.includes('Intrinsic') && scored === 0) label += ' (' + t('evidence_label_no_logprobs') + ')';
+  const evidenced = dims.filter(d => d.status === 'scored' && dimHasScoredEvidence(d)).length;
+  let label = t('evidence_label_dimensions').replace('{{n}}', evidenced).replace('{{m}}', dims.length);
+  if (prong.prong_name.includes('Intrinsic') && evidenced === 0) label += ' (' + t('evidence_label_no_logprobs') + ')';
   return label;
 }
 
@@ -2555,6 +2623,7 @@ async function verifyNow() {
       body: JSON.stringify({
         text: lastEvalText,
         prompt: lastEvalPrompt,
+        language: lastEvalLang,
         tiny_judge: document.getElementById('tiny-judge-toggle').checked,
         llm_extract: document.getElementById('llm-extract-toggle').checked,
         llm_verify: true,

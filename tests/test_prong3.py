@@ -260,12 +260,21 @@ class TestFactualConsistency:
         assert score.value == 1.0
 
     def test_single_claim(self, wikidata):
-        """Single claim → no contradiction possible."""
+        """Single claim → no comparison, so consistency is unknown."""
         dim = FactualConsistency(wikidata=wikidata)
         claims = [Claim(subject="Paris", predicate="be", object="the capital of France",
                         source_sentence="Paris is the capital of France.")]
         score = dim.evaluate("", claims=claims)
-        assert score.value == 1.0
+        assert score.status == 'unknown'
+        assert score.metadata['status'] == 'insufficient_claims'
+        assert score.value == 0.5
+
+    def test_no_claims(self, wikidata):
+        """No claims → consistency is unknown, never a perfect 1.0."""
+        dim = FactualConsistency(wikidata=wikidata)
+        score = dim.evaluate("", claims=[])
+        assert score.status == 'unknown'
+        assert score.metadata['status'] == 'insufficient_claims'
 
 
 class TestTemporalAccuracy:

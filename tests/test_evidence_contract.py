@@ -184,11 +184,14 @@ class TestProng1Evidence:
         assert ev['llm_judge']['value'] is None
         assert ev['embedding']['status'] == 'scored'
 
-    def test_coherence_short_text_lists_no_source(self):
-        """Short-text coherence 1.0 is a default, not a measurement."""
+    def test_coherence_short_text_is_unknown(self):
+        """Short-text coherence is an abstention, not a measurement."""
         score = SemanticCoherence().evaluate("Paris is the capital of France.")
-        assert score.value == 1.0
-        assert score.metadata['evidence_sources'] == {}
+        assert score.status == 'unknown'
+        assert score.value == 0.5
+        assert score.metadata['evidence_sources'] == {
+            'embedding': {'value': None, 'status': 'unknown', 'n': 1}
+        }
 
     def test_coherence_multisentence_lists_embedding(self):
         score = SemanticCoherence().evaluate(

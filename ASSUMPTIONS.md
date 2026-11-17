@@ -319,3 +319,20 @@ all lexicon-based dimensions, not just politeness.
 
 **To revisit when:** Annotators complete validation of non-English lexicons,
 or word-boundary matching is implemented across all Prong 2 dimensions.
+
+### A15. Short-Text and Language Scope
+
+**Assumption:** Prong 1 Coherence/Reliability and Prong 3 Consistency abstain
+rather than return default scores when their evidence is insufficient. A
+single sentence has no adjacent-sentence comparison; fewer than two claims have
+no cross-claim comparison; a blank answer has no content to embed. These cases
+report `status="unknown"` and are excluded from aggregation.
+
+**Assumption:** The Evaluation language selector and the API `language` field
+apply to Prong 2 lexicons and the optional judge. Prong 1 uses
+`all-MiniLM-L6-v2` and `toxic-bert` (English), and Prong 3 uses the English
+spaCy pipeline; non-English evaluation is therefore partial by design and is
+labelled in the UI and limitations.
+
+**To revisit when:** Multilingual embedding/toxicity models and a multilingual
+spaCy pipeline are adopted, or a short-text coherence method is validated.

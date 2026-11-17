@@ -134,6 +134,16 @@ class TestAPIEndpoints:
         })
         assert resp.status_code == 502
 
+    def test_evaluate_blank_text_rejected(self, client):
+        """Whitespace-only text is a 422 before evaluation."""
+        resp = client.post("/evaluate", json={"text": "   "})
+        assert resp.status_code == 422
+
+    def test_evaluate_unsupported_language_rejected(self, client):
+        """Only the nine supported Prong 2 codes are accepted."""
+        resp = client.post("/evaluate", json={"text": "Hello", "language": "xx"})
+        assert resp.status_code == 422
+
     def test_evaluate_request_validation(self, client):
         """POST /evaluate validates request body."""
         resp = client.post("/evaluate", json={})

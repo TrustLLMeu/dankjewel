@@ -75,6 +75,33 @@ class EvaluationPipeline:
         """
         results = []
 
+        if not text or not text.strip():
+            # A blank response is not an evaluation input. Returning no
+            # prong results (total None) is honest; scoring it through
+            # language/style defaults used to produce a high total.
+            aggregated = {
+                'total_score': None,
+                'prong_scores': {},
+                'dimension_scores': {},
+                'metadata': {
+                    'num_prongs': 0,
+                    'total_time': 0.0,
+                    'coverage': 'none',
+                },
+            }
+            output = {
+                'text_length': len(text),
+                'prong_results': [],
+                'aggregated_scores': aggregated,
+                'coverage': compute_coverage(
+                    [], aggregated['prong_scores'],
+                    prongs_total=len(self.prongs)),
+                'metadata': {'language': lang, 'empty_text': True},
+            }
+            if 'Prong 1' in self.prongs:
+                output['metadata']['prong1_backend'] = 'embeddings'
+            return output
+
         for prong_name, prong in self.prongs.items():
             try:
                 if prong_name == 'Prong 4':
@@ -111,8 +138,9 @@ class EvaluationPipeline:
             'coverage': compute_coverage(results, aggregated['prong_scores'],
                                          prongs_total=len(self.prongs)),
         }
+        output['metadata'] = {'language': lang}
         if 'Prong 1' in self.prongs:
-            output['metadata'] = {'prong1_backend': 'embeddings'}
+            output['metadata']['prong1_backend'] = 'embeddings'
 
         return output
 

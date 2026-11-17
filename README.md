@@ -211,6 +211,10 @@ served `judge_model`.
 Language support: English is the validated prototype. Lexicons exist for
 eight further Germanic languages (da, de, fo, is, nb, nn, nl, sv) as
 unvalidated translations — treat scores in those languages as experimental.
+The header language selector changes the interface language; the separate
+**Evaluation language** selector sends `language` to the pipeline. Prong 2
+lexicons and the non-English judge (1.5B) use it; Prong 1 embeddings/toxicity
+and Prong 3 spaCy are English-only.
 
 #### Prong 3 — Extraction-Based
 
@@ -282,11 +286,12 @@ For dimensions whose raw scale is not [0, 1] / higher-is-better (Toxicity,
 Uncertainty, Perplexity), an `agg_value` supplies an orientation-corrected
 bounded value used during aggregation.
 
-Dimensions whose evidence is missing (no prompt for Relevance, no verifiable
-claims in Prong 3, no logprobs in Prong 4) are scored with
-`status="unknown"`; failed computations are `status="error"`. Both are
-reported per-dimension but never enter prong or total averages — a missing
-measurement does not look like a middling 0.5. A prong with no scored
+Dimensions whose evidence is missing (no prompt for Relevance, a blank
+answer, one sentence for Coherence/Reliability, fewer than two claims for
+Consistency, no verifiable claims in Prong 3, no logprobs in Prong 4) are
+scored with `status="unknown"`; failed computations are `status="error"`.
+Both are reported per-dimension but never enter prong or total averages — a
+missing measurement does not look like a middling 0.5. A prong with no scored
 dimensions is omitted from the total, and if nothing was scored at all,
 `total_score` is JSON `null` and `metadata.coverage` is `"none"`.
 

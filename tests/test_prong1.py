@@ -38,6 +38,15 @@ class TestRelevance:
             assert 'reason' in score.metadata
             assert score.metadata.get('fallback') is None  # fake-prompt path is gone
 
+    def test_blank_response_returns_unknown(self):
+        """A blank answer has no content to embed."""
+        rel = Relevance()
+        for response in ("", "   "):
+            score = rel.evaluate("Explain biathlon.", response)
+            assert score.status == 'unknown'
+            assert score.metadata['reason'] == 'empty_response'
+            assert score.metadata['evidence_sources']['embedding']['status'] == 'unknown'
+
 
 class TestSemanticCoherence:
     """Test the Semantic Coherence dimension."""
@@ -58,12 +67,14 @@ class TestSemanticCoherence:
         # Incoherent text should have lower coherence
         assert 0.0 <= score.value <= 1.0, "Score out of bounds"
 
-    def test_short_text(self):
-        """Test short single-sentence text (should score high by default)."""
+    def test_short_text_is_unknown(self):
+        """A single sentence has no adjacent-sentence comparison."""
         coh = SemanticCoherence()
         response = "Biathlon is a winter sport."
         score = coh.evaluate(response)
-        assert score.value >= 0.9, f"Expected high coherence for short text, got {score.value}"
+        assert score.status == 'unknown'
+        assert score.value == 0.5
+        assert score.metadata['reason'] == 'short_text'
 
 
 class TestReliability:
@@ -75,6 +86,13 @@ class TestReliability:
         responses = ["Biathlon combines skiing and shooting. Both disciplines are important. Athletes train extensively."]
         score = rel.evaluate(responses)
         assert 0.0 <= score.value <= 1.0, "Score out of bounds"
+
+    def test_single_sentence_is_unknown(self):
+        """One sentence has no variance to measure."""
+        rel = Reliability()
+        score = rel.evaluate(["Biathlon is a winter sport."])
+        assert score.status == 'unknown'
+        assert score.metadata['reason'] == 'short_text'
 
     def test_multiple_consistent_responses(self):
         """Test multiple very similar responses (high reliability)."""

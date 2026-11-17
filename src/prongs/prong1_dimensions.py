@@ -65,6 +65,31 @@ class Relevance(ScorableDimension):
                                                        score.value, time.time() - start,
                                                        lang=lang))
             return score
+        if not response or not response.strip():
+            # A blank answer has no content to embed or judge. The old
+            # path embedded [""] and produced a relevance score from an
+            # empty string.
+            score = self.create_score(
+                value=0.5,
+                metadata={'reason': 'empty_response'},
+                status='unknown',
+                evidence_sources={'embedding': source(None, 'unknown', 0)},
+            )
+            if judge is not None:
+                score.metadata.update({
+                    'baseline_value': 0.5,
+                    'baseline_processing_time_ms': (time.time() - start) * 1000.0,
+                    'judge_model': judge.model_name,
+                    'judge_route': judge_route_for_lang(lang),
+                    'judge_status': 'unknown',
+                    'llm_value': None,
+                    'llm_processing_time_ms': None,
+                    'rationale': None,
+                    'judge_error': 'empty response',
+                })
+                score.metadata['evidence_sources'].update(
+                    {'llm_judge': source(None, 'unknown', None)})
+            return score
         try:
             p_emb = self.emb.embed_texts([prompt])[0]
             # split response into sentences
@@ -168,10 +193,19 @@ class SemanticCoherence(ScorableDimension):
             doc = nlp(response)
             sents = [s.text.strip() for s in doc.sents if s.text.strip()]
             if len(sents) <= 1:
-                # short texts are considered coherent by default — a
-                # documented assumption, not an embedding measurement,
-                # so the evidence contract lists no source here.
-                return self.create_score(value=1.0, raw_value=1.0, metadata={'time': time.time()-start})
+                # One sentence (or none) provides no adjacent-sentence
+                # comparison. The old 1.0 default was an assumption that
+                # entered the prong average as a perfect measurement.
+                return self.create_score(
+                    value=0.5,
+                    metadata={'reason': 'short_text',
+                              'sentences': len(sents),
+                              'time': time.time() - start},
+                    status='unknown',
+                    evidence_sources={
+                        'embedding': source(None, 'unknown', len(sents))
+                    },
+                )
             sent_embs = self.emb.embed_texts(sents)
             sims = []
             for i in range(len(sent_embs)-1):
@@ -204,9 +238,17 @@ class Reliability(ScorableDimension):
                 doc = nlp(resp)
                 sents = [s.text.strip() for s in doc.sents if s.text.strip()]
                 if len(sents) <= 1:
-                    # short-text default (0.8) — an assumption, not an
-                    # embedding measurement; no evidence source listed.
-                    return self.create_score(value=0.8, metadata={'note': 'short text'})
+                    # No adjacent-sentence variance to measure. The old
+                    # 0.8 default was an assumption, not a measurement.
+                    return self.create_score(
+                        value=0.5,
+                        metadata={'reason': 'short_text',
+                                  'sentences': len(sents)},
+                        status='unknown',
+                        evidence_sources={
+                            'embedding': source(None, 'unknown', len(sents))
+                        },
+                    )
                 sent_embs = self.emb.embed_texts(sents)
                 sims = []
                 for i in range(len(sent_embs)-1):

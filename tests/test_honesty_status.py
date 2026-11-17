@@ -212,9 +212,9 @@ class TestPipelineMetadata:
         )
         assert result['metadata']['prong1_backend'] == 'embeddings'
 
-    def test_metadata_absent_without_prong1(self):
+    def test_metadata_still_records_language_without_prong1(self):
         from src.pipeline import EvaluationPipeline
 
         pipeline = EvaluationPipeline(enable_prongs=[2])
         result = pipeline.evaluate(text="The cat sits on the mat.")
-        assert 'metadata' not in result
+        assert result['metadata'] == {'language': 'en'}

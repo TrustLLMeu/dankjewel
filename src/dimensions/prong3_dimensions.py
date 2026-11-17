@@ -411,10 +411,19 @@ class FactualConsistency(ScorableDimension):
     def evaluate(self, text: str, claims: List[Claim] = None) -> DimensionScore:
         start = time.perf_counter()
         if not claims or len(claims) < 2:
+            # Consistency is a comparison between at least two claims.
+            # With one claim (or none) there is no comparison to measure;
+            # a scored 1.0 here would count as a perfect factual score in
+            # the prong average and inflated vacuous text.
             return self.create_score(
-                value=1.0,  # Single claim or no claims = no contradiction
+                value=0.5,
                 metadata={'status': 'insufficient_claims',
-                          'num_claims': len(claims) if claims else 0}
+                          'num_claims': len(claims) if claims else 0},
+                status='unknown',
+                evidence_sources={
+                    'spacy': source(None, 'unknown',
+                                    len(claims) if claims else 0)
+                },
             )
 
         # Group claims by normalized subject

@@ -29,23 +29,28 @@ import time
 import logging
 import subprocess
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Literal, Optional
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from starlette.responses import StreamingResponse
 
 from src.vllm_client import VLLMClient, GenerationResult
 from src.vllm_adapter import generation_result_to_intrinsic_data
 from src.pipeline import EvaluationPipeline
-from src.config import VLLM_LOGPROBS_K
+from src.config import SUPPORTED_LANGUAGES, VLLM_LOGPROBS_K
 from src.llm_backends.factory import BackendConfig, build_backend, is_remote
 
 logger = logging.getLogger(__name__)
+
+# Supported Prong 2 / judge language codes. Keeping this a Literal makes
+# an unsupported code a 422 instead of a silent English fallback.
+LanguageCode = Literal['en', 'da', 'nl', 'fo', 'de', 'is', 'nb', 'nn', 'sv']
+assert set(LanguageCode.__args__) == set(SUPPORTED_LANGUAGES)
 
 # ── Configuration ───────────────────────────────────────────────────────────
 
@@ -105,7 +110,7 @@ class GenerateRequest(BaseModel):
     top_p: float = Field(1.0, ge=0.0, le=1.0)
     repetition_penalty: float = Field(1.0, ge=1.0, le=2.0)
     frequency_penalty: float = Field(0.0, ge=0.0, le=2.0)
-    language: str = Field("en", description="Language code for Prong 2 lexicons (e.g. en, nl, da)")
+    language: LanguageCode = Field("en", description="Language code for Prong 2 lexicons and judge routing (en, da, nl, fo, de, is, nb, nn, sv)")
     logprobs_k: int = Field(20, ge=0, le=20, description="Top-k logprobs per token; 0 disables them (Prong 4 then stays unknown). Defaults to VLLM_LOGPROBS_K.")
     backend_type: str = Field("local", description="'local' (vLLM) or 'remote' (OpenAI-compatible, bring-your-own-key)")
     base_url: Optional[str] = Field(None, description="Base URL for a remote backend (required if backend_type='remote')")
@@ -116,12 +121,20 @@ class GenerateRequest(BaseModel):
 
 class EvaluateRequest(BaseModel):
     prompt: str = Field("", description="The original prompt (for relevance scoring)")
-    text: str = Field(..., description="The text to evaluate")
-    language: str = Field("en", description="Language code for Prong 2 lexicons (e.g. en, nl, da)")
+    text: str = Field(..., min_length=1, description="The text to evaluate; must contain at least one non-whitespace character")
+    language: LanguageCode = Field("en", description="Language code for Prong 2 lexicons and judge routing (en, da, nl, fo, de, is, nb, nn, sv)")
     tiny_judge: bool = Field(False, description="Opt in: also run the local tiny-LLM judge on Relevance, routed by language (English: Qwen2.5-0.5B; other languages: Qwen2.5-1.5B via DANKJEWEL_JUDGE_BASE_URL_NONEN/DANKJEWEL_JUDGE_MODEL_NONEN), adding a dual llm_value/rationale track to that dimension's metadata. Default off: embeddings baseline only, identical behavior and latency.")
     llm_extract: bool = Field(False, description="Opt in: also run the local 1.5B claim-extraction track (Qwen2.5-1.5B, [CLAIMS] task) on Prong 3, merging decontextualized LLM atomic claims (claim.source 'llm'/'both') with the spaCy triples in claim_details. Default off: spaCy-only extraction, identical behavior and latency.")
     llm_verify: bool = Field(False, description="Opt in: also run the MiniCheck-Flan-T5-Large (770M) NLI verifier on Prong 3 FactualAccuracy's five-way relation track — KB-unknown claims are scored against the subject's formatted KB facts (relation/relation_counts/verifier_score in metadata; confirmed/denied/partially_supported/conflated labels). Default off: rule-based five-way labels only, no model load. First run loads the model (~30 s).")
     llm_admit: bool = Field(False, description="Opt in: run the local 1.5B admission classifier ([ADMIT] task) over the admitted Prong 3 claims and drop those it classifies as non-claims (commentary, advice, definitions). Metadata records llm_admit_dropped/llm_admit_unknown; claims are kept when the model is unavailable. Default off: deterministic gates only.")
+
+    @field_validator('text')
+    @classmethod
+    def _text_not_blank(cls, value: str) -> str:
+        """Reject whitespace-only input at the API boundary."""
+        if not value.strip():
+            raise ValueError('text must not be blank')
+        return value
 
 class GenerateAndEvaluateRequest(BaseModel):
     prompt: str = Field(..., description="The input prompt for the LLM")
@@ -131,7 +144,7 @@ class GenerateAndEvaluateRequest(BaseModel):
     top_p: float = Field(1.0, ge=0.0, le=1.0)
     repetition_penalty: float = Field(1.0, ge=1.0, le=2.0)
     frequency_penalty: float = Field(0.0, ge=0.0, le=2.0)
-    language: str = Field("en", description="Language code for Prong 2 lexicons (e.g. en, nl, da)")
+    language: LanguageCode = Field("en", description="Language code for Prong 2 lexicons and judge routing (en, da, nl, fo, de, is, nb, nn, sv)")
     logprobs_k: int = Field(20, ge=0, le=20, description="Top-k logprobs per token; 0 disables them (Prong 4 then stays unknown). Defaults to VLLM_LOGPROBS_K.")
     backend_type: str = Field("local", description="'local' (vLLM) or 'remote' (OpenAI-compatible, bring-your-own-key)")
     base_url: Optional[str] = Field(None, description="Base URL for a remote backend (required if backend_type='remote')")
@@ -344,6 +357,19 @@ async def generate_stream(req: GenerateRequest):
         gen_data = json.dumps({"type": "generation", "data": gen_dict})
         yield f"data: {gen_data}\n\n"
 
+        if not full_text.strip():
+            # No visible answer to evaluate. Tell the client explicitly
+            # and stop; the old path evaluated an empty string.
+            empty_data = json.dumps({
+                "type": "empty_output",
+                "detail": "The model produced no visible answer within the token budget.",
+            })
+            yield f"data: {empty_data}\n\n"
+            yield "data: [DONE]\n\n"
+            if must_close:
+                await backend.close()
+            return
+
         # Run evaluation
         try:
             intrinsic_data = generation_result_to_intrinsic_data(gen_result)
@@ -414,6 +440,22 @@ async def generate_and_evaluate(req: GenerateAndEvaluateRequest):
         if must_close:
             await backend.close()
 
+    gen_dict = gen_result.to_dict()
+    gen_dict["logprobs_k"] = req.logprobs_k
+    gen_dict["logprobs_reason"] = (
+        "ok" if gen_result.token_logprobs else
+        ("disabled" if req.logprobs_k == 0 else "backend_returned_none"))
+
+    if not gen_result.text.strip():
+        # No visible answer: there is nothing to evaluate. Returning
+        # evaluation=None keeps a style/prong default from becoming a
+        # quality score for an empty completion.
+        return {
+            "generation": gen_dict,
+            "evaluation": None,
+            "empty_output": True,
+        }
+
     intrinsic_data = generation_result_to_intrinsic_data(gen_result)
 
     try:
@@ -426,11 +468,6 @@ async def generate_and_evaluate(req: GenerateAndEvaluateRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Evaluation failed: {e}")
 
-    gen_dict = gen_result.to_dict()
-    gen_dict["logprobs_k"] = req.logprobs_k
-    gen_dict["logprobs_reason"] = (
-        "ok" if gen_result.token_logprobs else
-        ("disabled" if req.logprobs_k == 0 else "backend_returned_none"))
     return {
         "generation": gen_dict,
         "evaluation": eval_result,
