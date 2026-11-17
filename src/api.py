@@ -154,6 +154,7 @@ class GenerateRequest(BaseModel):
     llm_extract: bool = Field(False, description="Evaluate the generated text with the optional 1.5B atomic-claim track (Prong 3).")
     llm_verify: bool = Field(False, description="Evaluate the generated text with the optional MiniCheck verifier track (Prong 3).")
     llm_admit: bool = Field(False, description="Evaluate the generated text with the optional 1.5B claim-admission classifier (Prong 3).")
+    llm_readability: bool = Field(False, description="Evaluate the generated text with the optional 1.5B readability judge track (Prong 2 Fluency).")
     logprobs_k: int = Field(20, ge=0, le=20, description="Top-k logprobs per token; 0 disables them (Prong 4 then stays unknown). Defaults to VLLM_LOGPROBS_K.")
     backend_type: str = Field("local", description="'local' (vLLM) or 'remote' (OpenAI-compatible, bring-your-own-key)")
     base_url: Optional[str] = Field(None, description="Base URL for a remote backend (required if backend_type='remote')")
@@ -170,6 +171,7 @@ class EvaluateRequest(BaseModel):
     llm_extract: bool = Field(False, description="Opt in: also run the local 1.5B claim-extraction track (Qwen2.5-1.5B, [CLAIMS] task) on Prong 3, merging decontextualized LLM atomic claims (claim.source 'llm'/'both') with the spaCy triples in claim_details. Default off: spaCy-only extraction, identical behavior and latency.")
     llm_verify: bool = Field(False, description="Opt in: also run the MiniCheck-Flan-T5-Large (770M) NLI verifier on Prong 3 FactualAccuracy's five-way relation track — KB-unknown claims are scored against the subject's formatted KB facts (relation/relation_counts/verifier_score in metadata; confirmed/denied/partially_supported/conflated labels). Default off: rule-based five-way labels only, no model load. First run loads the model (~30 s).")
     llm_admit: bool = Field(False, description="Opt in: run the local 1.5B admission classifier ([ADMIT] task) over the admitted Prong 3 claims and drop those it classifies as non-claims (commentary, advice, definitions). Metadata records llm_admit_dropped/llm_admit_unknown; claims are kept when the model is unavailable. Default off: deterministic gates only.")
+    llm_readability: bool = Field(False, description="Opt in: also run the local 1.5B readability judge (Qwen2.5-1.5B, [READABILITY] task) on Prong 2 Fluency — coherence, audience level, structural flow, vocabulary complexity for a general adult audience — adding a dual llm_value/llm_level/llm_rationale track to that dimension's metadata; the Flesch baseline stays the aggregated value. English only: other languages keep the language-aware Flesch baseline. Default off: Flesch baseline only, identical behavior and latency.")
 
     @field_validator('text')
     @classmethod
@@ -192,6 +194,7 @@ class GenerateAndEvaluateRequest(BaseModel):
     llm_extract: bool = Field(False, description="Evaluate the generated text with the optional 1.5B atomic-claim track (Prong 3).")
     llm_verify: bool = Field(False, description="Evaluate the generated text with the optional MiniCheck verifier track (Prong 3).")
     llm_admit: bool = Field(False, description="Evaluate the generated text with the optional 1.5B claim-admission classifier (Prong 3).")
+    llm_readability: bool = Field(False, description="Evaluate the generated text with the optional 1.5B readability judge track (Prong 2 Fluency).")
     logprobs_k: int = Field(20, ge=0, le=20, description="Top-k logprobs per token; 0 disables them (Prong 4 then stays unknown). Defaults to VLLM_LOGPROBS_K.")
     backend_type: str = Field("local", description="'local' (vLLM) or 'remote' (OpenAI-compatible, bring-your-own-key)")
     base_url: Optional[str] = Field(None, description="Base URL for a remote backend (required if backend_type='remote')")
@@ -437,6 +440,7 @@ async def generate_stream(req: GenerateRequest):
                 llm_extract=req.llm_extract,
                 llm_verify=req.llm_verify,
                 llm_admit=req.llm_admit,
+                llm_readability=req.llm_readability,
             )
             eval_data = json.dumps({"type": "evaluation", "data": eval_result})
             yield f"data: {eval_data}\n\n"
@@ -468,7 +472,8 @@ async def evaluate(req: EvaluateRequest):
         result = await _run_evaluation(
             text=req.text, prompt=req.prompt, lang=req.language,
             tiny_judge=req.tiny_judge, llm_extract=req.llm_extract,
-            llm_verify=req.llm_verify, llm_admit=req.llm_admit)
+            llm_verify=req.llm_verify, llm_admit=req.llm_admit,
+            llm_readability=req.llm_readability)
         return result
     except Exception as e:
         logger.exception("Evaluation failed")
@@ -528,6 +533,7 @@ async def generate_and_evaluate(req: GenerateAndEvaluateRequest):
             llm_extract=req.llm_extract,
             llm_verify=req.llm_verify,
             llm_admit=req.llm_admit,
+            llm_readability=req.llm_readability,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Evaluation failed: {e}")

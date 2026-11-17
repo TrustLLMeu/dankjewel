@@ -245,8 +245,29 @@ formulas instead of the English coefficients. Other Germanic languages
 use an approximation that is better calibrated than the English original
 but not individually validated.
 
-**To revisit when:** A fine-tuned LLM readability evaluator is integrated
-(planned for a future Prong 1 dimension).
+**Dual-output LLM readability option (2026-11-17):** the opt-in
+`llm_readability` flag (`/evaluate`, `/generate`, `/generate-and-evaluate`;
+default off) adds a `[READABILITY]` track to the Fluency dimension
+(`src/dimensions/llm_fluidity.py`). The shared local 1.5B model
+(Qwen2.5-1.5B, `DANKJEWEL_READABILITY_*` env; the 0.5B failed the live
+prompt verification — it scored every text, garbled or plain, at a single
+mid value) rates coherence, structural flow, vocabulary complexity, and
+sentence structure for a general adult audience. The Flesch baseline
+**stays the dimension's aggregated value**; the LLM verdict is reported
+alongside it in the dimension metadata (`baseline_value`,
+`baseline_raw_value`, `llm_value`, `llm_level`, `llm_rationale`,
+`judge_status`, separate baseline/LLM processing times) and never
+replaces the baseline. The track is English-only: non-English
+evaluations abstain (`judge_status: unknown`) and keep the
+language-aware Flesch baseline. An unreachable, timed-out, or unparseable
+judge degrades to `judge_status: unknown|error` with the baseline intact.
+Live verification (2026-11-17, temperature 0): easy text → 1.0, dense
+jargon → 0.2, garbled → 0.0; the middle band compresses (a coherent
+B2-level science explainer also scored 1.0).
+
+**To revisit when:** Benchmarking the `[READABILITY]` track against the
+Flesch baseline on an annotated English set (TODO.md §3, deferred), or
+integrating a fine-tuned LLM readability evaluator.
 
 ### A11. Syllable Counting Backend Mapping
 

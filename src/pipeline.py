@@ -20,9 +20,11 @@ class EvaluationPipeline:
 
         Args:
             enable_prongs: List of prong numbers to enable (1-4). Defaults to all.
-            judge: Tiny-judge client for the optional LLM track (dual
-                output). None (the default) lazily uses the process-wide
-                shared client; tests can inject a stub.
+            judge: Tiny-judge client for the optional LLM tracks (dual
+                output; Prong 1 Relevance via tiny_judge, Prong 2
+                Fluency via llm_readability). None (the default)
+                lazily uses the process-wide shared client; tests can
+                inject a stub.
         """
         if enable_prongs is None:
             enable_prongs = [1, 2, 3, 4]
@@ -33,7 +35,7 @@ class EvaluationPipeline:
         if 1 in enable_prongs:
             self.prongs['Prong 1'] = Prong1LLMAsJudge(judge=judge)
         if 2 in enable_prongs:
-            self.prongs['Prong 2'] = Prong2RuleBased()
+            self.prongs['Prong 2'] = Prong2RuleBased(judge=judge)
         if 3 in enable_prongs:
             self.prongs['Prong 3'] = Prong3Extraction(wikidata_db_path=config.WIKIDATA_DB_PATH)
         if 4 in enable_prongs:
@@ -41,7 +43,8 @@ class EvaluationPipeline:
 
     def evaluate(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en",
                  tiny_judge: bool = False, llm_extract: bool = False,
-                 llm_verify: bool = False, llm_admit: bool = False) -> dict:
+                 llm_verify: bool = False, llm_admit: bool = False,
+                 llm_readability: bool = False) -> dict:
         """
         Evaluate text across all enabled prongs.
 
@@ -68,6 +71,13 @@ class EvaluationPipeline:
                 relation/relation_counts/verifier_score in metadata;
                 the binary value math is unchanged). Default False:
                 rule-based five-way labels only, no model load.
+            llm_readability: Opt in to the [READABILITY] LLM track on
+                Prong 2 Fluency (dual output: baseline_value/
+                baseline_raw_value plus llm_value/llm_level/
+                llm_rationale/judge_status in that dimension's metadata;
+                the Flesch baseline stays the aggregated value).
+                English only — other languages keep the Flesch baseline.
+                Default False: Flesch baseline only, no judge call.
 
         Returns:
             Dictionary containing all prong results and aggregated scores,
@@ -115,7 +125,8 @@ class EvaluationPipeline:
                     result = prong.evaluate(text, prompt=prompt,
                                            tiny_judge=tiny_judge, lang=lang)
                 elif prong_name == 'Prong 2':
-                    result = prong.evaluate(text, lang=lang)
+                    result = prong.evaluate(text, lang=lang,
+                                            llm_readability=llm_readability)
                 elif prong_name == 'Prong 3':
                     result = prong.evaluate(text, llm_extract=llm_extract,
                                             llm_verify=llm_verify,
@@ -166,7 +177,8 @@ class EvaluationPipeline:
 
     def evaluate_to_json(self, text: str, prompt: str = None, intrinsic_data=None, lang: str = "en",
                          tiny_judge: bool = False, llm_extract: bool = False,
-                         llm_verify: bool = False, llm_admit: bool = False) -> str:
+                         llm_verify: bool = False, llm_admit: bool = False,
+                         llm_readability: bool = False) -> str:
         """
         Evaluate text and return results as JSON string.
 
@@ -181,12 +193,15 @@ class EvaluationPipeline:
                 Prong 3 (dual output). Default False.
             llm_verify: Opt in to the MiniCheck NLI verifier track on
                 Prong 3 (dual output). Default False.
+            llm_readability: Opt in to the [READABILITY] LLM track on
+                Prong 2 Fluency (dual output). Default False.
 
         Returns:
             JSON string of evaluation results
         """
         results = self.evaluate(text, prompt=prompt, intrinsic_data=intrinsic_data, lang=lang,
                                 tiny_judge=tiny_judge, llm_extract=llm_extract,
-                                llm_verify=llm_verify, llm_admit=llm_admit)
+                                llm_verify=llm_verify, llm_admit=llm_admit,
+                                llm_readability=llm_readability)
         return json.dumps(results, indent=2)
 

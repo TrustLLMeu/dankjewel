@@ -1,8 +1,8 @@
 """Synchronous client for the shared tiny LLM judge.
 
 Talks to the local OpenAI-compatible servers (llama.cpp/vLLM on
-Malvik) that host the ≤1.5B judge and claim extractor for the whole
-product — task prefixes ("[JUDGE]", "[CLAIMS]", later "[READABILITY]")
+Malvik) that host the ≤1.7B judge and claim extractor for the whole
+product — task prefixes ("[JUDGE]", "[CLAIMS]", "[READABILITY]")
 instead of one server per dimension. The evaluation
 pipeline is synchronous, so this client is sync httpx — do not couple it
 to src/vllm_client.py, which is async and serves generation/logprobs.
@@ -30,6 +30,19 @@ the 1.5B):
                                  (never hardcoded)
     DANKJEWEL_CLAIMS_TIMEOUT_S   default 30
 
+[READABILITY] task (defaults to the same 1.5B server as [CLAIMS]:
+the 0.5B fails the readability task — at temperature 0 it collapses
+every text to a single mid score, so the rubric prompt below is
+verified against the 1.5B only):
+    DANKJEWEL_READABILITY_BASE_URL    default http://127.0.0.1:18093/v1
+    DANKJEWEL_READABILITY_MODEL       default Qwen/Qwen2.5-1.5B-Instruct
+    DANKJEWEL_READABILITY_API_KEY     optional; falls back to a constructor-
+                                      provided key, then to
+                                      DANKJEWEL_JUDGE_API_KEY; sent as
+                                      Authorization: Bearer only when set
+                                      (never hardcoded)
+    DANKJEWEL_READABILITY_TIMEOUT_S   default 30
+
 Language-routed [JUDGE] (see get_judge_for_lang; the 0.5B fails the
 Icelandic pass check — rho 0.30 — while the 1.5B passes all seven
 languages, mean rho 0.973; details in docs/MULTILINGUAL_JUDGE.md):
@@ -43,7 +56,8 @@ languages, mean rho 0.973; details in docs/MULTILINGUAL_JUDGE.md):
 The client never fabricates a score or a claim: a connection/timeout
 failure raises JudgeUnavailableError, and an unparseable reply or a
 score outside [0,1] raises JudgeParseError (its ClaimsParseError
-subclass for the [CLAIMS] task). Callers translate those into the
+subclass for the [CLAIMS] task, ReadabilityParseError for the
+[READABILITY] task). Callers translate those into the
 dual-output metadata (judge_status "unknown" / "error") and keep the
 baseline score.
 
@@ -70,6 +84,15 @@ DEFAULT_TIMEOUT_S = 30.0
 CLAIMS_DEFAULT_BASE_URL = "http://127.0.0.1:18093/v1"
 CLAIMS_DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
 CLAIMS_DEFAULT_TIMEOUT_S = 30.0
+
+# [READABILITY] task defaults to the same 1.5B server as [CLAIMS]: the
+# 0.5B failed the live prompt verification (2026-11-17) — every text,
+# garbled or plain, collapsed to a single mid score — while the 1.5B
+# discriminated the anchors. Separate env vars keep the task
+# independently reroutable without touching [JUDGE]/[CLAIMS].
+READABILITY_DEFAULT_BASE_URL = "http://127.0.0.1:18093/v1"
+READABILITY_DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
+READABILITY_DEFAULT_TIMEOUT_S = 30.0
 
 # Non-English [JUDGE] routing (get_judge_for_lang). Same server/model as
 # the [CLAIMS] task today — the 1.5B is the smallest model that passes
@@ -127,6 +150,37 @@ _ADMIT_SYSTEM_PROMPT = (
     "'The Earth is flat.' -> yes."
 )
 
+# The [READABILITY] prompt verified live against the 1.5B model on
+# 2026-11-17 (easy text -> 1.0, dense jargon -> 0.2, garbled -> 0.0;
+# all replies strict three-field JSON with CEFR labels). The 0.5B was
+# also tried and does NOT discriminate (every text scored a single mid
+# value) — that is why the task defaults to the 1.5B server. Known
+# limitations: the middle band compresses (a coherent B2-level science
+# explainer scores 1.0), and at temperature 0 a user message that
+# repeats an exemplar verbatim echoes that exemplar's score (same
+# caveat as [JUDGE]) — judge real text, not the exemplars. Do not
+# rewrite the prompt without re-verifying discrimination.
+_READABILITY_SYSTEM_PROMPT = (
+    "[READABILITY] Rate how readable the Text is for a general adult "
+    "audience, considering coherence, structural flow, vocabulary "
+    "complexity, and sentence structure. Scale: 1 = clear and easy for "
+    "any adult, 0.7 = a plain news article, 0.5 = needs effort or some "
+    "background knowledge, 0.2 = dense jargon most adults cannot parse, "
+    "0 = garbled or incoherent. "
+    'Reply with ONLY JSON: {"score": 0 to 1, "level": "A1"|"A2"|"B1"|"B2"|"C1"|"C2", '
+    '"rationale": at most 40 words}.\n'
+    "Examples:\n"
+    "Text: The sun rises in the east every morning. Plants need light to "
+    "grow. Farmers water their fields when the soil is dry. -> "
+    '{"score": 1, "level": "A1", "rationale": "Common words, short '
+    'sentences, logical order; understandable for any reader."}\n'
+    "Text: Utilization of polysyllabic nomenclature frequently obfuscates "
+    "pedagogical objectives, thereby attenuating comprehension amongst "
+    "demographically heterogeneous cohorts. -> "
+    '{"score": 0.1, "level": "C2", "rationale": "Dense jargon in one long '
+    'sentence; only expert readers parse it easily."}'
+)
+
 
 class JudgeError(Exception):
     """Base class for tiny-judge failures."""
@@ -142,6 +196,11 @@ class JudgeParseError(JudgeError):
 
 class ClaimsParseError(JudgeParseError):
     """The claims model replied, but not with a usable JSON array of strings."""
+
+
+class ReadabilityParseError(JudgeParseError):
+    """The readability model replied, but not with a usable
+    {"score", "level", "rationale"} JSON object."""
 
 
 def _parse_verdict(content: str) -> dict:
@@ -245,6 +304,50 @@ def _parse_claims(content: str) -> List[str]:
         f"claims reply is not a JSON array of strings: {content[:120]!r}")
 
 
+def _parse_readability(content: str) -> dict:
+    """Parse the [READABILITY] reply into {"score", "level", "rationale"}.
+
+    Tolerates a markdown fence or prose around the JSON object, but
+    never invents a missing score, level, or rationale: anything
+    unparsable, or with a score outside [0,1], raises
+    ReadabilityParseError. The `level` label is kept verbatim (stripped)
+    — the prompt asks for CEFR labels, but the score is the measured
+    value and a free-form label never invalidates it.
+    """
+    text = (content or "").strip()
+    obj = None
+    try:
+        obj = json.loads(text)
+    except json.JSONDecodeError:
+        # Models sometimes wrap the object in ```json fences``` or a
+        # short preamble; use the outermost {...} span, nothing else.
+        start, end = text.find("{"), text.rfind("}")
+        if start != -1 and end > start:
+            try:
+                obj = json.loads(text[start:end + 1])
+            except json.JSONDecodeError:
+                obj = None
+    if not isinstance(obj, dict):
+        raise ReadabilityParseError(
+            f"readability reply is not a JSON object: {content[:120]!r}")
+    score = obj.get("score")
+    level = obj.get("level")
+    rationale = obj.get("rationale")
+    # bool is an int subclass — exclude it explicitly.
+    if isinstance(score, bool) or not isinstance(score, (int, float)) \
+            or not (0.0 <= float(score) <= 1.0):
+        raise ReadabilityParseError(
+            f"readability score missing or out of [0,1]: {score!r}")
+    if not isinstance(level, str) or not level.strip():
+        raise ReadabilityParseError(
+            f"readability level missing or not a string: {level!r}")
+    if not isinstance(rationale, str):
+        raise ReadabilityParseError(
+            f"readability rationale missing or not a string: {rationale!r}")
+    return {"score": float(score), "level": level.strip(),
+            "rationale": rationale}
+
+
 def _env_float(name: str, default: float) -> float:
     """Read a float env var, falling back to the default when unset/invalid."""
     raw = os.environ.get(name)
@@ -298,6 +401,20 @@ class LLMJudgeClient:
                                or (os.environ.get("DANKJEWEL_JUDGE_API_KEY") or None))
         self.claims_timeout = _env_float("DANKJEWEL_CLAIMS_TIMEOUT_S",
                                          CLAIMS_DEFAULT_TIMEOUT_S)
+        # [READABILITY] task — env-only base URL/model/timeout, defaulting
+        # to the 1.5B server (the 0.5B failed the live prompt
+        # verification; see READABILITY_DEFAULT_* above). Key precedence
+        # mirrors claims: the readability env key, then a constructor-
+        # provided key (test injection), then the judge env key.
+        self.readability_base_url = (os.environ.get("DANKJEWEL_READABILITY_BASE_URL")
+                                    or READABILITY_DEFAULT_BASE_URL).rstrip('/')
+        self.readability_model_name = (os.environ.get("DANKJEWEL_READABILITY_MODEL")
+                                       or READABILITY_DEFAULT_MODEL)
+        self.readability_api_key = (os.environ.get("DANKJEWEL_READABILITY_API_KEY")
+                                   or api_key
+                                   or (os.environ.get("DANKJEWEL_JUDGE_API_KEY") or None))
+        self.readability_timeout = _env_float("DANKJEWEL_READABILITY_TIMEOUT_S",
+                                              READABILITY_DEFAULT_TIMEOUT_S)
         self._transport = transport
         self._http: Optional[httpx.Client] = None
 
@@ -415,6 +532,61 @@ class LLMJudgeClient:
             raise ClaimsParseError(f"unexpected claims response shape: {e}") from e
         return _parse_claims(content)
 
+    def readability(self, text: str) -> dict:
+        """Ask the [READABILITY] model to assess the readability of `text`.
+
+        One call per text (the [READABILITY] task on the shared client);
+        the verified prompt rates coherence, structural flow, vocabulary
+        complexity, and sentence structure for a general adult audience
+        and returns a CEFR-style audience level alongside the score.
+
+        Args:
+            text: the text to assess.
+
+        Returns:
+            {"score": float in [0,1], "level": str, "rationale": str}
+
+        Raises:
+            JudgeUnavailableError: connection error, timeout, or HTTP error status.
+            ReadabilityParseError: reply was not usable
+                {"score", "level", "rationale"} JSON.
+        """
+        headers = {"Content-Type": "application/json"}
+        if self.readability_api_key:
+            headers["Authorization"] = f"Bearer {self.readability_api_key}"
+        payload = {
+            "model": self.readability_model_name,
+            "messages": [
+                {"role": "system", "content": _READABILITY_SYSTEM_PROMPT},
+                {"role": "user", "content": f"Text: {text}"},
+            ],
+            "temperature": 0.0,  # scoring, not creativity
+            "max_tokens": 160,  # JSON with a level + a ≤40-word rationale
+        }
+        try:
+            http = self._get_http()
+            resp = http.post(f"{self.readability_base_url}/chat/completions",
+                             json=payload, headers=headers,
+                             timeout=self.readability_timeout)
+            resp.raise_for_status()
+            data = resp.json()
+        except httpx.TimeoutException as e:
+            raise JudgeUnavailableError(
+                f"readability model timed out after {self.readability_timeout}s: {e}") from e
+        except httpx.HTTPStatusError as e:
+            raise JudgeUnavailableError(
+                f"readability model returned HTTP {e.response.status_code}") from e
+        except httpx.TransportError as e:
+            raise JudgeUnavailableError(
+                f"cannot reach readability model at {self.readability_base_url}: {e}") from e
+        except json.JSONDecodeError as e:
+            raise ReadabilityParseError(f"readability model returned non-JSON body: {e}") from e
+        try:
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as e:
+            raise ReadabilityParseError(f"unexpected readability response shape: {e}") from e
+        return _parse_readability(content)
+
     def close(self) -> None:
         """Close the underlying HTTP client (idempotent)."""
         if self._http is not None and not self._http.is_closed:
@@ -469,7 +641,7 @@ _nonen_lock = threading.Lock()
 def get_shared_judge_client() -> LLMJudgeClient:
     """Return the process-wide shared judge client, created lazily.
 
-    All judge call sites ([JUDGE] and later [CLAIMS]/[READABILITY]) must
+    All judge call sites ([JUDGE], [CLAIMS], and [READABILITY]) must
     reuse this one client so the product keeps a single connection pool
     to the single shared judge server.
     """
