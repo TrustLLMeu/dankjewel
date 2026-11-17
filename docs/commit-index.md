@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `c2f777b` — Rename the duplicated intrinsic axis and complete provenance/i18n polish
+- **Latest commit:** `1b6e02a` — docs(scouting): exhaustive number-vs-artefact review for Lane A (B1/B2 closed)
 - **Tree:** clean (user exports, scouting briefs and `omniprov.txt` stay unstaged)
 - **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); seed-KB coverage still 0.3% on FEVER 1.0 dev (60/19,998); AVeriTeC (future work); native lexicon validation; human-annotation and user studies; paper cycle 11 after Stage 1/2
 
@@ -14,6 +14,9 @@ Newest first. `git log` remains the source of truth for hashes.
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
+| 2026-11-17 | PENDING | chore / index | Record Lane A paper review and Top-k test rename in commit index | chore |
+| 2026-11-17 | `1b6e02a` | docs / scouting | docs(scouting): exhaustive number-vs-artefact review for Lane A (B1/B2 closed) | Lane A B1/B2 |
+| 2026-11-17 | `1a35633` | prong 4 / test | Rename the sparse Top-k entropy test class | — |
 | 2026-11-17 | `c2f777b` | prong 4 / provenance / UI | Rename the duplicated intrinsic axis and complete provenance/i18n polish | wXze honesty / V55p transparency |
 | 2026-11-17 | `2f0dc18` | API / frontend / security | Harden error rendering, exports and generation; run evaluation on a worker | wXze transparency / robustness |
 | 2026-11-17 | `b7fd350` | prong 1+3 / scoring + UI | Abstain on insufficient evidence and add an evaluation-language control | wXze honesty / YE7H reproducibility |
@@ -107,6 +110,30 @@ Newest first. `git log` remains the source of truth for hashes.
 | 2026-11-14 | `df3f47a` | chore / ignore | Ignore local agentic inspiration files | chore |
 
 ## Commits
+
+### PENDING — Record Lane A paper review and Top-k test rename in commit index (2026-11-17)
+
+- **Hash:** PENDING
+- **Why:** Index the Lane A paper review landing and the sparse Top-k entropy test class rename that the previous index missed.
+- **Files:** `docs/commit-index.md`
+- **Closes:** the index gap after `c2f777b`
+- **Verify:** untested (docs only)
+
+### `1b6e02a` — docs(scouting): exhaustive number-vs-artefact review for Lane A (B1/B2 closed) (2026-11-17)
+
+- **Hash:** `1b6e02aeb6e11b5b56e4e1d81a320ded0bc6728a`
+- **Why:** Paper Reviewer's Lane A acceptance gate: every literal number in `new_demosubmission.tex` mapped line-by-line to an `evaluation_results/*.json` artefact or a stated calculation/assumption; no number is invented; B1 (abstract scope on the 76→8 claim) and B2 (table number traceability) are both closed, with one non-blocking note on the rounded multilingual judge latency column.
+- **Files:** `docs/scouting/2026-11-17-paper-review.md`
+- **Closes:** the senior-review blockers B1/B2 for the Overleaf submission
+- **Verify:** untested (docs only); the reviewed paper text shipped to Overleaf as `7ce2b92` on clone `main`
+
+### `1a35633` — Rename the sparse Top-k entropy test class (2026-11-17)
+
+- **Hash:** `1a356334f920ed2306beebaee127be2d2dc06906`
+- **Why:** Follow-up to `c2f777b`: the Top-k Entropy test class for top-k logprobs from the vLLM HTTP API kept the duplicated `TestTopKTopKEntropy` name; it is renamed to `TestTopKEntropySparse` to match the Top-k Entropy axis naming.
+- **Files:** `tests/test_prong4.py`
+- **Closes:** the leftover duplicate-name test class from the Top-k Entropy rename
+- **Verify:** untested (name-only test change)
 
 ### `c2f777b` — Rename the duplicated intrinsic axis and complete provenance/i18n polish (2026-11-17)
 
