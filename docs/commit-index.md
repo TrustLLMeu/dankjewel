@@ -6,7 +6,7 @@ Newest first. `git log` remains the source of truth for hashes.
 ## Where we are
 
 - **Branch:** `feature/d75-v2`
-- **Latest commit:** `2f0dc18` — Harden error rendering, exports and generation; run evaluation on a worker
+- **Latest commit:** `c2f777b` — Rename the duplicated intrinsic axis and complete provenance/i18n polish
 - **Tree:** clean (user exports, scouting briefs and `omniprov.txt` stay unstaged)
 - **Open slices:** unquoted embedded reported speech (ASSUMPTIONS.md A5); seed-KB coverage still 0.3% on FEVER 1.0 dev (60/19,998); AVeriTeC (future work); native lexicon validation; human-annotation and user studies; paper cycle 11 after Stage 1/2
 
@@ -14,6 +14,7 @@ Newest first. `git log` remains the source of truth for hashes.
 
 | date | short hash | prong / area | subject | review.txt item |
 |------|------------|--------------|---------|-----------------|
+| 2026-11-17 | `c2f777b` | prong 4 / provenance / UI | Rename the duplicated intrinsic axis and complete provenance/i18n polish | wXze honesty / V55p transparency |
 | 2026-11-17 | `2f0dc18` | API / frontend / security | Harden error rendering, exports and generation; run evaluation on a worker | wXze transparency / robustness |
 | 2026-11-17 | `b7fd350` | prong 1+3 / scoring + UI | Abstain on insufficient evidence and add an evaluation-language control | wXze honesty / YE7H reproducibility |
 | 2026-11-16 | `b4f3725` | chore / index | Record Stage 1-4 in commit index | chore |
@@ -106,6 +107,14 @@ Newest first. `git log` remains the source of truth for hashes.
 | 2026-11-14 | `df3f47a` | chore / ignore | Ignore local agentic inspiration files | chore |
 
 ## Commits
+
+### `c2f777b` — Rename the duplicated intrinsic axis and complete provenance/i18n polish (2026-11-17)
+
+- **Hash:** `c2f777b2b2608224093a6cebc45e0f01aa1c719f`
+- **Why:** Stage 5 renames the former Semantic Entropy to Top-k Entropy and defines it as the entropy of the five-token head; the old label claimed semantic clustering that the top-k logprobs cannot support. Token Entropy uses the full vocabulary or all available top-k, so the axes differ when k > 5. Stage 6 adds claims_confirmed/claims_denied, English fallback values for every missing locale key, localized table headers/verdicts, `<html lang>`, keyboard-focusable claim chips, history-storage trimming with a notice, active-KB provenance in `/health` and evaluation metadata (entity count cached at Prong 3 construction), and serialized Prong 3 timing metadata via `ProngResult.metadata`.
+- **Files:** `src/prongs/prong4_intrinsic.py`, `src/evidence.py`, `src/base.py`, `src/prongs/prong3_extraction.py`, `src/pipeline.py`, `src/api.py`, `src/resources/wikidata_offline.py`, `frontend/index.html`, `frontend/locales/*.json`, `tests/test_prong4.py`, `tests/test_stage6.py`, `tests/test_evidence_contract.py`, `tests/test_five_way.py`, `tests/evidence_flags_off_snapshot.json`, `README.md`, `requirements-minimal.txt`, `src/config.py`
+- **Closes:** the Semantic Entropy duplicate and the Stage 6 polish items
+- **Verify:** 470 passed + 2 skipped; Stage 6 Selenium ALL PASS; Intrinsic and 390/Verify-now regressions ALL PASS; paper 9 pages, 0 margin violations.
 
 ### `2f0dc18` — Harden error rendering, exports and generation; run evaluation on a worker (2026-11-17)
 
