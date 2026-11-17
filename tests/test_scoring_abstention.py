@@ -60,3 +60,17 @@ def test_unsupported_language_is_rejected():
 def test_blank_text_is_rejected_by_the_request_model():
     with pytest.raises(ValidationError):
         EvaluateRequest(text="   ")
+
+
+def test_prong_failure_is_returned_not_dropped():
+    """A failed prong appears as an error result and stays out of scores."""
+    pipeline = EvaluationPipeline(enable_prongs=[1, 2])
+    def boom(*args, **kwargs):
+        raise RuntimeError("simulated prong failure")
+    pipeline.prongs["Prong 2"].evaluate = boom
+    result = pipeline.evaluate(text="Paris is the capital of France.", prompt="test")
+    errors = [p for p in result["prong_results"] if p["error"]]
+    assert len(errors) == 1
+    assert errors[0]["prong_name"] == "Rule-Based (Prong 2)"
+    assert "Rule-Based (Prong 2)" not in result["aggregated_scores"]["prong_scores"]
+    assert result["coverage"]["prongs_scored"] == 1

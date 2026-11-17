@@ -78,6 +78,9 @@ header h1 .subtitle { font-family: inherit; font-style: normal; font-weight: 400
   grid-template-columns: 320px 1fr 380px;
   max-width: 1600px; margin: 0 auto;
 }
+.layout > .col-controls,
+.layout > .col-output,
+.layout > .col-scores { min-width: 0; }
 @media (max-width: 1100px) {
   .layout { grid-template-columns: 1fr; }
 }
@@ -190,7 +193,8 @@ details[open] summary::before { transform: rotate(90deg); }
 .dim-method.dim-tag-exact { color: #1a7a4c; border-color: #bfe3cf; background: #eefaf3; }
 
 /* ── Claims table ─────────────────────────────────────────────────── */
-.claims-table { width: 100%; border-collapse: collapse; font-size: 0.73rem; margin-top: 0.5rem; }
+#claims-body { max-width: 100%; overflow-x: auto; }
+.claims-table { width: 100%; min-width: 520px; border-collapse: collapse; font-size: 0.73rem; margin-top: 0.5rem; }
 .claims-table th { text-align: left; padding: 0.3rem 0.4rem; border-bottom: 2px solid var(--border); font-weight: 600; color: var(--text2); text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.03em; }
 .claims-table td { padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--border); vertical-align: top; }
 .verdict { font-family: var(--mono); font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; }
@@ -441,6 +445,9 @@ footer {
 }
 .prong-unknown .prong-bar { background: #9aa0a6 !important; border-style: dashed !important; }
 .prong-unknown .prong-score { color: #9aa0a6 !important; }
+.prong-error .prong-bar { background: var(--red) !important; border-style: dashed !important; }
+.prong-error .prong-score { color: var(--red) !important; }
+.prong-error-note { padding: 0.35rem 0.9rem 0.5rem; font-size: 0.72rem; color: var(--red); }
 .unknown-value { color: #9aa0a6 !important; }
 
 /* ── Prong subtitle ───────────────────────────────────────────────── */
@@ -1047,8 +1054,20 @@ function getParams() {
     repetition_penalty: parseFloat(document.getElementById('repetition-penalty').value),
     frequency_penalty: parseFloat(document.getElementById('frequency-penalty').value),
     language: getEvalLanguage(),
+    tiny_judge: document.getElementById('tiny-judge-toggle').checked,
+    llm_extract: document.getElementById('llm-extract-toggle').checked,
+    llm_verify: document.getElementById('llm-verify-toggle').checked,
     logprobs_k: Math.max(0, Math.min(20, parseInt(document.getElementById('logprobs-k').value) || 0)),
   };
+}
+
+// Append a server/transport error as text. Error details may come from a
+// remote backend, so they must never be parsed as HTML.
+function appendStreamError(container, message, prefix) {
+  const span = document.createElement('span');
+  span.style.color = 'var(--red)';
+  span.textContent = '\n[' + prefix + ': ' + String(message == null ? '' : message) + ']';
+  container.appendChild(span);
 }
 
 // ── Generate with SSE streaming ───────────────────────────────────
@@ -1156,7 +1175,7 @@ async function generateStream() {
           document.getElementById('btn-export').style.display = '';
 
           // Save to history
-          saveToHistory(params.prompt, event.data, params.language);
+          saveToHistory(params.prompt, event.data, params.language, lastGenerationData && lastGenerationData.text);
         }
 
         if (event.type === 'empty_output') {
@@ -1165,12 +1184,12 @@ async function generateStream() {
         }
 
         if (event.type === 'error') {
-          outputEl.innerHTML += `\n<span style="color:var(--red)">[Error: ${event.detail}]</span>`;
+          appendStreamError(outputEl, event.detail, 'Error');
         }
       }
     }
   } catch (err) {
-    document.getElementById('output-text').innerHTML += `\n<span style="color:var(--red)">[Connection error: ${err.message}]</span>`;
+    appendStreamError(document.getElementById('output-text'), err.message, 'Connection error');
   }
 
   // Remove cursor
@@ -1208,14 +1227,15 @@ async function evaluateOnly() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, prompt, language: getEvalLanguage(), tiny_judge: document.getElementById('tiny-judge-toggle').checked, llm_extract: document.getElementById('llm-extract-toggle').checked, llm_verify: document.getElementById('llm-verify-toggle').checked }),
     });
-    const d = await r.json();
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('HTTP ' + r.status));
     document.getElementById('eval-spinner').classList.remove('active');
     lastResult = { generation: null, evaluation: d };
     lastEvalText = text; lastEvalPrompt = prompt;
     lastEvalLang = getEvalLanguage();
     reaggregateAndRender();
     document.getElementById('btn-export').style.display = '';
-    saveToHistory(prompt || '(evaluate only)', d, lastEvalLang);
+    saveToHistory(prompt || '(evaluate only)', d, lastEvalLang, text);
   } catch (err) {
     document.getElementById('eval-spinner').classList.remove('active');
     alert(t('evaluation_failed') + ': ' + err.message);
@@ -1231,13 +1251,14 @@ function getHistory() {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
 }
 
-function saveToHistory(prompt, evalData, language) {
+function saveToHistory(prompt, evalData, language, text) {
   const history = getHistory();
   const entry = {
     id: Date.now(),
     timestamp: new Date().toISOString(),
     prompt: prompt.slice(0, 200),
     language: language || (evalData.metadata && evalData.metadata.language) || 'en',
+    text: text || (lastResult && lastResult.generation && lastResult.generation.text) || '',
     totalScore: evalData.aggregated_scores?.total_score,
     prongScores: evalData.aggregated_scores?.prong_scores,
     fullResult: lastResult,
@@ -1421,7 +1442,7 @@ function restoreHistory(entry) {
     if (evalLangSel) evalLangSel.value = restoredLang;
 
     // Keep Verify now tied to the restored entry's text, not the prior run.
-    lastEvalText = (genData && genData.text) || '';
+    lastEvalText = entry.text || (genData && genData.text) || '';
     lastEvalPrompt = entry.prompt || '';
 
     // Render scores
@@ -1872,7 +1893,13 @@ function renderScores(evalData) {
     const hasScoredDim = prong.dimensions.some(d => d.status === 'scored' && d.aggregate);
     const hasUnknownOrError = prong.dimensions.some(d => d.status === 'unknown' || d.status === 'error');
     
-    if (!hasScoredDim && hasUnknownOrError) {
+    if (prong.error) {
+      scoreDisplay = t('error');
+      barColor = 'var(--red)';
+      barStyle = 'dashed';
+      scoreColorVal = 'var(--red)';
+      card.classList.add('prong-error');
+    } else if (!hasScoredDim && hasUnknownOrError) {
       scoreDisplay = t('unknown');
       barColor = '#9aa0a6';
       barStyle = 'dashed';
@@ -1909,6 +1936,13 @@ function renderScores(evalData) {
 
     const body = document.createElement('div');
     body.className = 'prong-details';
+
+    if (prong.error) {
+      const err = document.createElement('div');
+      err.className = 'prong-error-note';
+      err.textContent = t('prong_error') + ': ' + prong.error;
+      body.appendChild(err);
+    }
 
     // Add claims summary for Prong 3 Factual Accuracy
     if (prong.prong_name.includes('Extraction')) {
@@ -2583,7 +2617,10 @@ function exportEvidenceBundle() {
 
 function csvCell(value) {
   if (value === null || value === undefined) return '';
-  const text = String(value);
+  let text = String(value);
+  // Spreadsheet formula injection: a leading = + - @ can execute when
+  // the CSV is opened in Excel/Sheets.
+  if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
   return /[",\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
 }
 
@@ -2601,12 +2638,12 @@ function exportClaimsCsv() {
   const bundle = evidenceModel();
   if (!bundle) return;
   const rows = [['subject', 'predicate', 'object', 'source', 'relation',
-                 'verifier_score', 'atomic_text']];
+                 'reason', 'verifier_score', 'atomic_text']];
   bundle.claims.forEach(item => {
     const c = item.claim || {};
     rows.push([c.subject, c.predicate, c.object, c.source || 'spacy',
-               item.relation || item.effective_result, item.verifier_score,
-               c.atomic_text]);
+               item.relation || item.effective_result, item.reason,
+               item.verifier_score, c.atomic_text]);
   });
   downloadEvidence('claims.csv',
                    rows.map(r => r.map(csvCell).join(',')).join('\n'), 'text/csv');
@@ -2629,7 +2666,8 @@ async function verifyNow() {
         llm_verify: true,
       }),
     });
-    const d = await r.json();
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || ('HTTP ' + r.status));
     lastResult = { generation: lastResult ? lastResult.generation : null, evaluation: d };
     reaggregateAndRender();
   } catch (err) {

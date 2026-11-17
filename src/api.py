@@ -22,12 +22,14 @@ Requires a running vLLM server for the local backend:
         --model <model_name> --port 8000
 """
 
+import asyncio
 import json
 import os
 import re
 import time
 import logging
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from typing import Literal, Optional
 from pathlib import Path
@@ -66,6 +68,22 @@ FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 vllm_client: Optional[VLLMClient] = None
 evaluator: Optional[EvaluationPipeline] = None
 
+# Evaluation is synchronous and model-heavy. One dedicated worker keeps it
+# off the event loop (health checks and other requests stay responsive)
+# while serializing evaluations, which matches the measured sequential
+# throughput. The shared pipeline's SQLite connection is opened with
+# check_same_thread=False for this hand-off; the single worker prevents
+# concurrent use.
+_EVAL_EXECUTOR = ThreadPoolExecutor(max_workers=1, thread_name_prefix="evaluation-worker")
+
+
+async def _run_evaluation(**kwargs) -> dict:
+    """Run the synchronous pipeline in the evaluation worker thread."""
+    if evaluator is None:
+        raise HTTPException(status_code=503, detail="Evaluator not initialized.")
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(_EVAL_EXECUTOR, lambda: evaluator.evaluate(**kwargs))
+
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
@@ -100,6 +118,27 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def security_headers(request, call_next):
+    """Add conservative browser hardening headers.
+
+    The inline UI script/style needs 'unsafe-inline'; the important
+    additions are the same-origin default, frame denial, and nosniff.
+    """
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+        "font-src 'self' data:; connect-src 'self' http: https:; "
+        "frame-ancestors 'none'",
+    )
+    return response
+
+
 # ── Request / Response models ───────────────────────────────────────────────
 
 class GenerateRequest(BaseModel):
@@ -111,6 +150,10 @@ class GenerateRequest(BaseModel):
     repetition_penalty: float = Field(1.0, ge=1.0, le=2.0)
     frequency_penalty: float = Field(0.0, ge=0.0, le=2.0)
     language: LanguageCode = Field("en", description="Language code for Prong 2 lexicons and judge routing (en, da, nl, fo, de, is, nb, nn, sv)")
+    tiny_judge: bool = Field(False, description="Evaluate the generated text with the optional tiny-LLM judge track (Prong 1 Relevance), routed by language.")
+    llm_extract: bool = Field(False, description="Evaluate the generated text with the optional 1.5B atomic-claim track (Prong 3).")
+    llm_verify: bool = Field(False, description="Evaluate the generated text with the optional MiniCheck verifier track (Prong 3).")
+    llm_admit: bool = Field(False, description="Evaluate the generated text with the optional 1.5B claim-admission classifier (Prong 3).")
     logprobs_k: int = Field(20, ge=0, le=20, description="Top-k logprobs per token; 0 disables them (Prong 4 then stays unknown). Defaults to VLLM_LOGPROBS_K.")
     backend_type: str = Field("local", description="'local' (vLLM) or 'remote' (OpenAI-compatible, bring-your-own-key)")
     base_url: Optional[str] = Field(None, description="Base URL for a remote backend (required if backend_type='remote')")
@@ -121,7 +164,7 @@ class GenerateRequest(BaseModel):
 
 class EvaluateRequest(BaseModel):
     prompt: str = Field("", description="The original prompt (for relevance scoring)")
-    text: str = Field(..., min_length=1, description="The text to evaluate; must contain at least one non-whitespace character")
+    text: str = Field(..., min_length=1, max_length=100_000, description="The text to evaluate; 1-100,000 non-blank characters")
     language: LanguageCode = Field("en", description="Language code for Prong 2 lexicons and judge routing (en, da, nl, fo, de, is, nb, nn, sv)")
     tiny_judge: bool = Field(False, description="Opt in: also run the local tiny-LLM judge on Relevance, routed by language (English: Qwen2.5-0.5B; other languages: Qwen2.5-1.5B via DANKJEWEL_JUDGE_BASE_URL_NONEN/DANKJEWEL_JUDGE_MODEL_NONEN), adding a dual llm_value/rationale track to that dimension's metadata. Default off: embeddings baseline only, identical behavior and latency.")
     llm_extract: bool = Field(False, description="Opt in: also run the local 1.5B claim-extraction track (Qwen2.5-1.5B, [CLAIMS] task) on Prong 3, merging decontextualized LLM atomic claims (claim.source 'llm'/'both') with the spaCy triples in claim_details. Default off: spaCy-only extraction, identical behavior and latency.")
@@ -145,6 +188,10 @@ class GenerateAndEvaluateRequest(BaseModel):
     repetition_penalty: float = Field(1.0, ge=1.0, le=2.0)
     frequency_penalty: float = Field(0.0, ge=0.0, le=2.0)
     language: LanguageCode = Field("en", description="Language code for Prong 2 lexicons and judge routing (en, da, nl, fo, de, is, nb, nn, sv)")
+    tiny_judge: bool = Field(False, description="Evaluate the generated text with the optional tiny-LLM judge track (Prong 1 Relevance), routed by language.")
+    llm_extract: bool = Field(False, description="Evaluate the generated text with the optional 1.5B atomic-claim track (Prong 3).")
+    llm_verify: bool = Field(False, description="Evaluate the generated text with the optional MiniCheck verifier track (Prong 3).")
+    llm_admit: bool = Field(False, description="Evaluate the generated text with the optional 1.5B claim-admission classifier (Prong 3).")
     logprobs_k: int = Field(20, ge=0, le=20, description="Top-k logprobs per token; 0 disables them (Prong 4 then stays unknown). Defaults to VLLM_LOGPROBS_K.")
     backend_type: str = Field("local", description="'local' (vLLM) or 'remote' (OpenAI-compatible, bring-your-own-key)")
     base_url: Optional[str] = Field(None, description="Base URL for a remote backend (required if backend_type='remote')")
@@ -373,11 +420,15 @@ async def generate_stream(req: GenerateRequest):
         # Run evaluation
         try:
             intrinsic_data = generation_result_to_intrinsic_data(gen_result)
-            eval_result = evaluator.evaluate(
+            eval_result = await _run_evaluation(
                 text=full_text,
                 prompt=req.prompt,
                 intrinsic_data=intrinsic_data,
                 lang=req.language,
+                tiny_judge=req.tiny_judge,
+                llm_extract=req.llm_extract,
+                llm_verify=req.llm_verify,
+                llm_admit=req.llm_admit,
             )
             eval_data = json.dumps({"type": "evaluation", "data": eval_result})
             yield f"data: {eval_data}\n\n"
@@ -406,9 +457,10 @@ async def evaluate(req: EvaluateRequest):
     if evaluator is None:
         raise HTTPException(status_code=503, detail="Evaluator not initialized.")
     try:
-        result = evaluator.evaluate(text=req.text, prompt=req.prompt, lang=req.language,
-                                    tiny_judge=req.tiny_judge, llm_extract=req.llm_extract,
-                                    llm_verify=req.llm_verify, llm_admit=req.llm_admit)
+        result = await _run_evaluation(
+            text=req.text, prompt=req.prompt, lang=req.language,
+            tiny_judge=req.tiny_judge, llm_extract=req.llm_extract,
+            llm_verify=req.llm_verify, llm_admit=req.llm_admit)
         return result
     except Exception as e:
         logger.exception("Evaluation failed")
@@ -459,11 +511,15 @@ async def generate_and_evaluate(req: GenerateAndEvaluateRequest):
     intrinsic_data = generation_result_to_intrinsic_data(gen_result)
 
     try:
-        eval_result = evaluator.evaluate(
+        eval_result = await _run_evaluation(
             text=gen_result.text,
             prompt=req.prompt,
             intrinsic_data=intrinsic_data,
             lang=req.language,
+            tiny_judge=req.tiny_judge,
+            llm_extract=req.llm_extract,
+            llm_verify=req.llm_verify,
+            llm_admit=req.llm_admit,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Evaluation failed: {e}")

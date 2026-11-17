@@ -134,6 +134,63 @@ class TestAPIEndpoints:
         })
         assert resp.status_code == 502
 
+    def test_evaluate_oversized_text_rejected(self, client):
+        """The API caps evaluated text at 100,000 characters."""
+        resp = client.post("/evaluate", json={"text": "x" * 100_001})
+        assert resp.status_code == 422
+
+    def test_stream_empty_output_skips_evaluation(self, client, monkeypatch):
+        """No visible tokens: emit empty_output and never evaluate."""
+        from src.vllm_client import GenerationResult
+
+        class EmptyBackend:
+            async def generate_stream(self, **kwargs):
+                if False:
+                    yield {}
+            async def generate(self, **kwargs):
+                return GenerationResult(text="", model="m",
+                                        finish_reason="stop",
+                                        generation_time_ms=1.0)
+            async def close(self):
+                return None
+
+        async def fake_resolve(cfg):
+            return EmptyBackend(), False
+
+        monkeypatch.setattr("src.api._resolve_backend", fake_resolve)
+        resp = client.post("/generate/stream", json={"prompt": "p", "model": "m"})
+        assert resp.status_code == 200
+        assert 'empty_output' in resp.text
+        assert 'type": "evaluation' not in resp.text
+
+    def test_generate_and_evaluate_empty_output_returns_no_evaluation(self, client, monkeypatch):
+        from src.vllm_client import GenerationResult
+
+        class EmptyBackend:
+            async def generate(self, **kwargs):
+                return GenerationResult(text="  ", model="m",
+                                        finish_reason="stop",
+                                        generation_time_ms=1.0)
+            async def close(self):
+                return None
+
+        async def fake_resolve(cfg):
+            return EmptyBackend(), False
+
+        monkeypatch.setattr("src.api._resolve_backend", fake_resolve)
+        resp = client.post("/generate-and-evaluate", json={"prompt": "p", "model": "m"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data['evaluation'] is None
+        assert data['empty_output'] is True
+
+    def test_generate_request_accepts_eval_flags(self):
+        """Generation requests can opt into the evaluation tracks."""
+        from src.api import GenerateRequest
+        req = GenerateRequest(prompt="p", model="m", tiny_judge=True,
+                              llm_extract=True, llm_verify=True, llm_admit=True)
+        assert req.tiny_judge and req.llm_extract and req.llm_verify and req.llm_admit
+
     def test_evaluate_blank_text_rejected(self, client):
         """Whitespace-only text is a 422 before evaluation."""
         resp = client.post("/evaluate", json={"text": "   "})

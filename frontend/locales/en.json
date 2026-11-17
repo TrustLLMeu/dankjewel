@@ -149,5 +149,6 @@
   "claim_reason_no_object": "no object extracted",
   "eval_language": "Evaluation language",
   "eval_language_hint": "Prong 2 lexicons and the non-English judge use this language. Prong 1 embeddings/toxicity and Prong 3 spaCy are English-only.",
-  "ui_language": "Interface language"
+  "ui_language": "Interface language",
+  "prong_error": "Prong failed"
 }

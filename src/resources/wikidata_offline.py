@@ -336,7 +336,7 @@ class OfflineWikidata:
                     f"Wikidata database not found at {self.db_path}. "
                     f"Run: python scripts/build_wikidata_db.py"
                 )
-            self._conn = sqlite3.connect(self.db_path)
+            self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self._conn.row_factory = sqlite3.Row
             self._loaded = True
 

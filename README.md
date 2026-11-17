@@ -147,7 +147,8 @@ Open **http://localhost:8080** in your browser. From there you can:
 
 - Pick a backend: **Local (vLLM)** or **Remote (OpenAI-compatible, bring-your-own-key)**
 - Configure generation parameters (temperature, top-p, penalties, max tokens)
-- Generate text with real-time SSE token streaming
+- Generate text with real-time SSE token streaming; the optional evaluation
+  tracks and the Evaluation language apply to generated text too
 - View all 4 prong scores with expandable per-dimension breakdowns
 - Export results as JSON / browse evaluation history (localStorage)
 

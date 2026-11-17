@@ -1,8 +1,10 @@
 """Main evaluation pipeline."""
 
 import json
+import time
 from typing import List, Optional
 from src import config
+from src.base import ProngResult
 from src.evidence import compute_coverage
 from src.llm_judge_client import LLMJudgeClient
 from src.prongs import Prong1LLMAsJudge, Prong2RuleBased, Prong3Extraction, Prong4Intrinsic
@@ -103,6 +105,7 @@ class EvaluationPipeline:
             return output
 
         for prong_name, prong in self.prongs.items():
+            prong_start = time.time()
             try:
                 if prong_name == 'Prong 4':
                     result = prong.evaluate(text, intrinsic_data=intrinsic_data)
@@ -121,7 +124,16 @@ class EvaluationPipeline:
                     result = prong.evaluate(text)
                 results.append(result)
             except Exception as e:
+                # Keep the failure visible in the response instead of
+                # silently dropping the prong. The aggregator skips
+                # errored results; the UI renders the error card.
                 print(f"Error in {prong_name}: {e}")
+                results.append(ProngResult(
+                    prong_name=getattr(prong, 'prong_name', prong_name),
+                    dimensions=[],
+                    processing_time=time.time() - prong_start,
+                    error=str(e),
+                ))
 
         # Aggregate results
         aggregated = self.aggregator.aggregate_prongs(results)
