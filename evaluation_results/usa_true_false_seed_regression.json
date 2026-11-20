@@ -1,6 +1,6 @@
 {
   "meta": {
-    "created_utc": "2026-11-20T19:57:55Z",
+    "created_utc": "2026-11-20T20:45:14Z",
     "dataset_file": "data/usa_true_false_clean.json",
     "dataset_sha256": "161ceefd9664616afacbe062059207cbe1c6deb9bbc8f59ed21adfea158465f1",
     "dataset_counts": {
@@ -21,10 +21,10 @@
     "elapsed_s": 2.3,
     "timings": {
       "n": 186,
-      "p50_ms": 10.4,
-      "p90_ms": 17.2,
-      "p99_ms": 56.0,
-      "mean_ms": 12.1
+      "p50_ms": 10.6,
+      "p90_ms": 17.3,
+      "p99_ms": 58.1,
+      "mean_ms": 12.2
     }
   },
   "metrics": {

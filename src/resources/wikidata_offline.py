@@ -327,8 +327,10 @@ ATTRIBUTE_TO_PROPERTY = {
     'head of government': 'P6',
     'head of state': 'P35',
     'legislative body': 'P194',
-    # Seats / head-of-government membership (Phase 2: P1342 QIDs depend on
-    # Senate disambiguation; safe to map, abstains until Q66096 resolvable)
+    # Count claims (C0b): restricted activation in _try_direct_verification
+    # — trigger only when object head noun in {states, members, seats} and
+    # owner in {USA, Senate, House of Representatives, Congress}. The map
+    # enables possessive decomposition; the guard enforces the scope.
     'number of seats': 'P1342',
     'seats': 'P1342',
     'members': 'P1342',
@@ -345,6 +347,19 @@ ATTRIBUTE_TO_PROPERTY = {
     'national sport': 'P2464',
 }
 # P2046 (area) deliberately absent: numeric, descriptive claims abstain.
+
+# ── C0b: count-claim vocabulary and QIDs ─────────────────────────────────
+_COUNT_HEAD_NOUNS = frozenset({'states', 'state', 'members', 'member', 'seats', 'seat'})
+_COUNT_OWNERS = frozenset({'usa', 'united states', 'united states of america', 'congress',
+                            'senate', 'house of representatives'})
+# USA states: Q30 P150 with territory filter. Chambers: QIDs for direct P1342.
+_COUNT_QIDS = {'usa': 'Q30', 'united states': 'Q30', 'united states of america': 'Q30',
+               'congress': 'Q11268', 'senate': 'Q66096', 'house of representatives': 'Q11701'}
+
+# Territories / historical units on Q30 P150 that must not count as states.
+_TERRITORY_SUBSTRINGS = ('territory', 'district of columbia', 'american samoa',
+                         'virgin islands', 'guam', 'mariana', 'puerto rico',
+                         'philippine', 'philippines', 'commonwealth of the philippines')
 
 # Superlative claims need a ranking/quantity comparison. The flat schema
 # cannot supply one, so only the two properties whose established path
@@ -767,6 +782,99 @@ class OfflineWikidata:
                     break
         return (owner, prop) if prop else None
 
+    def _is_count_object(self, obj: str) -> bool:
+        """True when the object head noun denotes a countable membership (C0b)."""
+        low = (obj or '').lower()
+        return any(re.search(r'\b' + re.escape(w) + r'\b', low) for w in _COUNT_HEAD_NOUNS)
+
+    def _count_claim_kb_count(self, subject: str, obj: str) -> Optional[int]:
+        """Deterministic state/seat count for a subject (C0b).
+
+        - USA states: count filtered Q30 P150 entries (territories excluded).
+        - Chambers/Congress: direct Q66096/Q11701/Q11268 P1342 value.
+        - Returns None when the subject is not a recognised owner or the
+          KB carries no relevant property; the caller must abstain.
+        """
+        subj_norm = _normalize_entity_text(subject or '')
+        # Strip leading articles already handled by _normalize; direct lookup:
+        for key in sorted(_COUNT_OWNERS, key=len, reverse=True):
+            if subj_norm == key or subj_norm.endswith(' ' + key):
+                owner_key = key
+                break
+        else:
+            return None
+        qid = _COUNT_QIDS.get(owner_key)
+        if not qid:
+            return None
+        obj_low = (obj or '').lower()
+        wants_states = bool(re.search(r'\bstates?\b', obj_low))
+        wants_members = bool(re.search(r'\b(members?|seats?)\b', obj_low))
+        if not (wants_states or wants_members):
+            return None
+        if qid == 'Q30' and wants_states:
+            rows = self.get_claims(qid, 'P150')
+            if not rows:
+                return None
+            filtered = [r for r in rows if not any(t in r['value'].lower() for t in _TERRITORY_SUBSTRINGS)]
+            if not filtered:
+                return None
+            # Q816 (Arizona) retains its P150 row despite its alias shadowing Q30;
+            # the substring filter keeps it (value 'Q816'), so 49 named + 1 = 50.
+            return len(filtered)
+        # Chambers/Congress: seats; USA members total only for total-seats phrasing
+        if wants_members:
+            claims = self.get_claims(qid, 'P1342')
+            if not claims:
+                return None
+            try:
+                return int(float(str(claims[0]['value']).replace(',', '').strip()))
+            except (TypeError, ValueError):
+                return None
+        if wants_states:
+            claims = self.get_claims(qid, 'P150')
+            if not claims:
+                return None
+            filtered = [r for r in claims if not any(t in r['value'].lower() for t in _TERRITORY_SUBSTRINGS)]
+            return len(filtered) if filtered else None
+        return None
+
+    def _verify_count_claim(self, subject: str, obj: str) -> Optional['VerificationDetail']:
+        """Attempt a count-based verification (C0b).
+
+        Extracts the claimed integer, looks up the KB count for the
+        subject, and returns CONFIRMED (exact match, tolerance 0) or
+        DENIED. Never uses the 0.10 approximation band: count claims are
+        exact. Returns None when the subject/object is not a count
+        claim or the KB lacks the property — caller must abstain, never
+        deny.
+        """
+        if not self._is_count_object(obj):
+            return None
+        parsed = _parse_quantity(obj)
+        if not parsed:
+            return None
+        claimed, _comparator = parsed
+        # Count claims are always exact, ignore comparator
+        kb_count = self._count_claim_kb_count(subject, obj)
+        if kb_count is None:
+            return None
+        matched = abs(claimed - kb_count) < 1e-9
+        qid, pid = None, None
+        subj_norm = _normalize_entity_text(subject)
+        for k in sorted(_COUNT_OWNERS, key=len, reverse=True):
+            if subj_norm == k or subj_norm.endswith(' ' + k):
+                qid = _COUNT_QIDS[k]
+                pid = 'P150' if (qid == 'Q30' and bool(re.search(r'\bstates?\b', (obj or '').lower()))) else 'P1342'
+                break
+        detail = VerificationDetail(
+            result=VerificationResult.CONFIRMED if matched else VerificationResult.DENIED,
+            expected_value=obj,
+            subject_qid=qid,
+            property_id=pid,
+            wikidata_value=str(kb_count),
+        )
+        return detail
+
     def _compare_quantity(self, obj: str, claims: List[Dict],
                           predicate: str = '') -> Optional[VerificationResult]:
         """Compare a numeric claim with the owner's KB quantity values.
@@ -991,6 +1099,20 @@ class OfflineWikidata:
     def _try_direct_verification(self, subject: str, predicate: str,
                                   obj: str, detail: VerificationDetail) -> VerificationDetail:
         """Try: lookup subject → find matching property → compare with object."""
+        # ── C0b: count claims ("52 states", "100 members") bypass both
+        # the possessive decomposition and the predicate map — "The
+        # USA's Senate" would decompose to Q30 P1342 (empty), masking the
+        # chamber seat count. Trigger only when the object head noun is
+        # in {states, members, seats} and the subject is a recognised
+        # owner; otherwise fall through.
+        count_detail = self._verify_count_claim(subject, obj)
+        if count_detail is not None and count_detail.subject_qid is not None:
+            detail.result = count_detail.result
+            detail.subject_qid = count_detail.subject_qid
+            detail.property_id = count_detail.property_id
+            detail.wikidata_value = count_detail.wikidata_value
+            return detail
+
         # Compound subjects carry their own property: "The USA's
         # currency" must check P38, not whatever the copula infers.
         decomposed = self._decompose_possessive(subject)

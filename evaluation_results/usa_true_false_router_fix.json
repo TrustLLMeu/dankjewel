@@ -1,6 +1,6 @@
 {
   "meta": {
-    "created_utc": "2026-11-20T19:57:52Z",
+    "created_utc": "2026-11-20T20:45:10Z",
     "dataset_file": "data/usa_true_false_clean.json",
     "dataset_sha256": "161ceefd9664616afacbe062059207cbe1c6deb9bbc8f59ed21adfea158465f1",
     "dataset_counts": {
@@ -18,13 +18,13 @@
       "deny": 0.2
     },
     "attribution": "harness-level decision_layer per claim/item + by_layer + false_confirms (see docs/scouting/2026-11-20-live-factcheck.md §7.6)",
-    "elapsed_s": 17.2,
+    "elapsed_s": 17.5,
     "timings": {
       "n": 186,
-      "p50_ms": 14.0,
-      "p90_ms": 164.2,
-      "p99_ms": 962.0,
-      "mean_ms": 92.3
+      "p50_ms": 14.3,
+      "p90_ms": 164.9,
+      "p99_ms": 988.3,
+      "mean_ms": 94.2
     }
   },
   "metrics": {
@@ -34,62 +34,62 @@
         "by_truth": {
           "true": {
             "n": 43,
-            "true": 7,
+            "true": 10,
             "false": 0,
-            "abstain": 36
+            "abstain": 33
           },
           "false": {
             "n": 50,
             "true": 0,
-            "false": 10,
-            "abstain": 40
+            "false": 14,
+            "abstain": 36
           }
         },
         "confusion": {
-          "truth=true|pred=abstain": 36,
-          "truth=true|pred=true": 7,
-          "truth=false|pred=false": 10,
-          "truth=false|pred=abstain": 40
+          "truth=true|pred=true": 10,
+          "truth=true|pred=abstain": 33,
+          "truth=false|pred=false": 14,
+          "truth=false|pred=abstain": 36
         },
         "coverage": {
-          "decided": 17,
+          "decided": 24,
           "total": 93,
-          "rate": 0.1828
+          "rate": 0.2581
         },
         "accuracy": {
           "on_decided": 1.0,
-          "overall_abstain_wrong": 0.1828
+          "overall_abstain_wrong": 0.2581
         }
       },
       "strict_conflated_abstains": {
         "by_truth": {
           "true": {
             "n": 43,
-            "true": 7,
+            "true": 10,
             "false": 0,
-            "abstain": 36
+            "abstain": 33
           },
           "false": {
             "n": 50,
             "true": 0,
-            "false": 10,
-            "abstain": 40
+            "false": 14,
+            "abstain": 36
           }
         },
         "confusion": {
-          "truth=true|pred=abstain": 36,
-          "truth=true|pred=true": 7,
-          "truth=false|pred=false": 10,
-          "truth=false|pred=abstain": 40
+          "truth=true|pred=true": 10,
+          "truth=true|pred=abstain": 33,
+          "truth=false|pred=false": 14,
+          "truth=false|pred=abstain": 36
         },
         "coverage": {
-          "decided": 17,
+          "decided": 24,
           "total": 93,
-          "rate": 0.1828
+          "rate": 0.2581
         },
         "accuracy": {
           "on_decided": 1.0,
-          "overall_abstain_wrong": 0.1828
+          "overall_abstain_wrong": 0.2581
         }
       }
     },
@@ -99,62 +99,62 @@
         "by_truth": {
           "true": {
             "n": 43,
-            "true": 7,
+            "true": 10,
             "false": 0,
-            "abstain": 36
+            "abstain": 33
           },
           "false": {
             "n": 50,
             "true": 0,
-            "false": 10,
-            "abstain": 40
+            "false": 14,
+            "abstain": 36
           }
         },
         "confusion": {
-          "truth=true|pred=abstain": 36,
-          "truth=true|pred=true": 7,
-          "truth=false|pred=false": 10,
-          "truth=false|pred=abstain": 40
+          "truth=true|pred=true": 10,
+          "truth=true|pred=abstain": 33,
+          "truth=false|pred=false": 14,
+          "truth=false|pred=abstain": 36
         },
         "coverage": {
-          "decided": 17,
+          "decided": 24,
           "total": 93,
-          "rate": 0.1828
+          "rate": 0.2581
         },
         "accuracy": {
           "on_decided": 1.0,
-          "overall_abstain_wrong": 0.1828
+          "overall_abstain_wrong": 0.2581
         }
       },
       "strict_conflated_abstains": {
         "by_truth": {
           "true": {
             "n": 43,
-            "true": 7,
+            "true": 10,
             "false": 0,
-            "abstain": 36
+            "abstain": 33
           },
           "false": {
             "n": 50,
             "true": 0,
-            "false": 10,
-            "abstain": 40
+            "false": 14,
+            "abstain": 36
           }
         },
         "confusion": {
-          "truth=true|pred=abstain": 36,
-          "truth=true|pred=true": 7,
-          "truth=false|pred=false": 10,
-          "truth=false|pred=abstain": 40
+          "truth=true|pred=true": 10,
+          "truth=true|pred=abstain": 33,
+          "truth=false|pred=false": 14,
+          "truth=false|pred=abstain": 36
         },
         "coverage": {
-          "decided": 17,
+          "decided": 24,
           "total": 93,
-          "rate": 0.1828
+          "rate": 0.2581
         },
         "accuracy": {
           "on_decided": 1.0,
-          "overall_abstain_wrong": 0.1828
+          "overall_abstain_wrong": 0.2581
         }
       }
     }
@@ -162,11 +162,11 @@
   "by_layer": {
     "off": {
       "kb_exact": {
-        "decided": 17,
+        "decided": 24,
         "accuracy": 1.0,
         "false_confirms": 0,
         "false_confirm_rate": 0.0,
-        "coverage_added": 0.1828
+        "coverage_added": 0.2581
       },
       "web": {
         "decided": 0,
@@ -192,11 +192,11 @@
     },
     "on": {
       "kb_exact": {
-        "decided": 17,
+        "decided": 24,
         "accuracy": 1.0,
         "false_confirms": 0,
         "false_confirm_rate": 0.0,
-        "coverage_added": 0.1828
+        "coverage_added": 0.2581
       },
       "web": {
         "decided": 0,
@@ -312,31 +312,31 @@
       "ground_truth": "false",
       "section_index": 2,
       "off": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "denied"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The USA",
             "predicate": "have",
             "object": "52 states",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "verifier_off",
-            "reason": "verifier_off",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }
@@ -347,31 +347,31 @@
         }
       },
       "on": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "denied"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The USA",
             "predicate": "have",
             "object": "52 states",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "insufficient_kb_coverage",
-            "reason": "insufficient_kb_coverage",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }
@@ -1344,31 +1344,31 @@
       "ground_truth": "false",
       "section_index": 16,
       "off": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "denied"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The USA 's Senate",
             "predicate": "have",
             "object": "500 members",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "verifier_off",
-            "reason": "verifier_off",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }
@@ -1379,31 +1379,31 @@
         }
       },
       "on": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "denied"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The USA 's Senate",
             "predicate": "have",
             "object": "500 members",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "insufficient_kb_coverage",
-            "reason": "insufficient_kb_coverage",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }
@@ -2172,31 +2172,31 @@
       "ground_truth": "false",
       "section_index": 28,
       "off": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "denied"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The USA",
             "predicate": "have",
             "object": "200 states",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "verifier_off",
-            "reason": "verifier_off",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }
@@ -2207,31 +2207,31 @@
         }
       },
       "on": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "denied"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The USA",
             "predicate": "have",
             "object": "200 states",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "insufficient_kb_coverage",
-            "reason": "insufficient_kb_coverage",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }
@@ -3208,31 +3208,31 @@
       "ground_truth": "false",
       "section_index": 42,
       "off": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "denied"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The USA 's House of Representatives",
             "predicate": "have",
             "object": "10 members",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "verifier_off",
-            "reason": "verifier_off",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }
@@ -3243,31 +3243,31 @@
         }
       },
       "on": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "denied"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The USA 's House of Representatives",
             "predicate": "have",
             "object": "10 members",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "insufficient_kb_coverage",
-            "reason": "insufficient_kb_coverage",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }
@@ -3884,31 +3884,31 @@
       "ground_truth": "true",
       "section_index": 1,
       "off": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "confirmed"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The United States",
             "predicate": "have",
             "object": "50 states",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "verifier_off",
-            "reason": "verifier_off",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }
@@ -3919,31 +3919,31 @@
         }
       },
       "on": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "confirmed"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The United States",
             "predicate": "have",
             "object": "50 states",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "insufficient_kb_coverage",
-            "reason": "insufficient_kb_coverage",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }
@@ -4616,31 +4616,31 @@
       "ground_truth": "true",
       "section_index": 11,
       "off": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "confirmed"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The Senate",
             "predicate": "have",
             "object": "100 members two per state",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "no_kb_facts",
-            "reason": "no_kb_facts",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }
@@ -4651,31 +4651,31 @@
         }
       },
       "on": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "confirmed"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The Senate",
             "predicate": "have",
             "object": "100 members two per state",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "no_kb_facts",
-            "reason": "no_kb_facts",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }
@@ -4692,31 +4692,31 @@
       "ground_truth": "true",
       "section_index": 12,
       "off": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "confirmed"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The House of Representatives",
             "predicate": "have",
             "object": "435 voting members",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "no_kb_facts",
-            "reason": "no_kb_facts",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }
@@ -4727,31 +4727,31 @@
         }
       },
       "on": {
-        "prediction": "abstain",
-        "prediction_strict": "abstain",
-        "fa_value": 0.5,
-        "fa_status": "unknown",
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
         "relations": [
-          "unknown"
+          "confirmed"
         ],
-        "decision_layer": "abstain",
+        "decision_layer": "kb_exact",
         "layer_counts": {
-          "kb_exact": 0,
+          "kb_exact": 1,
           "web": 0,
           "verifier": 0,
-          "abstain": 1
+          "abstain": 0
         },
         "false_confirm": false,
-        "verifiable": 0,
+        "verifiable": 1,
         "claims": [
           {
             "subject": "The House of Representatives",
             "predicate": "have",
             "object": "435 voting members",
-            "relation": "unknown",
-            "decision_layer": "abstain",
-            "abstain_reason": "no_kb_facts",
-            "reason": "no_kb_facts",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
             "verifier_score": null,
             "source": "spacy"
           }

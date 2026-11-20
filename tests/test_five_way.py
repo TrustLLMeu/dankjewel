@@ -642,13 +642,14 @@ class TestSeedDBExpansion:
 # pin has a paired control proving the weak match WOULD confirm without
 # the qualifier, so the pin is non-vacuous.
 
-def _build_gate_fixture_db(db_path, entities, claims):
+def _build_gate_fixture_db(db_path, entities, claims, aliases=None):
     """Create a minimal seed-schema SQLite DB for qualifier-gate tests.
 
     Mirrors scripts/build_wikidata_db.py's schema so OfflineWikidata
     can read it. Args:
       entities: [(qid, label), ...]
       claims:   [(qid, property, value, value_qid), ...]
+      aliases:  [(qid, alias_lower), ...] optional
     """
     conn = sqlite3.connect(db_path)
     conn.executescript("""
@@ -681,6 +682,11 @@ def _build_gate_fixture_db(db_path, entities, claims):
             "INSERT INTO claims (qid, property, value, value_qid) "
             "VALUES (?, ?, ?, ?)",
             (qid, prop, value, value_qid),
+        )
+    for qid, alias in (aliases or []):
+        conn.execute(
+            "INSERT INTO aliases (qid, alias_lower) VALUES (?, ?)",
+            (qid, alias),
         )
     conn.commit()
     conn.close()
