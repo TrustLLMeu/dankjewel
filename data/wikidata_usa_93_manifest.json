@@ -1,0 +1,391 @@
+{
+  "created_utc": "2026-11-19T21:01:03Z",
+  "dataset": "data/usa_true_false_clean.json",
+  "seed_db": "data/wikidata_seed.db",
+  "target_db": "data/wikidata_usa_93.db",
+  "properties": [
+    "P17",
+    "P36",
+    "P1376",
+    "P131",
+    "P30",
+    "P610",
+    "P2044",
+    "P2046",
+    "P47",
+    "P206",
+    "P190",
+    "P276",
+    "P159",
+    "P569",
+    "P570",
+    "P19",
+    "P20",
+    "P27",
+    "P106",
+    "P108",
+    "P39",
+    "P69",
+    "P26",
+    "P22",
+    "P25",
+    "P40",
+    "P1037",
+    "P169",
+    "P355",
+    "P127",
+    "P176",
+    "P1001",
+    "P31",
+    "P279",
+    "P171",
+    "P161",
+    "P57",
+    "P162",
+    "P86",
+    "P175",
+    "P264",
+    "P136",
+    "P179",
+    "P495",
+    "P449",
+    "P465",
+    "P50",
+    "P170",
+    "P800",
+    "P1441",
+    "P361",
+    "P527",
+    "P54",
+    "P118",
+    "P413",
+    "P1344",
+    "P37",
+    "P38",
+    "P407",
+    "P364",
+    "P1412",
+    "P135",
+    "P166",
+    "P571",
+    "P580",
+    "P582",
+    "P585",
+    "P577",
+    "P155",
+    "P156",
+    "P1082",
+    "P1128",
+    "P150",
+    "P194",
+    "P1342",
+    "P463",
+    "P6",
+    "P35",
+    "P85",
+    "P421",
+    "P625",
+    "P163"
+  ],
+  "rank_filter": {
+    "preferred_only": [
+      "P1082",
+      "P30",
+      "P31",
+      "P35",
+      "P36",
+      "P6"
+    ],
+    "drop_if_ended": [
+      "P1082",
+      "P1376",
+      "P30",
+      "P31",
+      "P35",
+      "P36",
+      "P463",
+      "P6"
+    ],
+    "dropped": [
+      "deprecated (all properties)",
+      "claims with a past P582 end time for current-relation properties",
+      "future-dated P571"
+    ],
+    "note": "Time-series and current-state properties keep the preferred Wikidata value only; ended historical relations are dropped; other properties keep all non-deprecated values. The seed's curated claims are merged, never deleted."
+  },
+  "counts": {
+    "statements": 93,
+    "candidate_names": 63,
+    "resolved_names": 63,
+    "unresolved_names": 0,
+    "entities_fetched": 63,
+    "entities_added": 48,
+    "entities_refreshed": 63,
+    "claims_added": 1446,
+    "aliases_added": 309,
+    "total_entities": 1406,
+    "total_claims": 2234,
+    "total_aliases": 602
+  },
+  "resolved": {
+    "Africa": {
+      "qid": "Q15",
+      "label": "Africa"
+    },
+    "Alaska": {
+      "qid": "Q797",
+      "label": "Alaska"
+    },
+    "American bison": {
+      "qid": "Q82728",
+      "label": "American bison"
+    },
+    "Apollo 11": {
+      "qid": "Q43653",
+      "label": "Apollo 11"
+    },
+    "Arctic Circle": {
+      "qid": "Q176609",
+      "label": "Arctic Circle"
+    },
+    "Asia": {
+      "qid": "Q48",
+      "label": "Asia"
+    },
+    "Bald eagle": {
+      "qid": "Q127216",
+      "label": "bald eagle"
+    },
+    "Baseball": {
+      "qid": "Q5369",
+      "label": "baseball"
+    },
+    "Cactus": {
+      "qid": "Q14560",
+      "label": "Cactaceae"
+    },
+    "California": {
+      "qid": "Q99",
+      "label": "California"
+    },
+    "Chicago": {
+      "qid": "Q1297",
+      "label": "Chicago"
+    },
+    "Christopher Columbus": {
+      "qid": "Q7322",
+      "label": "Christopher Columbus"
+    },
+    "Cricket": {
+      "qid": "Q5375",
+      "label": "cricket"
+    },
+    "Democratic Party (United States)": {
+      "qid": "Q29552",
+      "label": "Democratic Party"
+    },
+    "Diamond": {
+      "qid": "Q5283",
+      "label": "diamond"
+    },
+    "English language": {
+      "qid": "Q1860",
+      "label": "English"
+    },
+    "Euro": {
+      "qid": "Q4916",
+      "label": "euro"
+    },
+    "Europe": {
+      "qid": "Q46",
+      "label": "Europe"
+    },
+    "Federal Reserve System": {
+      "qid": "Q53536",
+      "label": "Federal Reserve System"
+    },
+    "Flag of the United States": {
+      "qid": "Q42537",
+      "label": "flag of the United States"
+    },
+    "French language": {
+      "qid": "Q150",
+      "label": "French"
+    },
+    "George Washington": {
+      "qid": "Q23",
+      "label": "George Washington"
+    },
+    "God Save the King": {
+      "qid": "Q40807",
+      "label": "God Save the King"
+    },
+    "Japanese yen": {
+      "qid": "Q8146",
+      "label": "yen"
+    },
+    "Kangaroo": {
+      "qid": "Q5070208",
+      "label": "kangaroo"
+    },
+    "Lion": {
+      "qid": "Q140",
+      "label": "lion"
+    },
+    "Moon": {
+      "qid": "Q405",
+      "label": "Moon"
+    },
+    "New York City": {
+      "qid": "Q60",
+      "label": "New York City"
+    },
+    "North America": {
+      "qid": "Q49",
+      "label": "North America"
+    },
+    "Northern Hemisphere": {
+      "qid": "Q39061",
+      "label": "Northern Hemisphere"
+    },
+    "Oak": {
+      "qid": "Q12004",
+      "label": "Quercus"
+    },
+    "Oceania": {
+      "qid": "Q55643",
+      "label": "Oceania"
+    },
+    "Ostrich": {
+      "qid": "Q2576337",
+      "label": "Struthio"
+    },
+    "Parliament of the United Kingdom": {
+      "qid": "Q11010",
+      "label": "Parliament of the United Kingdom"
+    },
+    "Penguin": {
+      "qid": "Q9147",
+      "label": "penguin"
+    },
+    "Pound sterling": {
+      "qid": "Q25224",
+      "label": "pound sterling"
+    },
+    "President of the United States": {
+      "qid": "Q11696",
+      "label": "President of the United States"
+    },
+    "Republican Party (United States)": {
+      "qid": "Q29468",
+      "label": "Republican Party"
+    },
+    "Rose": {
+      "qid": "Q34687",
+      "label": "Rosa"
+    },
+    "South America": {
+      "qid": "Q18",
+      "label": "South America"
+    },
+    "Southern Hemisphere": {
+      "qid": "Q41228",
+      "label": "Southern Hemisphere"
+    },
+    "Square dance": {
+      "qid": "Q1156994",
+      "label": "square dance"
+    },
+    "Supreme Court of the United States": {
+      "qid": "Q11201",
+      "label": "Supreme Court of the United States"
+    },
+    "The Star-Spangled Banner": {
+      "qid": "Q44696",
+      "label": "The Star-Spangled Banner"
+    },
+    "United Nations": {
+      "qid": "Q1065",
+      "label": "United Nations"
+    },
+    "United Nations General Assembly": {
+      "qid": "Q47423",
+      "label": "United Nations General Assembly"
+    },
+    "United Nations Security Council": {
+      "qid": "Q37470",
+      "label": "United Nations Security Council"
+    },
+    "United States": {
+      "qid": "Q30",
+      "label": "United States"
+    },
+    "United States Armed Forces": {
+      "qid": "Q11211",
+      "label": "United States Armed Forces"
+    },
+    "United States Bill of Rights": {
+      "qid": "Q862765",
+      "label": "United States Bill of Rights"
+    },
+    "United States Congress": {
+      "qid": "Q11268",
+      "label": "United States Congress"
+    },
+    "United States Constitution": {
+      "qid": "Q11698",
+      "label": "United States Constitution"
+    },
+    "United States Declaration of Independence": {
+      "qid": "Q127912",
+      "label": "United States Declaration of Independence"
+    },
+    "United States Department of Defense": {
+      "qid": "Q11209",
+      "label": "United States Department of Defense"
+    },
+    "United States Department of the Treasury": {
+      "qid": "Q648666",
+      "label": "United States Department of the Treasury"
+    },
+    "United States Electoral College": {
+      "qid": "Q47586",
+      "label": "United States Electoral College"
+    },
+    "United States House of Representatives": {
+      "qid": "Q11701",
+      "label": "United States House of Representatives"
+    },
+    "United States Senate": {
+      "qid": "Q66096",
+      "label": "United States Senate"
+    },
+    "United States dollar": {
+      "qid": "Q4917",
+      "label": "United States dollar"
+    },
+    "United States federal government": {
+      "qid": "Q48525",
+      "label": "Federal Government of the United States"
+    },
+    "Vice President of the United States": {
+      "qid": "Q11699",
+      "label": "Vice President of the United States"
+    },
+    "Washington, D.C.": {
+      "qid": "Q61",
+      "label": "Washington, D.C."
+    },
+    "Yellowstone National Park": {
+      "qid": "Q351",
+      "label": "Yellowstone National Park"
+    }
+  },
+  "unresolved": [],
+  "api": {
+    "wikipedia": "https://en.wikipedia.org/w/api.php",
+    "wikidata": "https://www.wikidata.org/w/api.php",
+    "user_agent": "FEVER-Eval-Research/1.0 (academic; extend_wikidata_db.py)",
+    "cache_dir": "data/wikidata_cache"
+  }
+}

@@ -1,0 +1,7130 @@
+{
+  "meta": {
+    "created_utc": "2026-11-20T19:57:52Z",
+    "dataset_file": "data/usa_true_false_clean.json",
+    "dataset_sha256": "161ceefd9664616afacbe062059207cbe1c6deb9bbc8f59ed21adfea158465f1",
+    "dataset_counts": {
+      "total": 93,
+      "true": 43,
+      "false": 50,
+      "excluded": 7
+    },
+    "pipeline": "EvaluationPipeline(enable_prongs=[3]), language='en'",
+    "db_path": "data/wikidata_usa_93.db",
+    "db_label": "wikidata_usa_93.db (C0a router fixes)",
+    "decision_rule": "Per item: all claims confirmed -> true; all denied/conflated -> false; mixed or any partial/unknown -> abstain. 'strict' treats conflated as abstain.",
+    "minicheck_thresholds": {
+      "support": 0.8,
+      "deny": 0.2
+    },
+    "attribution": "harness-level decision_layer per claim/item + by_layer + false_confirms (see docs/scouting/2026-11-20-live-factcheck.md §7.6)",
+    "elapsed_s": 17.2,
+    "timings": {
+      "n": 186,
+      "p50_ms": 14.0,
+      "p90_ms": 164.2,
+      "p99_ms": 962.0,
+      "mean_ms": 92.3
+    }
+  },
+  "metrics": {
+    "off": {
+      "label": "KB exact + conflation (llm_verify off)",
+      "main": {
+        "by_truth": {
+          "true": {
+            "n": 43,
+            "true": 7,
+            "false": 0,
+            "abstain": 36
+          },
+          "false": {
+            "n": 50,
+            "true": 0,
+            "false": 10,
+            "abstain": 40
+          }
+        },
+        "confusion": {
+          "truth=true|pred=abstain": 36,
+          "truth=true|pred=true": 7,
+          "truth=false|pred=false": 10,
+          "truth=false|pred=abstain": 40
+        },
+        "coverage": {
+          "decided": 17,
+          "total": 93,
+          "rate": 0.1828
+        },
+        "accuracy": {
+          "on_decided": 1.0,
+          "overall_abstain_wrong": 0.1828
+        }
+      },
+      "strict_conflated_abstains": {
+        "by_truth": {
+          "true": {
+            "n": 43,
+            "true": 7,
+            "false": 0,
+            "abstain": 36
+          },
+          "false": {
+            "n": 50,
+            "true": 0,
+            "false": 10,
+            "abstain": 40
+          }
+        },
+        "confusion": {
+          "truth=true|pred=abstain": 36,
+          "truth=true|pred=true": 7,
+          "truth=false|pred=false": 10,
+          "truth=false|pred=abstain": 40
+        },
+        "coverage": {
+          "decided": 17,
+          "total": 93,
+          "rate": 0.1828
+        },
+        "accuracy": {
+          "on_decided": 1.0,
+          "overall_abstain_wrong": 0.1828
+        }
+      }
+    },
+    "on": {
+      "label": "KB exact + conflation + gated MiniCheck (llm_verify on)",
+      "main": {
+        "by_truth": {
+          "true": {
+            "n": 43,
+            "true": 7,
+            "false": 0,
+            "abstain": 36
+          },
+          "false": {
+            "n": 50,
+            "true": 0,
+            "false": 10,
+            "abstain": 40
+          }
+        },
+        "confusion": {
+          "truth=true|pred=abstain": 36,
+          "truth=true|pred=true": 7,
+          "truth=false|pred=false": 10,
+          "truth=false|pred=abstain": 40
+        },
+        "coverage": {
+          "decided": 17,
+          "total": 93,
+          "rate": 0.1828
+        },
+        "accuracy": {
+          "on_decided": 1.0,
+          "overall_abstain_wrong": 0.1828
+        }
+      },
+      "strict_conflated_abstains": {
+        "by_truth": {
+          "true": {
+            "n": 43,
+            "true": 7,
+            "false": 0,
+            "abstain": 36
+          },
+          "false": {
+            "n": 50,
+            "true": 0,
+            "false": 10,
+            "abstain": 40
+          }
+        },
+        "confusion": {
+          "truth=true|pred=abstain": 36,
+          "truth=true|pred=true": 7,
+          "truth=false|pred=false": 10,
+          "truth=false|pred=abstain": 40
+        },
+        "coverage": {
+          "decided": 17,
+          "total": 93,
+          "rate": 0.1828
+        },
+        "accuracy": {
+          "on_decided": 1.0,
+          "overall_abstain_wrong": 0.1828
+        }
+      }
+    }
+  },
+  "by_layer": {
+    "off": {
+      "kb_exact": {
+        "decided": 17,
+        "accuracy": 1.0,
+        "false_confirms": 0,
+        "false_confirm_rate": 0.0,
+        "coverage_added": 0.1828
+      },
+      "web": {
+        "decided": 0,
+        "accuracy": null,
+        "false_confirms": 0,
+        "false_confirm_rate": null,
+        "coverage_added": 0.0
+      },
+      "verifier": {
+        "decided": 0,
+        "accuracy": null,
+        "false_confirms": 0,
+        "false_confirm_rate": null,
+        "coverage_added": 0.0
+      },
+      "abstain": {
+        "decided": 0,
+        "accuracy": null,
+        "false_confirms": 0,
+        "false_confirm_rate": 0.0,
+        "coverage_added": 0.0
+      }
+    },
+    "on": {
+      "kb_exact": {
+        "decided": 17,
+        "accuracy": 1.0,
+        "false_confirms": 0,
+        "false_confirm_rate": 0.0,
+        "coverage_added": 0.1828
+      },
+      "web": {
+        "decided": 0,
+        "accuracy": null,
+        "false_confirms": 0,
+        "false_confirm_rate": null,
+        "coverage_added": 0.0
+      },
+      "verifier": {
+        "decided": 0,
+        "accuracy": null,
+        "false_confirms": 0,
+        "false_confirm_rate": null,
+        "coverage_added": 0.0
+      },
+      "abstain": {
+        "decided": 0,
+        "accuracy": null,
+        "false_confirms": 0,
+        "false_confirm_rate": 0.0,
+        "coverage_added": 0.0
+      }
+    }
+  },
+  "false_confirms": {
+    "off": 0,
+    "on": 0
+  },
+  "false_confirm_rate": {
+    "off": 0.0,
+    "on": 0.0
+  },
+  "items": [
+    {
+      "id": "usa-untrue-01",
+      "statement": "The capital of the United States is New York City.",
+      "ground_truth": "false",
+      "section_index": 1,
+      "off": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "City",
+            "predicate": "be",
+            "object": "The capital of the United States",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "City",
+            "predicate": "be",
+            "object": "The capital of the United States",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-02",
+      "statement": "The USA has 52 states.",
+      "ground_truth": "false",
+      "section_index": 2,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "52 states",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "52 states",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-03",
+      "statement": "The United States was founded in 1976.",
+      "ground_truth": "false",
+      "section_index": 3,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-04",
+      "statement": "The USA is located in the Southern Hemisphere.",
+      "ground_truth": "false",
+      "section_index": 4,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "is locate",
+            "object": "in the Southern Hemisphere",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "is locate",
+            "object": "in the Southern Hemisphere",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-05",
+      "statement": "The currency of the USA is the pound sterling.",
+      "ground_truth": "false",
+      "section_index": 5,
+      "off": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The currency of the USA",
+            "predicate": "be",
+            "object": "the pound sterling",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The currency of the USA",
+            "predicate": "be",
+            "object": "the pound sterling",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-06",
+      "statement": "The national bird of the USA is the penguin.",
+      "ground_truth": "false",
+      "section_index": 6,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The national bird of the USA",
+            "predicate": "be",
+            "object": "the penguin",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The national bird of the USA",
+            "predicate": "be",
+            "object": "the penguin",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-07",
+      "statement": "The USA is the largest country in the world by land area.",
+      "ground_truth": "false",
+      "section_index": 7,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "the largest country in the world by land area",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "the largest country in the world by land area",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-08",
+      "statement": "The president of the USA is appointed by the United Nations General Assembly.",
+      "ground_truth": "false",
+      "section_index": 8,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-09",
+      "statement": "The USA's flag has 50 stars and 12 stripes.",
+      "ground_truth": "false",
+      "section_index": 9,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 2
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's flag",
+            "predicate": "have",
+            "object": "50 stars and 12 stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The USA 's flag",
+            "predicate": "have",
+            "object": "12 stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 2,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 2
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's flag",
+            "predicate": "have",
+            "object": "50 stars and 12 stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The USA 's flag",
+            "predicate": "have",
+            "object": "12 stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 2,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-10",
+      "statement": "The USA is a constitutional monarchy.",
+      "ground_truth": "false",
+      "section_index": 10,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "a constitutional monarchy",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "a constitutional monarchy",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-11",
+      "statement": "The USA has no coastline.",
+      "ground_truth": "false",
+      "section_index": 11,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "no coastline",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "no coastline",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-12",
+      "statement": "The national anthem of the USA is \"God Save the King.\"",
+      "ground_truth": "false",
+      "section_index": 12,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "God",
+            "predicate": "save",
+            "object": "the King",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "entity_not_in_kb",
+            "reason": "entity_not_in_kb",
+            "verifier_score": null,
+            "source": "quote"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "God",
+            "predicate": "save",
+            "object": "the King",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "entity_not_in_kb",
+            "reason": "entity_not_in_kb",
+            "verifier_score": null,
+            "source": "quote"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-13",
+      "statement": "The USA's population is approximately 5 million.",
+      "ground_truth": "false",
+      "section_index": 13,
+      "off": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "million",
+            "predicate": "be",
+            "object": "The USA 's population",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "million",
+            "predicate": "be",
+            "object": "The USA 's population",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-14",
+      "statement": "The president of the USA serves a single 10-year term.",
+      "ground_truth": "false",
+      "section_index": 14,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The president of the USA",
+            "predicate": "serve",
+            "object": "a single 10 year term",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The president of the USA",
+            "predicate": "serve",
+            "object": "a single 10 year term",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-15",
+      "statement": "The USA is located in South America.",
+      "ground_truth": "false",
+      "section_index": 15,
+      "off": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "is locate",
+            "object": "in South America",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "is locate",
+            "object": "in South America",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-16",
+      "statement": "The USA's Senate has 500 members.",
+      "ground_truth": "false",
+      "section_index": 16,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's Senate",
+            "predicate": "have",
+            "object": "500 members",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's Senate",
+            "predicate": "have",
+            "object": "500 members",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-17",
+      "statement": "The USA was founded by a decree of the British Parliament in 1900.",
+      "ground_truth": "false",
+      "section_index": 17,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-18",
+      "statement": "The USA's national animal is the kangaroo.",
+      "ground_truth": "false",
+      "section_index": 18,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's national animal",
+            "predicate": "be",
+            "object": "the kangaroo",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's national animal",
+            "predicate": "be",
+            "object": "the kangaroo",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-19",
+      "statement": "The USA is an island nation.",
+      "ground_truth": "false",
+      "section_index": 19,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "an island nation",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "an island nation",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-20",
+      "statement": "The USA has a prime minister as its head of government.",
+      "ground_truth": "false",
+      "section_index": 20,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a prime minister as its head of government",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a prime minister as its head of government",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-21",
+      "statement": "The USA's currency is the euro.",
+      "ground_truth": "false",
+      "section_index": 21,
+      "off": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA 's currency",
+            "predicate": "be",
+            "object": "the euro",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA 's currency",
+            "predicate": "be",
+            "object": "the euro",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-22",
+      "statement": "The USA is the most populous country on Earth.",
+      "ground_truth": "false",
+      "section_index": 22,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "the most populous country on Earth",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "the most populous country on Earth",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-23",
+      "statement": "The USA has no written constitution.",
+      "ground_truth": "false",
+      "section_index": 23,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "no written constitution",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "no written constitution",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-24",
+      "statement": "The USA's president is chosen by a public lottery.",
+      "ground_truth": "false",
+      "section_index": 24,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-25",
+      "statement": "The USA was \"discovered\" by Christopher Columbus in 1500.",
+      "ground_truth": "false",
+      "section_index": 25,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-26",
+      "statement": "The USA's national language is French.",
+      "ground_truth": "false",
+      "section_index": 26,
+      "off": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA 's national language",
+            "predicate": "be",
+            "object": "French",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA 's national language",
+            "predicate": "be",
+            "object": "French",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-27",
+      "statement": "The USA is the smallest country in the world.",
+      "ground_truth": "false",
+      "section_index": 27,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "the smallest country in the world",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "the smallest country in the world",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-28",
+      "statement": "The USA has 200 states.",
+      "ground_truth": "false",
+      "section_index": 28,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "200 states",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "200 states",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-29",
+      "statement": "The USA's president serves for life.",
+      "ground_truth": "false",
+      "section_index": 29,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's president",
+            "predicate": "serve",
+            "object": "for life",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's president",
+            "predicate": "serve",
+            "object": "for life",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-30",
+      "statement": "The USA is located in Africa.",
+      "ground_truth": "false",
+      "section_index": 30,
+      "off": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "is locate",
+            "object": "in Africa",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "is locate",
+            "object": "in Africa",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-31",
+      "statement": "The USA has no military.",
+      "ground_truth": "false",
+      "section_index": 31,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "no military",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "no military",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-32",
+      "statement": "The USA's national sport is cricket.",
+      "ground_truth": "false",
+      "section_index": 32,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's national sport",
+            "predicate": "be",
+            "object": "cricket",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's national sport",
+            "predicate": "be",
+            "object": "cricket",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-33",
+      "statement": "The USA's population is 100,000.",
+      "ground_truth": "false",
+      "section_index": 33,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {
+            "pronoun": 1
+          }
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {
+            "pronoun": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-34",
+      "statement": "The USA's capital is Chicago.",
+      "ground_truth": "false",
+      "section_index": 34,
+      "off": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "Chicago",
+            "predicate": "be",
+            "object": "The USA 's capital",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "Chicago",
+            "predicate": "be",
+            "object": "The USA 's capital",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-35",
+      "statement": "The USA was founded in 2001.",
+      "ground_truth": "false",
+      "section_index": 35,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-36",
+      "statement": "The USA is a one-party state.",
+      "ground_truth": "false",
+      "section_index": 36,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "a one party state",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "a one party state",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-37",
+      "statement": "The USA's national bird is the ostrich.",
+      "ground_truth": "false",
+      "section_index": 37,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's national bird",
+            "predicate": "be",
+            "object": "the ostrich",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's national bird",
+            "predicate": "be",
+            "object": "the ostrich",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-38",
+      "statement": "The USA has a dictator as its head of state.",
+      "ground_truth": "false",
+      "section_index": 38,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 2
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a dictator",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "as its head of state",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 2,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 2
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a dictator",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "as its head of state",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 2,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-39",
+      "statement": "The USA's currency is the Japanese yen.",
+      "ground_truth": "false",
+      "section_index": 39,
+      "off": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA 's currency",
+            "predicate": "be",
+            "object": "the Japanese yen",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA 's currency",
+            "predicate": "be",
+            "object": "the Japanese yen",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-40",
+      "statement": "The USA is located entirely in the Arctic Circle.",
+      "ground_truth": "false",
+      "section_index": 40,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "is locate",
+            "object": "in the Arctic Circle",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "is locate",
+            "object": "in the Arctic Circle",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-41",
+      "statement": "The USA's flag has a single star on a green field.",
+      "ground_truth": "false",
+      "section_index": 41,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's flag",
+            "predicate": "have",
+            "object": "a single star on a green field",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's flag",
+            "predicate": "have",
+            "object": "a single star on a green field",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-42",
+      "statement": "The USA's House of Representatives has 10 members.",
+      "ground_truth": "false",
+      "section_index": 42,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's House of Representatives",
+            "predicate": "have",
+            "object": "10 members",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's House of Representatives",
+            "predicate": "have",
+            "object": "10 members",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-43",
+      "statement": "The USA was founded by the United States Congress in 1950.",
+      "ground_truth": "false",
+      "section_index": 43,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-44",
+      "statement": "The USA's national animal is the lion.",
+      "ground_truth": "false",
+      "section_index": 44,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's national animal",
+            "predicate": "be",
+            "object": "the lion",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's national animal",
+            "predicate": "be",
+            "object": "the lion",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-45",
+      "statement": "The USA has no written laws.",
+      "ground_truth": "false",
+      "section_index": 45,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "no written laws",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "no written laws",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-46",
+      "statement": "The USA's president is elected by a single national vote every 20 years.",
+      "ground_truth": "false",
+      "section_index": 46,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-47",
+      "statement": "The USA is located in Oceania.",
+      "ground_truth": "false",
+      "section_index": 47,
+      "off": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "is locate",
+            "object": "in Oceania",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "false",
+        "prediction_strict": "false",
+        "fa_value": 0.0,
+        "fa_status": "scored",
+        "relations": [
+          "denied"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "is locate",
+            "object": "in Oceania",
+            "relation": "denied",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-48",
+      "statement": "The USA's national flower is the cactus.",
+      "ground_truth": "false",
+      "section_index": 48,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's national flower",
+            "predicate": "be",
+            "object": "the cactus",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's national flower",
+            "predicate": "be",
+            "object": "the cactus",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-49",
+      "statement": "The USA has a king and a queen as its ruling heads of state.",
+      "ground_truth": "false",
+      "section_index": 49,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 3
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a king and a queen",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a queen",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "as its ruling heads of state",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 3,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 3
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a king and a queen",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a queen",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "as its ruling heads of state",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 3,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-untrue-50",
+      "statement": "The USA was founded in 3000 BC.",
+      "ground_truth": "false",
+      "section_index": 50,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "was found",
+            "object": "in 3000 BC",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "was found",
+            "object": "in 3000 BC",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-01",
+      "statement": "The United States has 50 states.",
+      "ground_truth": "true",
+      "section_index": 1,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The United States",
+            "predicate": "have",
+            "object": "50 states",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The United States",
+            "predicate": "have",
+            "object": "50 states",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-02",
+      "statement": "The capital of the United States is Washington, D.C.",
+      "ground_truth": "true",
+      "section_index": 2,
+      "off": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "Washington",
+            "predicate": "be",
+            "object": "The capital of the United States",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "Washington",
+            "predicate": "be",
+            "object": "The capital of the United States",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-03",
+      "statement": "The Declaration of Independence was adopted on July 4, 1776.",
+      "ground_truth": "true",
+      "section_index": 3,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-04",
+      "statement": "The national bird of the USA is the bald eagle.",
+      "ground_truth": "true",
+      "section_index": 4,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The national bird of the USA",
+            "predicate": "be",
+            "object": "the bald eagle",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The national bird of the USA",
+            "predicate": "be",
+            "object": "the bald eagle",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-05",
+      "statement": "The national anthem is \"The Star-Spangled Banner.\"",
+      "ground_truth": "true",
+      "section_index": 5,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "Banner",
+            "predicate": "be",
+            "object": "The national anthem",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "entity_not_in_kb",
+            "reason": "entity_not_in_kb",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "Banner",
+            "predicate": "be",
+            "object": "The national anthem",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "entity_not_in_kb",
+            "reason": "entity_not_in_kb",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-06",
+      "statement": "The currency of the USA is the US dollar.",
+      "ground_truth": "true",
+      "section_index": 6,
+      "off": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The currency of the USA",
+            "predicate": "be",
+            "object": "the US dollar",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The currency of the USA",
+            "predicate": "be",
+            "object": "the US dollar",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-07",
+      "statement": "The USA is located in North America.",
+      "ground_truth": "true",
+      "section_index": 7,
+      "off": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "is locate",
+            "object": "in North America",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "is locate",
+            "object": "in North America",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-08",
+      "statement": "The USA has a written constitution, ratified in 1788.",
+      "ground_truth": "true",
+      "section_index": 8,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a written constitution ratified in 1788",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a written constitution ratified in 1788",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-09",
+      "statement": "The president serves four-year terms.",
+      "ground_truth": "true",
+      "section_index": 9,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The president",
+            "predicate": "serve",
+            "object": "four year terms",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "no_kb_facts",
+            "reason": "no_kb_facts",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The president",
+            "predicate": "serve",
+            "object": "four year terms",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "no_kb_facts",
+            "reason": "no_kb_facts",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-10",
+      "statement": "Congress is bicameral, consisting of the Senate and the House of Representatives.",
+      "ground_truth": "true",
+      "section_index": 10,
+      "off": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "Congress",
+            "predicate": "be",
+            "object": "bicameral",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "Congress",
+            "predicate": "be",
+            "object": "bicameral",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-11",
+      "statement": "The Senate has 100 members (two per state).",
+      "ground_truth": "true",
+      "section_index": 11,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The Senate",
+            "predicate": "have",
+            "object": "100 members two per state",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "no_kb_facts",
+            "reason": "no_kb_facts",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The Senate",
+            "predicate": "have",
+            "object": "100 members two per state",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "no_kb_facts",
+            "reason": "no_kb_facts",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-12",
+      "statement": "The House of Representatives has 435 voting members.",
+      "ground_truth": "true",
+      "section_index": 12,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The House of Representatives",
+            "predicate": "have",
+            "object": "435 voting members",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "no_kb_facts",
+            "reason": "no_kb_facts",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The House of Representatives",
+            "predicate": "have",
+            "object": "435 voting members",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "no_kb_facts",
+            "reason": "no_kb_facts",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-13",
+      "statement": "The US flag features 50 stars and 13 stripes.",
+      "ground_truth": "true",
+      "section_index": 13,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 2
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The US flag",
+            "predicate": "feature",
+            "object": "50 stars and 13 stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The US flag",
+            "predicate": "feature",
+            "object": "13 stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 2,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 2
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The US flag",
+            "predicate": "feature",
+            "object": "50 stars and 13 stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The US flag",
+            "predicate": "feature",
+            "object": "13 stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 2,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-15",
+      "statement": "The USA operates under a presidential system of government.",
+      "ground_truth": "true",
+      "section_index": 15,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "operate",
+            "object": "under a presidential system of government",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "operate",
+            "object": "under a presidential system of government",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-16",
+      "statement": "The USA's population exceeds 330 million people.",
+      "ground_truth": "true",
+      "section_index": 16,
+      "off": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA 's population",
+            "predicate": "exceed",
+            "object": "330 million people",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA 's population",
+            "predicate": "exceed",
+            "object": "330 million people",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-18",
+      "statement": "The USA has the largest economy in the world by nominal GDP.",
+      "ground_truth": "true",
+      "section_index": 18,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 2
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "the largest economy in the world",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "by nominal GDP",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 2,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 2
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "the largest economy in the world",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "by nominal GDP",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 2,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-19",
+      "statement": "The national flower of the USA is the rose.",
+      "ground_truth": "true",
+      "section_index": 19,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The national flower of the USA",
+            "predicate": "be",
+            "object": "the rose",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The national flower of the USA",
+            "predicate": "be",
+            "object": "the rose",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-20",
+      "statement": "The USA spans six time zones across its 50 states.",
+      "ground_truth": "true",
+      "section_index": 20,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-21",
+      "statement": "The USA has the largest military budget in the world.",
+      "ground_truth": "true",
+      "section_index": 21,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "the largest military budget in the world",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "the largest military budget in the world",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-22",
+      "statement": "The USA is a federal republic.",
+      "ground_truth": "true",
+      "section_index": 22,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "a federal republic",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "a federal republic",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-23",
+      "statement": "The national mammal of the USA is the American bison.",
+      "ground_truth": "true",
+      "section_index": 23,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The national mammal of the USA",
+            "predicate": "be",
+            "object": "the American bison",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The national mammal of the USA",
+            "predicate": "be",
+            "object": "the American bison",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-24",
+      "statement": "Presidential elections are held every four years.",
+      "ground_truth": "true",
+      "section_index": 24,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-25",
+      "statement": "George Washington was the first president of the United States.",
+      "ground_truth": "true",
+      "section_index": 25,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "George Washington",
+            "predicate": "be",
+            "object": "the first president of the United States",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "partially_supported"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "George Washington",
+            "predicate": "be",
+            "object": "the first president of the United States",
+            "relation": "partially_supported",
+            "decision_layer": "abstain",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": 0.4815,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-26",
+      "statement": "The US government operates on a system of checks and balances among three branches.",
+      "ground_truth": "true",
+      "section_index": 26,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The US government",
+            "predicate": "operate",
+            "object": "on a system of checks and balances among three branches",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The US government",
+            "predicate": "operate",
+            "object": "on a system of checks and balances among three branches",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-27",
+      "statement": "The US flag is commonly called \"Old Glory\" or \"Stars and Stripes.\"",
+      "ground_truth": "true",
+      "section_index": 27,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 3
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The US flag",
+            "predicate": "is call",
+            "object": "Old Glory or Stars and Stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The US flag",
+            "predicate": "is call",
+            "object": "Stars and Stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The US flag",
+            "predicate": "is call",
+            "object": "Stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 3,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 3
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The US flag",
+            "predicate": "is call",
+            "object": "Old Glory or Stars and Stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The US flag",
+            "predicate": "is call",
+            "object": "Stars and Stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The US flag",
+            "predicate": "is call",
+            "object": "Stripes",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 3,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-28",
+      "statement": "The USA has a Supreme Court as its highest court.",
+      "ground_truth": "true",
+      "section_index": 28,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 2
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a Supreme Court",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "as its highest court",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 2,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown",
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 2
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a Supreme Court",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          },
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "as its highest court",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 2,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-30",
+      "statement": "The first ten amendments to the Constitution are known as the Bill of Rights.",
+      "ground_truth": "true",
+      "section_index": 30,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The first ten amendments to the Constitution",
+            "predicate": "are know",
+            "object": "as the Bill of Rights",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "entity_not_in_kb",
+            "reason": "entity_not_in_kb",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The first ten amendments to the Constitution",
+            "predicate": "are know",
+            "object": "as the Bill of Rights",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "entity_not_in_kb",
+            "reason": "entity_not_in_kb",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-31",
+      "statement": "The USA was originally formed from 13 British colonies.",
+      "ground_truth": "true",
+      "section_index": 31,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "was form",
+            "object": "from 13 British colonies",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "was form",
+            "object": "from 13 British colonies",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-32",
+      "statement": "Alaska is the largest US state by area.",
+      "ground_truth": "true",
+      "section_index": 32,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "Alaska",
+            "predicate": "be",
+            "object": "the largest US state by area",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "Alaska",
+            "predicate": "be",
+            "object": "the largest US state by area",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-33",
+      "statement": "California is the most populous US state.",
+      "ground_truth": "true",
+      "section_index": 33,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "California",
+            "predicate": "be",
+            "object": "the most populous US state",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "California",
+            "predicate": "be",
+            "object": "the most populous US state",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-34",
+      "statement": "The USA operates under a system of federalism, dividing power between national and state governments.",
+      "ground_truth": "true",
+      "section_index": 34,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "operate",
+            "object": "under a system of federalism",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "operate",
+            "object": "under a system of federalism",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-35",
+      "statement": "Baseball is widely referred to as the \"national pastime\" of the USA.",
+      "ground_truth": "true",
+      "section_index": 35,
+      "off": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "Baseball",
+            "predicate": "is refer",
+            "object": "as the national pastime of the USA",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "Baseball",
+            "predicate": "is refer",
+            "object": "as the national pastime of the USA",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-36",
+      "statement": "The USA has a Department of the Treasury.",
+      "ground_truth": "true",
+      "section_index": 36,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a Department of the Treasury",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a Department of the Treasury",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-37",
+      "statement": "Yellowstone, established in 1872, is the world's first national park.",
+      "ground_truth": "true",
+      "section_index": 37,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "Yellowstone established in 1872",
+            "predicate": "be",
+            "object": "the world 's first national park",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "entity_not_in_kb",
+            "reason": "entity_not_in_kb",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "Yellowstone established in 1872",
+            "predicate": "be",
+            "object": "the world 's first national park",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "entity_not_in_kb",
+            "reason": "entity_not_in_kb",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-38",
+      "statement": "The USA operates under a de facto two-party system (Democrats and Republicans).",
+      "ground_truth": "true",
+      "section_index": 38,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "operate",
+            "object": "under a de facto two party system Democrats and Republicans",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "operate",
+            "object": "under a de facto two party system Democrats and Republicans",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-39",
+      "statement": "The USA has a Vice President who presides over the Senate.",
+      "ground_truth": "true",
+      "section_index": 39,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a Vice President",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a Vice President",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-40",
+      "statement": "The Constitution's system of judicial review allows courts to strike down laws.",
+      "ground_truth": "true",
+      "section_index": 40,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-42",
+      "statement": "The USA has a Department of Defense.",
+      "ground_truth": "true",
+      "section_index": 42,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a Department of Defense",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a Department of Defense",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-44",
+      "statement": "The Federal Reserve System serves as the central banking system.",
+      "ground_truth": "true",
+      "section_index": 44,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The Federal Reserve System",
+            "predicate": "serve",
+            "object": "as the central banking system",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The Federal Reserve System",
+            "predicate": "serve",
+            "object": "as the central banking system",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-47",
+      "statement": "The USA has a system of state and local governments alongside the federal government.",
+      "ground_truth": "true",
+      "section_index": 47,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a system of state and local governments alongside the federal government",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "have",
+            "object": "a system of state and local governments alongside the federal government",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-48",
+      "statement": "The USA's national park system spans all 50 states.",
+      "ground_truth": "true",
+      "section_index": 48,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's national park system",
+            "predicate": "span",
+            "object": "all 50 states",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "verifier_off",
+            "reason": "verifier_off",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [
+          "unknown"
+        ],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 1
+        },
+        "false_confirm": false,
+        "verifiable": 0,
+        "claims": [
+          {
+            "subject": "The USA 's national park system",
+            "predicate": "span",
+            "object": "all 50 states",
+            "relation": "unknown",
+            "decision_layer": "abstain",
+            "abstain_reason": "insufficient_kb_coverage",
+            "reason": "insufficient_kb_coverage",
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-49",
+      "statement": "The US Constitution has been amended 27 times.",
+      "ground_truth": "true",
+      "section_index": 49,
+      "off": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "abstain",
+        "prediction_strict": "abstain",
+        "fa_value": 0.5,
+        "fa_status": "unknown",
+        "relations": [],
+        "decision_layer": "abstain",
+        "layer_counts": {
+          "kb_exact": 0,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": null,
+        "claims": [],
+        "admission": {
+          "admitted_claims": 0,
+          "discarded_candidates": {}
+        }
+      }
+    },
+    {
+      "id": "usa-true-50",
+      "statement": "The USA is a member of the United Nations, having been a founding member in 1945.",
+      "ground_truth": "true",
+      "section_index": 50,
+      "off": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "a member of the United Nations",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      },
+      "on": {
+        "prediction": "true",
+        "prediction_strict": "true",
+        "fa_value": 1.0,
+        "fa_status": "scored",
+        "relations": [
+          "confirmed"
+        ],
+        "decision_layer": "kb_exact",
+        "layer_counts": {
+          "kb_exact": 1,
+          "web": 0,
+          "verifier": 0,
+          "abstain": 0
+        },
+        "false_confirm": false,
+        "verifiable": 1,
+        "claims": [
+          {
+            "subject": "The USA",
+            "predicate": "be",
+            "object": "a member of the United Nations",
+            "relation": "confirmed",
+            "decision_layer": "kb_exact",
+            "abstain_reason": null,
+            "reason": null,
+            "verifier_score": null,
+            "source": "spacy"
+          }
+        ],
+        "admission": {
+          "admitted_claims": 1,
+          "discarded_candidates": {}
+        }
+      }
+    }
+  ]
+}

@@ -187,6 +187,7 @@ PREDICATE_TO_PROPERTY = {
     'language': 'P37',
     'official language': 'P37',
     'currency': 'P38',
+    'population': 'P1082',
     'language of work': 'P407',
     'original language': 'P364',
     'speak': 'P1412',
@@ -304,6 +305,120 @@ _TEMPORAL_QUALIFIER_RE = re.compile(
     r'\b(before|after|since|until)\s+\d{3,4}\b|\bbetween\s+\d{3,4}\s+and\s+\d{3,4}\b'
 )
 
+# ── Claim-type router: possessives, superlatives, quantities ───────────────
+# A claim's surface form carries the property it is about: "the USA's
+# currency", "the currency of the USA", "population exceeds 330 million".
+# Decomposing those forms before the generic predicate map prevents the
+# owner entity from being verified against the wrong property (the
+# extended KB exposed this: "The USA's currency is the US dollar" was
+# denied via P17 because the compound subject resolved to Q30).
+ATTRIBUTE_TO_PROPERTY = {
+    'currency': 'P38',
+    'capital': 'P36',
+    'population': 'P1082',
+    'anthem': 'P85',
+    'national anthem': 'P85',
+    'national language': 'P37',
+    'official language': 'P37',
+    'language': 'P37',
+    'continent': 'P30',
+    'inception': 'P571',
+    'founded': 'P571',
+    'head of government': 'P6',
+    'head of state': 'P35',
+    'legislative body': 'P194',
+    # Seats / head-of-government membership (Phase 2: P1342 QIDs depend on
+    # Senate disambiguation; safe to map, abstains until Q66096 resolvable)
+    'number of seats': 'P1342',
+    'seats': 'P1342',
+    'members': 'P1342',
+    'member of': 'P463',
+    'senate': 'P1342',
+    'house of representatives': 'P1342',
+    # Symbols (flag entity-valued; national symbols not yet in DB — abstain-safe)
+    'flag': 'P163',
+    'national flag': 'P163',
+    'national bird': 'P2464',
+    'national flower': 'P2464',
+    'national mammal': 'P2464',
+    'national animal': 'P2464',
+    'national sport': 'P2464',
+}
+# P2046 (area) deliberately absent: numeric, descriptive claims abstain.
+
+# Superlative claims need a ranking/quantity comparison. The flat schema
+# cannot supply one, so only the two properties whose established path
+# already handles superlatives (elevation, highest point) keep the
+# auto-confirm; P31/P17/P2046 matches abstain instead of confirming a
+# "largest/smallest/most" claim on a generic type word.
+_SUPERLATIVE_RE = re.compile(
+    r"\b(largest|smallest|highest|lowest|tallest|shortest|longest|deepest|"
+    r"biggest|greatest|fastest|slowest|oldest|youngest|most|least)\b",
+    re.IGNORECASE,
+)
+_SUPERLATIVE_PROPERTIES = {'P2044', 'P610'}
+
+# Location containment is only meaningful for location claims. Running it
+# for every UNKNOWN made "Chicago is the USA's capital" confirm via
+# P17=United States and made "has a Department of the Treasury" deny.
+_LOCATION_PREDICATE_CUES = ('locat', 'situat', 'border', 'part of', 'in ')
+_LOCATION_OBJECT_BLOCKERS = (
+    "'s", 'capital', 'currency', 'population', 'department', 'member',
+    'language', 'anthem', 'flag', 'bird', 'animal', 'flower', 'sport',
+    'mammal', 'tree', 'gemstone', 'dance', 'most', 'least', 'largest',
+    'smallest', 'highest', 'lowest', 'president', 'senate', 'house',
+)
+
+# Demonyms ground a nationality claim in the country relation (P17), so
+# "Tromsø is a Norwegian city" confirms through Norway. Shared by the
+# value matcher and the location-claim guard.
+_DEMONYM_TO_COUNTRY = {
+    'norwegian': 'norway', 'french': 'france', 'german': 'germany',
+    'british': 'united kingdom', 'american': 'united states of america',
+    'japanese': 'japan', 'italian': 'italy', 'spanish': 'spain',
+    'russian': 'russia', 'chinese': 'china', 'danish': 'denmark',
+    'swedish': 'sweden', 'finnish': 'finland', 'dutch': 'netherlands',
+    'polish': 'poland', 'brazilian': 'brazil', 'indian': 'india',
+    'australian': 'australia', 'canadian': 'canada', 'mexican': 'mexico',
+}
+
+
+def _parse_quantity(text: str):
+    """Parse a quantity expression into (number, comparator).
+
+    Comparators: 'gt' (exceed/more than/over), 'lt' (less than/under),
+    'approx' (approximately/about), or None for exact equality.
+    Returns None when no number is present.
+    """
+    low = (text or '').lower()
+    comparator = None
+    if re.search(r'\b(exceed|exceeds|exceeded|more than|greater than|over|above)\b', low):
+        comparator = 'gt'
+    elif re.search(r'\b(less than|fewer than|under|below)\b', low):
+        comparator = 'lt'
+    elif re.search(r'\b(approximately|approx\.?|about|around|roughly|nearly)\b', low):
+        comparator = 'approx'
+    m = re.search(
+        r'(-?\d[\d,]*(?:\.\d+)?)\s*(thousand|million|billion|trillion)?',
+        low,
+    )
+    if not m:
+        return None
+    number = float(m.group(1).replace(',', ''))
+    multiplier = {
+        'thousand': 1e3, 'million': 1e6,
+        'billion': 1e9, 'trillion': 1e12,
+    }.get(m.group(2), 1.0)
+    return number * multiplier, comparator
+
+
+def _normalize_entity_text(text: str) -> str:
+    """Lowercase, normalise hyphens and US/UK country abbreviations."""
+    s = (text or '').lower().replace('-', ' ')
+    s = re.sub(r'\b(u\.s\.a\.|u\.s\.|usa|us)\b', 'united states', s)
+    s = re.sub(r'\b(u\.k\.|uk)\b', 'united kingdom', s)
+    return re.sub(r'\s+', ' ', s).strip()
+
 
 def _default_db_path() -> str:
     """Return default database path relative to project root."""
@@ -395,12 +510,17 @@ class OfflineWikidata:
                 return row['qid']
 
         # Try partial match (starts with). Slice 0 hardening: the query
-        # must be at least 3 characters and must match on a word
-        # boundary — the stored label/alias equals the query or starts
-        # with the query followed by a space ("Oslo C" may match "Oslo
-        # City", but "it" may no longer match "Italy").
+        # must match on a word boundary — the stored label/alias equals
+        # the query or starts with the query followed by a space ("Oslo
+        # C" may match "Oslo City", but "it" may no longer match "Italy").
+        # Single-token queries need 4+ characters: a 3-letter common word
+        # ("God") otherwise resolves to a longer title ("God Save the
+        # King") and grounds unrelated claims. Multi-word partials stay
+        # allowed.
         for candidate in dict.fromkeys((name_lower, name_stripped)):
-            if len(candidate) < 3 or is_junk_name(candidate):
+            if is_junk_name(candidate):
+                continue
+            if len(candidate) < 3 or (' ' not in candidate and len(candidate) < 4):
                 continue
             row = self._conn.execute(
                 "SELECT qid FROM entities WHERE label_lower LIKE ? LIMIT 1",
@@ -563,8 +683,9 @@ class OfflineWikidata:
             result.verification_time_ms = (time.perf_counter() - start) * 1000
             return result
 
-        # Try location-based verification
-        result = self._try_location_verification(subject, clean_obj, detail)
+        # Try location-based verification (only for location relations)
+        result = self._try_location_verification(
+            subject, predicate, clean_obj, detail, raw_obj=obj)
         if result.result != VerificationResult.UNKNOWN:
             result.verification_time_ms = (time.perf_counter() - start) * 1000
             return result
@@ -607,6 +728,139 @@ class OfflineWikidata:
                 obj = obj[len(prefix):]
                 break
         return obj.strip()
+
+    def _is_superlative(self, obj: str) -> bool:
+        """True for a ranking phrase the flat schema cannot check."""
+        return bool(_SUPERLATIVE_RE.search(obj or ''))
+
+    def _decompose_possessive(self, text: str):
+        """Parse 'The USA's currency' / 'the currency of the USA'.
+
+        Returns (owner_name, property_id) or None when the attribute is
+        not one the KB models as a property. The property map is
+        deliberately small: only attributes with a direct Wikidata
+        property and a clear head noun.
+        """
+        s = (text or '').strip()
+        m = re.match(r"^(.+?)\s+'s\s+(.+)$", s, re.IGNORECASE)
+        if not m:
+            m = re.match(r"^(.+?)'s\s+(.+)$", s, re.IGNORECASE)
+        if m:
+            owner, attr = m.group(1), m.group(2)
+        else:
+            m = re.match(
+                r"^(?:the\s+)?(.+?)\s+of\s+(?:the\s+)?(.+)$",
+                s, re.IGNORECASE,
+            )
+            if not m:
+                return None
+            attr, owner = m.group(1), m.group(2)
+        owner = re.sub(r'^(the|a|an)\s+', '', owner.strip(), flags=re.IGNORECASE)
+        attr = re.sub(r'^(the|a|an)\s+', '', attr.strip(), flags=re.IGNORECASE).lower()
+        if not owner or not attr:
+            return None
+        prop = ATTRIBUTE_TO_PROPERTY.get(attr)
+        if not prop:
+            for key in sorted(ATTRIBUTE_TO_PROPERTY, key=len, reverse=True):
+                if attr == key or attr.endswith(' ' + key):
+                    prop = ATTRIBUTE_TO_PROPERTY[key]
+                    break
+        return (owner, prop) if prop else None
+
+    def _compare_quantity(self, obj: str, claims: List[Dict],
+                          predicate: str = '') -> Optional[VerificationResult]:
+        """Compare a numeric claim with the owner's KB quantity values.
+
+        The comparator often lives in the predicate ("exceeds 330
+        million"), so parse predicate + object together.
+        """
+        parsed = _parse_quantity(f"{predicate} {obj}")
+        if not parsed:
+            return None
+        number, comparator = parsed
+        values = []
+        for claim in claims:
+            try:
+                values.append(float(str(claim['value']).replace(',', '').strip()))
+            except (TypeError, ValueError):
+                continue
+        if not values:
+            return None
+        value = max(values)
+        if comparator == 'gt':
+            return (VerificationResult.CONFIRMED if value > number
+                    else VerificationResult.DENIED)
+        if comparator == 'lt':
+            return (VerificationResult.CONFIRMED if value < number
+                    else VerificationResult.DENIED)
+        tolerance = 0.10 if comparator == 'approx' else 0.01
+        return (VerificationResult.CONFIRMED
+                if abs(value - number) / max(value, 1.0) <= tolerance
+                else VerificationResult.DENIED)
+
+    def _verify_possessive_attribute(self, owner: str, prop: str, obj: str,
+                                     predicate: str = '') -> Optional['VerificationDetail']:
+        """Verify an object against owner.prop, bypassing the predicate map."""
+        owner_qid = self.lookup_entity(owner)
+        if not owner_qid:
+            return None
+        claims = self.get_claims(owner_qid, prop)
+        if not claims:
+            return None
+        detail = VerificationDetail(
+            result=VerificationResult.UNKNOWN,
+            expected_value=obj,
+            subject_qid=owner_qid,
+            property_id=prop,
+        )
+        for claim in claims:
+            if self._values_match(obj, claim['value'], claim.get('value_qid')):
+                detail.result = VerificationResult.CONFIRMED
+                detail.wikidata_value = claim['value']
+                return detail
+        if prop == 'P1082':
+            compared = self._compare_quantity(obj, claims, predicate)
+            if compared is not None:
+                detail.result = compared
+                detail.wikidata_value = claims[0]['value']
+                return detail
+        # Entity-valued attributes (flag P163, symbols P2464 etc.) carry an entity,
+        # not a description. A numeric/descriptive object ("50 stars") does not deny
+        # the entity — it abstains. Only an entity that resolves differently denies.
+        if prop in ('P163', 'P2464'):
+            # "50 stars and 12 stripes" is not "flag of the United States" — abstain, not deny
+            if any(w in obj.lower() for w in ('star', 'stripe', 'color', 'colour')):
+                detail.result = VerificationResult.UNKNOWN
+                detail.wikidata_value = claims[0]['value']
+                return detail
+            detail.result = VerificationResult.UNKNOWN
+            detail.wikidata_value = claims[0]['value']
+            return detail
+        detail.result = VerificationResult.DENIED
+        detail.wikidata_value = claims[0]['value']
+        return detail
+
+    def _is_location_claim(self, predicate: str, obj: str) -> bool:
+        """True when the relation is about place containment.
+
+        The location fallback used to run for every UNKNOWN, so a
+        possessive or type claim could confirm/deny against the subject's
+        country. Restrict it to location predicates and copulas with a
+        prepositional place phrase that carries no attribute marker.
+        """
+        pred = (predicate or '').lower()
+        obj_low = (obj or '').lower()
+        if any(cue in pred for cue in _LOCATION_PREDICATE_CUES):
+            return True
+        if pred in ('be', 'is', 'are', 'was', 'were'):
+            if any(re.search(r'\b' + re.escape(d) + r'\b', obj_low)
+                   for d in _DEMONYM_TO_COUNTRY):
+                return True
+            if re.search(r'\b(in|of)\s+', obj_low):
+                return not any(
+                    blocker in obj_low for blocker in _LOCATION_OBJECT_BLOCKERS
+                )
+        return False
 
     def _parse_existential_subject(self, subject: str):
         """Parse an existential subject like 'a cat called Simon Pegg'.
@@ -737,6 +991,19 @@ class OfflineWikidata:
     def _try_direct_verification(self, subject: str, predicate: str,
                                   obj: str, detail: VerificationDetail) -> VerificationDetail:
         """Try: lookup subject → find matching property → compare with object."""
+        # Compound subjects carry their own property: "The USA's
+        # currency" must check P38, not whatever the copula infers.
+        decomposed = self._decompose_possessive(subject)
+        if decomposed:
+            owner, prop = decomposed
+            possessive = self._verify_possessive_attribute(owner, prop, obj, predicate)
+            if possessive is not None:
+                detail.result = possessive.result
+                detail.subject_qid = possessive.subject_qid
+                detail.property_id = possessive.property_id
+                detail.wikidata_value = possessive.wikidata_value
+                return detail
+
         subj_qid = self.lookup_entity(subject)
         if not subj_qid:
             return detail
@@ -758,6 +1025,14 @@ class OfflineWikidata:
             return self._try_fuzzy_property_match(subj_qid, obj, detail)
 
         detail.property_id = property_id
+
+        # A superlative needs the ranking, which the flat schema does not
+        # carry. Only the established elevation/highest-point path keeps
+        # its auto-confirm; a P31/P17/P2046 type match must abstain
+        # ("largest country", "most populous country", "smallest country").
+        if self._is_superlative(obj) and property_id not in _SUPERLATIVE_PROPERTIES:
+            detail.result = VerificationResult.UNKNOWN
+            return detail
 
         wd_claims = self.get_claims(subj_qid, property_id)
         if not wd_claims:
@@ -882,6 +1157,21 @@ class OfflineWikidata:
     def _try_reverse_verification(self, subject: str, predicate: str,
                                    obj: str, detail: VerificationDetail) -> VerificationDetail:
         """Try reverse: 'X is the capital of Y' → check Y.P36 == X."""
+        # Possessive object: "Chicago is the USA's capital" must check
+        # USA.P36, not Chicago's country. If the owner has no property
+        # claims, fall through so the conflation rule can still label a
+        # cross-entity slot ("Trondheim is the capital of Hordaland").
+        decomposed = self._decompose_possessive(obj)
+        if decomposed:
+            owner, prop = decomposed
+            reverse = self._verify_possessive_attribute(owner, prop, subject, predicate)
+            if reverse is not None:
+                detail.result = reverse.result
+                detail.subject_qid = reverse.subject_qid
+                detail.property_id = reverse.property_id
+                detail.wikidata_value = reverse.wikidata_value
+                return detail
+
         obj_lower = obj.lower()
 
         for pattern, prop_id in OBJECT_OF_PATTERNS.items():
@@ -906,8 +1196,9 @@ class OfflineWikidata:
 
         return detail
 
-    def _try_location_verification(self, subject: str, obj: str,
-                                    detail: VerificationDetail) -> VerificationDetail:
+    def _try_location_verification(self, subject: str, predicate: str, obj: str,
+                                    detail: VerificationDetail,
+                                    raw_obj: str = None) -> VerificationDetail:
         """Try verifying location relationships (P17, P131, P30).
 
         Only denies if the object itself resolves to a known entity (i.e.,
@@ -922,6 +1213,16 @@ class OfflineWikidata:
         # A bare year like "1973" is not a place; trying to look it up can
         # hit entities whose names start with that year and cause false denials.
         if re.match(r'^\d{1,4}s?$', obj.strip()):
+            return detail
+
+        # Only location relations reach the containment check. Without
+        # this, a possessive or type claim confirms/denies against the
+        # subject's country ("Chicago is the USA's capital"). Use the
+        # raw object: _clean_object strips the leading "in ", which the
+        # guard needs to recognise the relation.
+        if not self._is_location_claim(predicate, raw_obj if raw_obj is not None else obj):
+            return detail
+        if self._is_superlative(obj):
             return detail
 
         subj_qid = self.lookup_entity(subject)
@@ -1103,6 +1404,11 @@ class OfflineWikidata:
         text. Always gated: a match here is far more likely to be a
         coincidental partial overlap than the direct/explicit paths.
         """
+        # A ranking phrase ("most populous", "largest") cannot be checked
+        # by value overlap; the type/category word would produce a false
+        # confirmation.
+        if self._is_superlative(obj):
+            return detail
         all_claims = self.get_claims(subj_qid)
         for claim in all_claims:
             if self._values_match(obj, claim['value'], claim.get('value_qid')):
@@ -1121,49 +1427,43 @@ class OfflineWikidata:
     def _values_match(self, extracted: str, wikidata_value: str,
                       value_qid: Optional[str] = None) -> bool:
         """Check if an extracted value matches a Wikidata value."""
-        ext_lower = extracted.lower().strip()
-        wd_lower = wikidata_value.lower().strip()
+        ext_lower = _normalize_entity_text(extracted)
+        wd_lower = _normalize_entity_text(wikidata_value)
 
         if ext_lower == wd_lower:
             return True
 
-        # Word-boundary-aware substring matching. The old `ext_lower in
-        # wd_lower` check matched "cat" in "category", "us" in "house" —
-        # false positives that inflated REFUTES scores. Word boundaries
-        # allow "united states" in "united states of america" while
-        # blocking "cat" in "category". Hyphens are normalised to spaces
-        # first so "commander-in-chief" (Wikidata) matches "Commander in
-        # Chief of the armed forces" (parsed claim).
-        ext_norm = ext_lower.replace('-', ' ')
-        wd_norm = wd_lower.replace('-', ' ')
-        if len(ext_norm) >= 3 and len(wd_norm) >= 3:
-            if re.search(r'\b' + re.escape(ext_norm) + r'\b', wd_norm) or \
-               re.search(r'\b' + re.escape(wd_norm) + r'\b', ext_norm):
+        # Word-boundary-aware substring matching. The old unbounded
+        # `in` check matched "cat" in "category", "state" in "united
+        # states" and "Africa" in "African Development Bank" — false
+        # positives that inflated REFUTES scores. Word boundaries allow
+        # "united states" in "united states of america" while blocking
+        # the short-word cases. Hyphens and US/UK abbreviations are
+        # normalised first so "US dollar" matches "United States
+        # dollar" and "commander-in-chief" matches "Commander in Chief".
+        if len(ext_lower) >= 3 and len(wd_lower) >= 3:
+            if re.search(r'\b' + re.escape(ext_lower) + r'\b', wd_lower) or \
+               re.search(r'\b' + re.escape(wd_lower) + r'\b', ext_lower):
                 return True
 
         if value_qid:
             label = self.get_entity_label(value_qid)
-            if label and label.lower() == ext_lower:
-                return True
-            if label and (ext_lower in label.lower() or label.lower() in ext_lower):
-                return True
+            if label:
+                label_lower = _normalize_entity_text(label)
+                if label_lower == ext_lower:
+                    return True
+                if len(label_lower) >= 3 and len(ext_lower) >= 3:
+                    if re.search(r'\b' + re.escape(ext_lower) + r'\b', label_lower) or \
+                       re.search(r'\b' + re.escape(label_lower) + r'\b', ext_lower):
+                        return True
 
         ext_qid = self.lookup_entity(extracted)
         if ext_qid and value_qid and ext_qid == value_qid:
             return True
 
-        demonym_to_country = {
-            'norwegian': 'norway', 'french': 'france', 'german': 'germany',
-            'british': 'united kingdom', 'american': 'united states of america',
-            'japanese': 'japan', 'italian': 'italy', 'spanish': 'spain',
-            'russian': 'russia', 'chinese': 'china', 'danish': 'denmark',
-            'swedish': 'sweden', 'finnish': 'finland', 'dutch': 'netherlands',
-            'polish': 'poland', 'brazilian': 'brazil', 'indian': 'india',
-            'australian': 'australia', 'canadian': 'canada', 'mexican': 'mexico',
-        }
         # Check each word in the extracted string for demonym match
         ext_words = set(ext_lower.split())
-        for demonym, country in demonym_to_country.items():
+        for demonym, country in _DEMONYM_TO_COUNTRY.items():
             if demonym in ext_words:
                 if country == wd_lower:
                     return True

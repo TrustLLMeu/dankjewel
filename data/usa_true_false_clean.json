@@ -1,0 +1,726 @@
+{
+  "meta": {
+    "name": "USA true/false statements, 93 items (50 false, 43 true), disputed items removed",
+    "created_utc": "2026-11-19",
+    "source_file": "dj_result_2026-11-19T20-34-09.json",
+    "source_exported_at": "2026-11-19T20:34:09.083Z",
+    "source_text_sha256": "4f52f848d4b822681de0aa94cd794b15fab9aef0a57f94e4c359d1a1deecf727",
+    "source_prompt": "Write fifty  untrue things about the USA and fifty true things about the USA.",
+    "generator": {
+      "model": "Qwen/Qwen3.8-27B-FP8",
+      "finish_reason": "stop",
+      "num_tokens": 469
+    },
+    "filtering": "Items with a factual error, a contested ranking, or a territory-dependent reading were removed (see excluded_items). The remaining labels follow the generator's true/untrue sections and were spot-checked, not exhaustively fact-checked.",
+    "counts": {
+      "total": 93,
+      "true": 43,
+      "false": 50,
+      "excluded": 7
+    },
+    "excluded_items": [
+      {
+        "id": "usa-true-14",
+        "statement": "The USA lies entirely in the Northern Hemisphere.",
+        "ground_truth": "true",
+        "reason": "All 50 states lie in the Northern Hemisphere, but the USA includes American Samoa south of the equator; the statement is ambiguous about territories."
+      },
+      {
+        "id": "usa-true-17",
+        "statement": "The USA is the third-largest country in the world by total area.",
+        "ground_truth": "true",
+        "reason": "Third-largest by total area is source-dependent; China is close and some sources rank the USA fourth."
+      },
+      {
+        "id": "usa-true-29",
+        "statement": "The national motto is \"In God We Trust\" (adopted 1956); \"E Pluribus Unum\" is also an official motto.",
+        "ground_truth": "true",
+        "reason": "In God We Trust is the official motto; E Pluribus Unum is a de facto motto, so calling both official is disputed."
+      },
+      {
+        "id": "usa-true-41",
+        "statement": "The Missouri River is the longest river in the USA.",
+        "ground_truth": "true",
+        "reason": "Missouri and Mississippi river lengths are close and the longest-river ranking differs by measurement source."
+      },
+      {
+        "id": "usa-true-43",
+        "statement": "The national tree of the USA is the oak (designated 1954).",
+        "ground_truth": "true",
+        "reason": "Congress designated the oak the national tree in 2004 (P.L. 108-447), not 1954."
+      },
+      {
+        "id": "usa-true-45",
+        "statement": "The diamond is the national gemstone of the USA (designated 1999).",
+        "ground_truth": "true",
+        "reason": "The United States has no federal national gemstone; diamond is Arkansas's state gemstone (1967)."
+      },
+      {
+        "id": "usa-true-46",
+        "statement": "The square dance is the national dance of the USA (designated 1976).",
+        "ground_truth": "true",
+        "reason": "Square dance was designated the national folk dance for 1982-1983 only (P.L. 97-188); the 1976 date is wrong."
+      }
+    ],
+    "fields": {
+      "id": "stable item id from the 100-item extraction (gaps are excluded items)",
+      "statement": "the generated statement, verbatim",
+      "ground_truth": "true | false",
+      "section": "untrue | true (the source section)",
+      "section_index": "1-based position within the source section"
+    }
+  },
+  "items": [
+    {
+      "id": "usa-untrue-01",
+      "statement": "The capital of the United States is New York City.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 1
+    },
+    {
+      "id": "usa-untrue-02",
+      "statement": "The USA has 52 states.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 2
+    },
+    {
+      "id": "usa-untrue-03",
+      "statement": "The United States was founded in 1976.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 3
+    },
+    {
+      "id": "usa-untrue-04",
+      "statement": "The USA is located in the Southern Hemisphere.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 4
+    },
+    {
+      "id": "usa-untrue-05",
+      "statement": "The currency of the USA is the pound sterling.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 5
+    },
+    {
+      "id": "usa-untrue-06",
+      "statement": "The national bird of the USA is the penguin.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 6
+    },
+    {
+      "id": "usa-untrue-07",
+      "statement": "The USA is the largest country in the world by land area.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 7
+    },
+    {
+      "id": "usa-untrue-08",
+      "statement": "The president of the USA is appointed by the United Nations General Assembly.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 8
+    },
+    {
+      "id": "usa-untrue-09",
+      "statement": "The USA's flag has 50 stars and 12 stripes.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 9
+    },
+    {
+      "id": "usa-untrue-10",
+      "statement": "The USA is a constitutional monarchy.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 10
+    },
+    {
+      "id": "usa-untrue-11",
+      "statement": "The USA has no coastline.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 11
+    },
+    {
+      "id": "usa-untrue-12",
+      "statement": "The national anthem of the USA is \"God Save the King.\"",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 12
+    },
+    {
+      "id": "usa-untrue-13",
+      "statement": "The USA's population is approximately 5 million.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 13
+    },
+    {
+      "id": "usa-untrue-14",
+      "statement": "The president of the USA serves a single 10-year term.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 14
+    },
+    {
+      "id": "usa-untrue-15",
+      "statement": "The USA is located in South America.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 15
+    },
+    {
+      "id": "usa-untrue-16",
+      "statement": "The USA's Senate has 500 members.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 16
+    },
+    {
+      "id": "usa-untrue-17",
+      "statement": "The USA was founded by a decree of the British Parliament in 1900.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 17
+    },
+    {
+      "id": "usa-untrue-18",
+      "statement": "The USA's national animal is the kangaroo.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 18
+    },
+    {
+      "id": "usa-untrue-19",
+      "statement": "The USA is an island nation.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 19
+    },
+    {
+      "id": "usa-untrue-20",
+      "statement": "The USA has a prime minister as its head of government.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 20
+    },
+    {
+      "id": "usa-untrue-21",
+      "statement": "The USA's currency is the euro.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 21
+    },
+    {
+      "id": "usa-untrue-22",
+      "statement": "The USA is the most populous country on Earth.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 22
+    },
+    {
+      "id": "usa-untrue-23",
+      "statement": "The USA has no written constitution.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 23
+    },
+    {
+      "id": "usa-untrue-24",
+      "statement": "The USA's president is chosen by a public lottery.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 24
+    },
+    {
+      "id": "usa-untrue-25",
+      "statement": "The USA was \"discovered\" by Christopher Columbus in 1500.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 25
+    },
+    {
+      "id": "usa-untrue-26",
+      "statement": "The USA's national language is French.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 26
+    },
+    {
+      "id": "usa-untrue-27",
+      "statement": "The USA is the smallest country in the world.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 27
+    },
+    {
+      "id": "usa-untrue-28",
+      "statement": "The USA has 200 states.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 28
+    },
+    {
+      "id": "usa-untrue-29",
+      "statement": "The USA's president serves for life.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 29
+    },
+    {
+      "id": "usa-untrue-30",
+      "statement": "The USA is located in Africa.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 30
+    },
+    {
+      "id": "usa-untrue-31",
+      "statement": "The USA has no military.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 31
+    },
+    {
+      "id": "usa-untrue-32",
+      "statement": "The USA's national sport is cricket.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 32
+    },
+    {
+      "id": "usa-untrue-33",
+      "statement": "The USA's population is 100,000.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 33
+    },
+    {
+      "id": "usa-untrue-34",
+      "statement": "The USA's capital is Chicago.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 34
+    },
+    {
+      "id": "usa-untrue-35",
+      "statement": "The USA was founded in 2001.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 35
+    },
+    {
+      "id": "usa-untrue-36",
+      "statement": "The USA is a one-party state.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 36
+    },
+    {
+      "id": "usa-untrue-37",
+      "statement": "The USA's national bird is the ostrich.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 37
+    },
+    {
+      "id": "usa-untrue-38",
+      "statement": "The USA has a dictator as its head of state.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 38
+    },
+    {
+      "id": "usa-untrue-39",
+      "statement": "The USA's currency is the Japanese yen.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 39
+    },
+    {
+      "id": "usa-untrue-40",
+      "statement": "The USA is located entirely in the Arctic Circle.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 40
+    },
+    {
+      "id": "usa-untrue-41",
+      "statement": "The USA's flag has a single star on a green field.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 41
+    },
+    {
+      "id": "usa-untrue-42",
+      "statement": "The USA's House of Representatives has 10 members.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 42
+    },
+    {
+      "id": "usa-untrue-43",
+      "statement": "The USA was founded by the United States Congress in 1950.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 43
+    },
+    {
+      "id": "usa-untrue-44",
+      "statement": "The USA's national animal is the lion.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 44
+    },
+    {
+      "id": "usa-untrue-45",
+      "statement": "The USA has no written laws.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 45
+    },
+    {
+      "id": "usa-untrue-46",
+      "statement": "The USA's president is elected by a single national vote every 20 years.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 46
+    },
+    {
+      "id": "usa-untrue-47",
+      "statement": "The USA is located in Oceania.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 47
+    },
+    {
+      "id": "usa-untrue-48",
+      "statement": "The USA's national flower is the cactus.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 48
+    },
+    {
+      "id": "usa-untrue-49",
+      "statement": "The USA has a king and a queen as its ruling heads of state.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 49
+    },
+    {
+      "id": "usa-untrue-50",
+      "statement": "The USA was founded in 3000 BC.",
+      "ground_truth": "false",
+      "section": "untrue",
+      "section_index": 50
+    },
+    {
+      "id": "usa-true-01",
+      "statement": "The United States has 50 states.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 1
+    },
+    {
+      "id": "usa-true-02",
+      "statement": "The capital of the United States is Washington, D.C.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 2
+    },
+    {
+      "id": "usa-true-03",
+      "statement": "The Declaration of Independence was adopted on July 4, 1776.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 3
+    },
+    {
+      "id": "usa-true-04",
+      "statement": "The national bird of the USA is the bald eagle.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 4
+    },
+    {
+      "id": "usa-true-05",
+      "statement": "The national anthem is \"The Star-Spangled Banner.\"",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 5
+    },
+    {
+      "id": "usa-true-06",
+      "statement": "The currency of the USA is the US dollar.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 6
+    },
+    {
+      "id": "usa-true-07",
+      "statement": "The USA is located in North America.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 7
+    },
+    {
+      "id": "usa-true-08",
+      "statement": "The USA has a written constitution, ratified in 1788.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 8
+    },
+    {
+      "id": "usa-true-09",
+      "statement": "The president serves four-year terms.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 9
+    },
+    {
+      "id": "usa-true-10",
+      "statement": "Congress is bicameral, consisting of the Senate and the House of Representatives.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 10
+    },
+    {
+      "id": "usa-true-11",
+      "statement": "The Senate has 100 members (two per state).",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 11
+    },
+    {
+      "id": "usa-true-12",
+      "statement": "The House of Representatives has 435 voting members.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 12
+    },
+    {
+      "id": "usa-true-13",
+      "statement": "The US flag features 50 stars and 13 stripes.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 13
+    },
+    {
+      "id": "usa-true-15",
+      "statement": "The USA operates under a presidential system of government.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 15
+    },
+    {
+      "id": "usa-true-16",
+      "statement": "The USA's population exceeds 330 million people.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 16
+    },
+    {
+      "id": "usa-true-18",
+      "statement": "The USA has the largest economy in the world by nominal GDP.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 18
+    },
+    {
+      "id": "usa-true-19",
+      "statement": "The national flower of the USA is the rose.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 19
+    },
+    {
+      "id": "usa-true-20",
+      "statement": "The USA spans six time zones across its 50 states.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 20
+    },
+    {
+      "id": "usa-true-21",
+      "statement": "The USA has the largest military budget in the world.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 21
+    },
+    {
+      "id": "usa-true-22",
+      "statement": "The USA is a federal republic.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 22
+    },
+    {
+      "id": "usa-true-23",
+      "statement": "The national mammal of the USA is the American bison.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 23
+    },
+    {
+      "id": "usa-true-24",
+      "statement": "Presidential elections are held every four years.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 24
+    },
+    {
+      "id": "usa-true-25",
+      "statement": "George Washington was the first president of the United States.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 25
+    },
+    {
+      "id": "usa-true-26",
+      "statement": "The US government operates on a system of checks and balances among three branches.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 26
+    },
+    {
+      "id": "usa-true-27",
+      "statement": "The US flag is commonly called \"Old Glory\" or \"Stars and Stripes.\"",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 27
+    },
+    {
+      "id": "usa-true-28",
+      "statement": "The USA has a Supreme Court as its highest court.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 28
+    },
+    {
+      "id": "usa-true-30",
+      "statement": "The first ten amendments to the Constitution are known as the Bill of Rights.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 30
+    },
+    {
+      "id": "usa-true-31",
+      "statement": "The USA was originally formed from 13 British colonies.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 31
+    },
+    {
+      "id": "usa-true-32",
+      "statement": "Alaska is the largest US state by area.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 32
+    },
+    {
+      "id": "usa-true-33",
+      "statement": "California is the most populous US state.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 33
+    },
+    {
+      "id": "usa-true-34",
+      "statement": "The USA operates under a system of federalism, dividing power between national and state governments.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 34
+    },
+    {
+      "id": "usa-true-35",
+      "statement": "Baseball is widely referred to as the \"national pastime\" of the USA.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 35
+    },
+    {
+      "id": "usa-true-36",
+      "statement": "The USA has a Department of the Treasury.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 36
+    },
+    {
+      "id": "usa-true-37",
+      "statement": "Yellowstone, established in 1872, is the world's first national park.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 37
+    },
+    {
+      "id": "usa-true-38",
+      "statement": "The USA operates under a de facto two-party system (Democrats and Republicans).",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 38
+    },
+    {
+      "id": "usa-true-39",
+      "statement": "The USA has a Vice President who presides over the Senate.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 39
+    },
+    {
+      "id": "usa-true-40",
+      "statement": "The Constitution's system of judicial review allows courts to strike down laws.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 40
+    },
+    {
+      "id": "usa-true-42",
+      "statement": "The USA has a Department of Defense.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 42
+    },
+    {
+      "id": "usa-true-44",
+      "statement": "The Federal Reserve System serves as the central banking system.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 44
+    },
+    {
+      "id": "usa-true-47",
+      "statement": "The USA has a system of state and local governments alongside the federal government.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 47
+    },
+    {
+      "id": "usa-true-48",
+      "statement": "The USA's national park system spans all 50 states.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 48
+    },
+    {
+      "id": "usa-true-49",
+      "statement": "The US Constitution has been amended 27 times.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 49
+    },
+    {
+      "id": "usa-true-50",
+      "statement": "The USA is a member of the United Nations, having been a founding member in 1945.",
+      "ground_truth": "true",
+      "section": "true",
+      "section_index": 50
+    }
+  ]
+}
